@@ -1,0 +1,53 @@
+	(primitive_def PMVBRAM 7 8
+		(pin O O output)
+		(pin ODIV2 ODIV2 output)
+		(pin ODIV4 ODIV4 output)
+		(pin SELECT4 SELECT4 input)
+		(pin SELECT3 SELECT3 input)
+		(pin SELECT2 SELECT2 input)
+		(pin SELECT1 SELECT1 input)
+		(element O 1
+			(pin O input)
+			(conn O O <== PMVBRAM O)
+		)
+		(element ODIV2 1
+			(pin ODIV2 input)
+			(conn ODIV2 ODIV2 <== PMVBRAM ODIV2)
+		)
+		(element ODIV4 1
+			(pin ODIV4 input)
+			(conn ODIV4 ODIV4 <== PMVBRAM ODIV4)
+		)
+		(element SELECT1 1
+			(pin SELECT1 output)
+			(conn SELECT1 SELECT1 ==> PMVBRAM SELECT1)
+		)
+		(element SELECT2 1
+			(pin SELECT2 output)
+			(conn SELECT2 SELECT2 ==> PMVBRAM SELECT2)
+		)
+		(element SELECT3 1
+			(pin SELECT3 output)
+			(conn SELECT3 SELECT3 ==> PMVBRAM SELECT3)
+		)
+		(element SELECT4 1
+			(pin SELECT4 output)
+			(conn SELECT4 SELECT4 ==> PMVBRAM SELECT4)
+		)
+		(element PMVBRAM 7 # BEL
+			(pin O output)
+			(pin ODIV2 output)
+			(pin ODIV4 output)
+			(pin SELECT1 input)
+			(pin SELECT2 input)
+			(pin SELECT3 input)
+			(pin SELECT4 input)
+			(conn PMVBRAM O ==> O O)
+			(conn PMVBRAM ODIV2 ==> ODIV2 ODIV2)
+			(conn PMVBRAM ODIV4 ==> ODIV4 ODIV4)
+			(conn PMVBRAM SELECT1 <== SELECT1 SELECT1)
+			(conn PMVBRAM SELECT2 <== SELECT2 SELECT2)
+			(conn PMVBRAM SELECT3 <== SELECT3 SELECT3)
+			(conn PMVBRAM SELECT4 <== SELECT4 SELECT4)
+		)
+	)

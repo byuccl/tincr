@@ -1,0 +1,53 @@
+	(primitive_def PMV2 7 8
+		(pin A2 A2 input)
+		(pin A1 A1 input)
+		(pin A0 A0 input)
+		(pin EN EN input)
+		(pin O O output)
+		(pin ODIV2 ODIV2 output)
+		(pin ODIV4 ODIV4 output)
+		(element A0 1
+			(pin A0 output)
+			(conn A0 A0 ==> PMV2 A0)
+		)
+		(element A1 1
+			(pin A1 output)
+			(conn A1 A1 ==> PMV2 A1)
+		)
+		(element A2 1
+			(pin A2 output)
+			(conn A2 A2 ==> PMV2 A2)
+		)
+		(element EN 1
+			(pin EN output)
+			(conn EN EN ==> PMV2 EN)
+		)
+		(element O 1
+			(pin O input)
+			(conn O O <== PMV2 O)
+		)
+		(element ODIV2 1
+			(pin ODIV2 input)
+			(conn ODIV2 ODIV2 <== PMV2 ODIV2)
+		)
+		(element ODIV4 1
+			(pin ODIV4 input)
+			(conn ODIV4 ODIV4 <== PMV2 ODIV4)
+		)
+		(element PMV2 7 # BEL
+			(pin A0 input)
+			(pin A1 input)
+			(pin A2 input)
+			(pin EN input)
+			(pin O output)
+			(pin ODIV2 output)
+			(pin ODIV4 output)
+			(conn PMV2 O ==> O O)
+			(conn PMV2 ODIV2 ==> ODIV2 ODIV2)
+			(conn PMV2 ODIV4 ==> ODIV4 ODIV4)
+			(conn PMV2 A0 <== A0 A0)
+			(conn PMV2 A1 <== A1 A1)
+			(conn PMV2 A2 <== A2 A2)
+			(conn PMV2 EN <== EN EN)
+		)
+	)

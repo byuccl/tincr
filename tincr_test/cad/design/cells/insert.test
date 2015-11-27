@@ -1,0 +1,87 @@
+package require tcltest 2.2
+
+eval ::tcltest::configure $::argv
+
+package require tincr
+
+namespace eval ::tincr::cells::test {
+	namespace import ::tcltest::*
+	
+	set part [get_parts xc7k70tfbg484-2]
+	set src_cell_name cell_a
+	set snk_cell_names {cell_b cell_c cell_d}
+	set net_name {net}
+	
+	variable SIMPLE_UNROUTED_DESIGN {
+		#common setup code
+		if {[get_part -quiet -of [current_project -quiet]] != $part} {
+			link_design -quiet -part $part
+		}
+		
+		set src_cell [get_cells -quiet $src_cell_name]
+		if {$src_cell == ""} {
+			set src_cell [create_cell -quiet -reference BUF $src_cell_name]
+		}
+		
+		set snk_cells [list]
+		foreach snk_cell_name $snk_cell_names {
+			set snk_cell [get_cells -quiet $snk_cell_name]
+			if {$snk_cell == ""} {
+				set snk_cell [create_cell -quiet -reference BUF $snk_cell_name]
+			}
+			lappend snk_cells $snk_cell
+		}
+		
+		set net [get_nets -quiet $net_name]
+		if {$net == ""} {
+			set net [create_net -quiet $net_name]
+		}
+		
+		connect_net -quiet -net $net_name -objects [get_pins -quiet -of_objects $src_cell -filter {DIRECTION==OUT}]
+		connect_net -quiet -net $net_name -objects [get_pins -quiet -of_objects $snk_cells -filter {DIRECTION==IN}] 
+	}
+	
+	variable BFT_ROUTED_DESIGN {
+		open_checkpoint [file join $::env(TINCR_PATH) test_files checkpoints bft post_routed.dcp]
+	}
+	
+	variable CLEANUP {
+		#common cleanup code
+		close_project
+	}
+	
+	test insert-1 {New cell becomes the source of the downhill net} -setup $SIMPLE_UNROUTED_DESIGN -body {
+		set cell [create_cell -reference BUF new_cell]
+		
+		tincr::cells insert 
+		
+		get_cells -of [get_pins -of [get_nets $net_name] -filter {DIRECTION==OUT}]
+	} -cleanup $CLEANUP -result {new_cell}
+	
+	test insert-2 {New downhill net only sources specified pins} -setup $SIMPLE_UNROUTED_DESIGN -body {
+		set cell [create_cell -reference BUF new_cell]
+		
+		
+		
+		get_cells -of [get_pins -of [get_nets $net_name] -filter {DIRECTION==OUT}]
+	} -cleanup $CLEANUP -result {new_cell}
+	
+	test insert-3 {New uphill net sources the new cell} -setup $SIMPLE_UNROUTED_DESIGN -body {
+		set cell [create_cell -reference BUF new_cell]
+		
+		
+		
+		get_cells -of [get_pins -of [get_nets $net_name] -filter {DIRECTION==OUT}]
+	} -cleanup $CLEANUP -result {new_cell}
+		
+	test insert-4 {Original source is a port} -setup $SIMPLE_UNROUTED_DESIGN -body {
+		set cell [create_cell -reference BUF new_cell]
+		
+		
+		
+		get_cells -of [get_pins -of [get_nets $net_name] -filter {DIRECTION==OUT}]
+	} -cleanup $CLEANUP -result {new_cell}
+	
+	cleanupTests
+}
+namespace delete ::tincr::cells::test

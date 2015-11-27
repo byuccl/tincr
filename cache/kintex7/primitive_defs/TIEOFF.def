@@ -1,0 +1,20 @@
+	(primitive_def TIEOFF 2 4
+		(pin HARD0 HARD0 output)
+		(pin HARD1 HARD1 output)
+		(element HARD1 1
+			(pin HARD1 input)
+			(conn HARD1 HARD1 <== HARD1VCC 1)
+		)
+		(element HARD0 1
+			(pin HARD0 input)
+			(conn HARD0 HARD0 <== HARD0GND 0)
+		)
+		(element HARD0GND 1 # BEL
+			(pin 0 output)
+			(conn HARD0GND 0 ==> HARD0 HARD0)
+		)
+		(element HARD1VCC 1 # BEL
+			(pin 1 output)
+			(conn HARD1VCC 1 ==> HARD1 HARD1)
+		)
+	)

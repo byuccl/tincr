@@ -1,0 +1,35 @@
+package require tcltest 2.2
+
+eval ::tcltest::configure $argv
+
+package require tincr
+
+namespace eval ::tincr::test {
+	namespace import ::tcltest::*
+	testConstraint X [expr {...}]
+	
+	variable SETUP {
+		#common setup code
+		
+	}
+	
+	variable CLEANUP {
+		#common cleanup code
+		
+	}
+	
+	test example-1 {} -setup $SETUP -body {
+		# First test
+	} -cleanup $CLEANUP -result {...}
+	
+	test example-2 {} -constraints X -setup $SETUP -body {
+		# Second test; constrained
+	} -cleanup $CLEANUP -result {...}
+	
+	test example-3 {} {
+		# Third test; no context required
+	} {...}
+	
+	cleanupTests
+}
+namespace delete ::tincr::test
