@@ -10,7 +10,10 @@ if {[info exists ::env(TINCR_PATH)]} {
         source [file join $::env(TINCR_PATH) tincr cad device site_pins.tcl]
         source [file join $::env(TINCR_PATH) tincr cad device site_pips.tcl]
         source [file join $::env(TINCR_PATH) tincr cad device sites.tcl]
+        source [file join $::env(TINCR_PATH) tincr cad device site.tcl]
         source [file join $::env(TINCR_PATH) tincr cad device tiles.tcl]
         source [file join $::env(TINCR_PATH) tincr cad device wires.tcl]
+        
+        source [file join $::env(TINCR_PATH) tincr cad object.tcl]
     }
 }
