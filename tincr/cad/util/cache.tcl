@@ -1,7 +1,7 @@
 # cache.tcl 
 # Comprises the entire caching framework for Tincr.
 #
-# The cache package contains procs for registering, accessing, generating, saving, and loading caches for use in Tincr.
+# The cache package contains procs for defining, accessing, generating, saving, and loading caches for use in Tincr.
 
 # Register the package
 package provide tincr.cad.util 0.0
@@ -11,7 +11,7 @@ package require struct 2.1
 
 namespace eval ::tincr::cache {
     namespace export \
-        register \
+        define \
         path \
         namespace_path \
         directory_path \
@@ -26,11 +26,12 @@ set ::tincr::cache::generate_scripts [dict create]
 set ::tincr::cache::save_scripts [dict create]
 set ::tincr::cache::load_scripts [dict create]
 
-## Register a cache with Tincr's caching database. You must provide a name for the cache(s), a script for computing the path of the cache (as a list), a script for generating the cache, and a script for loading the cache from disk.
-# @param generation_map A dict of cache name(s) to generation script mappings.
-# @param load_map A dict of cache name(s) to load script mappings.
-# @return True if the cache(s) was/were successfully registered, false otherwise.
-proc ::tincr::cache::register {names path_script generate_script save_script load_script} {
+## Register a cache with Tincr's caching database. You must provide a name for the cache(s), a script for computing the path of the cache (as a list), a script for generating the cache, and a script for saving/loading the cache to/from disk.
+# @param path_script A script for computing the path of the cache(s) as a list. This is used to determine the namespace where the cache will be stored and the path it will be saved to on disk. If nothing, no new script script is registered.
+# @param generate_script A script for generating the cache(s). If nothing, no new script script is registered.
+# @param save_script A script for saving the cache(s). If nothing, no new script script is registered.
+# @param load_script A script for loading the cache(s). If nothing, no new script script is registered.
+proc ::tincr::cache::define {names path_script generate_script save_script load_script} {
     foreach name $names {
         if {$path_script != ""} {
             dict set ::tincr::cache::path_scripts $name $path_script
@@ -133,7 +134,22 @@ proc ::tincr::cache::refresh {cache} {
     initialize $cache
 }
 
-::tincr::cache::register {
+######################## Begin cache definitions #########################
+
+# This is a template for a cache definition
+::tincr::cache::define {
+    # Cache name(s)
+} {
+    # Path script
+} {
+    # Generate script
+} {
+    # Save script
+} {
+    # Load script
+}
+
+::tincr::cache::define {
     array.bel_pin.bel
     array.bel_type.bels
     array.bel.site_types
@@ -163,7 +179,7 @@ proc ::tincr::cache::refresh {cache} {
     }
 } {} {}
 
-::tincr::cache::register {
+::tincr::cache::define {
     array.bel_pin.bel
     array.bel_type.bels
     array.site.site_type.bels
@@ -211,7 +227,7 @@ proc ::tincr::cache::refresh {cache} {
     }
 }
 
-::tincr::cache::register {
+::tincr::cache::define {
     array.bel.site_types
 } {} {} {
     namespace eval [::tincr::cache::namespace_path $cache] {
@@ -235,7 +251,7 @@ proc ::tincr::cache::refresh {cache} {
     }
 }
 
-::tincr::cache::register {
+::tincr::cache::define {
     array.bel_type.lib_cells
     array.lib_cell.bel_types
 } {} {
@@ -316,7 +332,7 @@ proc ::tincr::cache::refresh {cache} {
             foreach key [array names array.lib_cell.bel_types] {
                 set lib_cell [get_lib_cells $key]
                 
-                foreach bel_type $"array.lib_cell.bel_types($key)" {
+                foreach bel_type [lindex [array get {array.lib_cell.bel_types} $key] 1] {
                     lappend array.bel_type.lib_cells($bel_type) $lib_cell
                 }
             }
@@ -326,7 +342,7 @@ proc ::tincr::cache::refresh {cache} {
     }
 }
 
-::tincr::cache::register {
+::tincr::cache::define {
     array.site.site_types
     array.site_type.sites
     list.site.site_type
@@ -378,7 +394,7 @@ proc ::tincr::cache::refresh {cache} {
     }
 }
 
-::tincr::cache::register {
+::tincr::cache::define {
     array.bel_pin.bel
     array.bel_type.bels
     array.bel.site_types
@@ -396,8 +412,8 @@ proc ::tincr::cache::refresh {cache} {
     set device [get_property DEVICE $part]
     set package [get_property PACKAGE $part]
     
-    # TODO I don't know for sure what the correct "resolutions" for these
-    #      caches are; so I just assigned them all to the most fine-grained
+    # TODO I don't know for sure what the correct "resolutions" are for these
+    #      caches; so I just assigned them all to the most fine-grained
     #      path, based on part. This means these caches will be re-
     #      generated/populated when the user switches parts in Vivado.
     #      Performance gains may be observed for users that operate across
@@ -409,7 +425,7 @@ proc ::tincr::cache::refresh {cache} {
 } {} {} {}
 
 # The array.part.site_types cache provides quick access to the list of site types on a given part.
-::tincr::cache::register {
+::tincr::cache::define {
     array.part.site_types
 } {
     return "all"
@@ -459,19 +475,21 @@ proc ::tincr::cache::refresh {cache} {
     }
 }
 
-::tincr::cache::register {
+::tincr::cache::define {
+    # Cache name(s)
     dict.site_type.src_bel.src_pin.snk_bel.snk_pins
 } {
+    # Path script
     set part [get_part -of_objects [current_design]]
     set family [get_property FAMILY $part]
     return [list $family "primitive_defs"]
 } {
-    # Generate
+    # Generate script
     
 } {
-    # Save
+    # Save script
 } {
-    # Load
+    # Load script
     namespace eval [::tincr::cache::namespace_path $cache] {
         set dict.site_type.src_bel.src_pin.snk_bel.snk_pins [dict create]
         foreach site_type [tincr::sites get_types] {
@@ -489,7 +507,7 @@ proc ::tincr::cache::refresh {cache} {
     }
 }
 
-::tincr::cache::register {
+::tincr::cache::define {
     array.lib_cell.bels
 } {} {
     namespace eval [::tincr::cache::namespace_path $cache] {
