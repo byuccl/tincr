@@ -18,15 +18,17 @@ namespace eval ::tincr::bel {
     namespace export \
         get_name \
         get_type \
+        get_bels \
+        get_bel_pins \
         get_cell \
         get_cells \
+        get_compatible_lib_cells \
         get_tile \
         get_site \
-        get_bel_pins \
         is_lut5 \
         is_lut6 \
         is_lut \
-        get_compatible_lib_cells
+        is_route_through
     namespace ensemble create
 }
 
@@ -42,10 +44,21 @@ proc ::tincr::bel::get_name { this } {
 }
 
 ## Get the type of a BEL.
-# @param bel The <CODE>bel</CODE> object.
+# @param this The <CODE>bel</CODE> object.
 # @return The BEL's type as a string.
 proc ::tincr::bel::get_type { this } {
     return [get_property TYPE $this]
+}
+
+proc ::tincr::bel::get_bel_pins { this } {
+    return [::get_bel_pins -of_objects $this]
+}
+
+## Get the BELs of a BEL. This only applies to BELs that are hierarchical such as CARRY4s.
+# @param this The <CODE>bel</CODE> object.
+# @return The BELs that are children of this BEL.
+proc ::tincr::bel::get_bels { this } {
+    error "Not implemented"
 }
 
 proc ::tincr::bel::get_cell { this } {
@@ -63,10 +76,6 @@ proc ::tincr::bel::get_tile { this } {
 
 proc ::tincr::bel::get_site { this } {
     return [::get_sites -of_objects $this]
-}
-
-proc ::tincr::bel::get_bel_pins { this } {
-    return [::get_bel_pins -of_objects $this]
 }
 
 ## Is this BEL a LUT5
@@ -105,4 +114,11 @@ proc ::tincr::bel::is_lut { this } {
 proc ::tincr::bel::get_compatible_lib_cells { this } {
     ::tincr::cache::get array.bel_type.lib_cells bel_type2lib_cells
     return $bel_type2lib_cells([get_type $this])
+}
+
+## Is this BEL a route-through?
+# @param bel The <CODE>bel</CODE> object.
+# @return True (1) if this BEL is being used as a route through, false (0) otherwise.
+proc ::tincr::bel::is_route_through { this } {
+    # TODO This is a planned feature
 }
