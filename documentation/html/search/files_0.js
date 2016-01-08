@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['cells_2etcl',['cells.tcl',['../cells_8tcl.html',1,'']]],
-  ['clocks_2etcl',['clocks.tcl',['../clocks_8tcl.html',1,'']]]
+  ['bel_5fpins_2etcl',['bel_pins.tcl',['../bel__pins_8tcl.html',1,'']]],
+  ['bels_2etcl',['bels.tcl',['../bels_8tcl.html',1,'']]]
 ];

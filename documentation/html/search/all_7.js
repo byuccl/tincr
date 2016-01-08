@@ -1,8 +1,5 @@
 var searchData=
 [
-  ['lib_5fcells_2etcl',['lib_cells.tcl',['../lib__cells_8tcl.html',1,'']]],
-  ['lib_5fpins_2etcl',['lib_pins.tcl',['../lib__pins_8tcl.html',1,'']]],
-  ['libs_2etcl',['libs.tcl',['../libs_8tcl.html',1,'']]],
-  ['list_5fnodes',['list_nodes',['../namespacetincr_1_1nets.html#a06b39422901a3f9349a57ece8c3b082a',1,'tincr::nets']]],
-  ['list_5fpips',['list_pips',['../namespacetincr_1_1nets.html#a8091bf05eb2900e93bb36d48ae720374',1,'tincr::nets']]]
+  ['has_5falternate_5ftypes',['has_alternate_types',['../namespacetincr_1_1sites.html#a074206510636c60403824784c4931473',1,'tincr::sites']]],
+  ['hops',['hops',['../namespacetincr_1_1nodes.html#a5111f9dd2061fbf1354e48de290bd2d7',1,'tincr::nodes::hops()'],['../namespacetincr_1_1pips.html#a8ccf8b9a6b14f87f8c4299711293bb99',1,'tincr::pips::hops()']]]
 ];

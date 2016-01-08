@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['nets_2etcl',['nets.tcl',['../nets_8tcl.html',1,'']]]
+  ['macros_2etcl',['macros.tcl',['../macros_8tcl.html',1,'']]]
 ];
