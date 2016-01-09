@@ -1,0 +1,18 @@
+	(primitive_def BUFG 2 3
+		(pin I0 I0 input)
+		(pin O O output)
+		(element O 1
+			(pin O input)
+			(conn O O <== BUFG O)
+		)
+		(element BUFG 2 # BEL
+			(pin I0 input)
+			(pin O output)
+			(conn BUFG O ==> O O)
+			(conn BUFG I0 <== I0 I0)
+		)
+		(element I0 1
+			(pin I0 output)
+			(conn I0 I0 ==> BUFG I0)
+		)
+	)

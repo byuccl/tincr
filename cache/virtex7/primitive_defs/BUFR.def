@@ -1,0 +1,35 @@
+	(primitive_def BUFR 4 6
+		(pin I I input)
+		(pin CE CE input)
+		(pin CLR CLR input)
+		(pin O O output)
+		(element O 1
+			(pin O input)
+			(conn O O <== BUFR O)
+		)
+		(element I 1
+			(pin I output)
+			(conn I I ==> BUFR I)
+		)
+		(element BUFR 4 # BEL
+			(pin I input)
+			(pin CE input)
+			(pin CLR input)
+			(pin O output)
+			(conn BUFR O ==> O O)
+			(conn BUFR I <== I I)
+			(conn BUFR CE <== CE CE)
+			(conn BUFR CLR <== CLR CLR)
+		)
+		(element CE 1
+			(pin CE output)
+			(conn CE CE ==> BUFR CE)
+		)
+		(element CLR 1
+			(pin CLR output)
+			(conn CLR CLR ==> BUFR CLR)
+		)
+		(element BUFR_DIVIDE 0
+			(cfg BYPASS 1 2 3 4 5 6 7 8)
+		)
+	)

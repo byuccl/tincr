@@ -1,0 +1,41 @@
+	(primitive_def BUFHCE 3 7
+		(pin O O output)
+		(pin I I input)
+		(pin CE CE input)
+		(element CE_TYPE 0
+			(cfg SYNC ASYNC)
+		)
+		(element INIT_OUT 0
+			(cfg 0 1)
+		)
+		(element O 1
+			(pin O input)
+			(conn O O <== BUFHCE O)
+		)
+		(element I 1
+			(pin I output)
+			(conn I I ==> BUFHCE I)
+		)
+		(element CE 1
+			(pin CE output)
+			(conn CE CE ==> CEINV CE)
+			(conn CE CE ==> CEINV CE_B)
+		)
+		(element CEINV 3
+			(pin OUT output)
+			(pin CE input)
+			(pin CE_B input)
+			(cfg CE CE_B)
+			(conn CEINV OUT ==> BUFHCE CE)
+			(conn CEINV CE <== CE CE)
+			(conn CEINV CE_B <== CE CE)
+		)
+		(element BUFHCE 3 # BEL
+			(pin O output)
+			(pin I input)
+			(pin CE input)
+			(conn BUFHCE O ==> O O)
+			(conn BUFHCE I <== I I)
+			(conn BUFHCE CE <== CEINV OUT)
+		)
+	)
