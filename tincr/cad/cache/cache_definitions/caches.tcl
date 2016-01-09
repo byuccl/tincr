@@ -1,160 +1,17 @@
-# cache.tcl 
-# Comprises the entire caching framework for Tincr.
+# caches.tcl 
+# A template for a Tincr cache.
 #
-# The cache package contains procs for defining, accessing, generating, saving, and loading caches for use in Tincr.
-
-# Register the package
-package provide tincr.cad.util 0.0
-
-package require Tcl 8.5
-package require struct 2.1
-
-namespace eval ::tincr::cache {
-    namespace export \
-        define \
-        path \
-        namespace_path \
-        directory_path \
-        initialize \
-        get \
-        free \
-        refresh
-}
-
-set ::tincr::cache::path_scripts [dict create]
-set ::tincr::cache::generate_scripts [dict create]
-set ::tincr::cache::save_scripts [dict create]
-set ::tincr::cache::load_scripts [dict create]
-
-## Register a cache with Tincr's caching database. You must provide a name for the cache(s), a script for computing the path of the cache (as a list), a script for generating the cache, and a script for saving/loading the cache to/from disk.
-# @param path_script A script for computing the path of the cache(s) as a list. This is used to determine the namespace where the cache will be stored and the path it will be saved to on disk. If nothing, no new script script is registered.
-# @param generate_script A script for generating the cache(s). If nothing, no new script script is registered.
-# @param save_script A script for saving the cache(s). If nothing, no new script script is registered.
-# @param load_script A script for loading the cache(s). If nothing, no new script script is registered.
-proc ::tincr::cache::define {names path_script generate_script save_script load_script} {
-    foreach name $names {
-        if {$path_script != ""} {
-            dict set ::tincr::cache::path_scripts $name $path_script
-        }
-        if {$generate_script != ""} {
-            dict set ::tincr::cache::generate_scripts $name $generate_script
-        }
-        if {$save_script != ""} {
-            dict set ::tincr::cache::save_scripts $name $save_script
-        }
-        if {$load_script != ""} {
-            dict set ::tincr::cache::load_scripts $name $load_script
-        }
-    }
-}
-
-proc ::tincr::cache::path {cache} {
-    if {[dict exists $::tincr::cache::path_scripts $cache]} {
-        eval [dict get $::tincr::cache::path_scripts $cache]
-    }
-}
-
-proc ::tincr::cache::namespace_path {cache} {
-    return "::[join [list tincr cache {*}[path $cache]] ::]"
-}
-
-proc ::tincr::cache::directory_path {cache} {
-    return [file join $::env(TINCR_PATH) cache {*}[path $cache]]
-}
-
-proc ::tincr::cache::generate {cache} {
-    if {[dict exists $::tincr::cache::generate_scripts $cache]} {
-        eval [dict get $::tincr::cache::generate_scripts $cache]
-    } else {
-        return 0
-    }
-    return 1
-}
-
-proc ::tincr::cache::save {cache} {
-    if {[dict exists $::tincr::cache::save_scripts $cache]} {
-        eval [dict get $::tincr::cache::save_scripts $cache]
-    } else {
-        return 0
-    }
-    return 1
-}
-
-proc ::tincr::cache::load {cache} {
-    if {[dict exists $::tincr::cache::load_scripts $cache]} {
-        eval [dict get $::tincr::cache::load_scripts $cache]
-    } else {
-        return 0
-    }
-    return 1
-}
-
-proc ::tincr::cache::initialize {cache} {
-    if {![load $cache]} {
-        puts "Generating the data for cache $cache..."
-        if {[generate $cache]} {
-            puts "Cache $cache generated successfully."
-            save $cache
-        } else {
-            error "Could not initialize cache: $cache"
-        }
-    }
-}
-
-# TODO The naming scheme for these caches is terrible...
-#      Is it even a good idea to standardize how they are named?
-
-## Get a cache and assign it to destination
-# @param cache The cache to get. The cache will be generated if it doesn't exist. Defaults to destination.
-# @param destination The name of the variable that the cache will be assigned to.
-# @return Nothing. This is because arrays cannot be passed between procs.
-proc ::tincr::cache::get { cache {destination ""} } {
-    if {$destination == ""} {
-        set destination $cache
-    }
-    
-    if {![info exists "[::tincr::cache::namespace_path $cache]::$cache"]} {
-        initialize $cache
-    }
-    
-    uplevel "upvar #0 [::tincr::cache::namespace_path $cache]::$cache $destination"
-}
-
-
-proc ::tincr::cache::free {cache} {
-    set var "[::tincr::cache::namespace_path $cache]::$cache"
-    
-    if {[info exists $var]} {
-        unset $var
-    }
-}
-
-proc ::tincr::cache::refresh {cache} {
-    free $cache
-    initialize $cache
-}
-
-######################## Begin cache definitions #########################
-
-# This is a template for a cache definition
-::tincr::cache::define {
-    # Cache name(s)
-} {
-    # Path script
-} {
-    # Generate script
-} {
-    # Save script
-} {
-    # Load script
-}
+# Use this template to help you write a new cache for Tincr.
 
 ::tincr::cache::define {
     array.bel_pin.bel
     array.bel_type.bels
     array.bel.site_types
     array.site.site_type.bels
-} {} {
+} {
+    # Path script
+} {
+    # Generate script
     namespace eval [::tincr::cache::namespace_path $cache] {
         ::tincr::run_in_temporary_project {
             foreach site [get_sites -quiet] {
@@ -177,13 +34,22 @@ proc ::tincr::cache::refresh {cache} {
             }
         }
     }
-} {} {}
+} {
+    # Save script
+} {
+    # Load script
+}
 
 ::tincr::cache::define {
     array.bel_pin.bel
     array.bel_type.bels
     array.site.site_type.bels
-} {} {} {
+} {
+    # Path script
+} {
+    # Generate script
+} {
+    # Save script
     namespace eval [::tincr::cache::namespace_path $cache] {
         set dir [::tincr::cache::directory_path array.site.site_type.bels]
         file mkdir $dir
@@ -192,6 +58,7 @@ proc ::tincr::cache::refresh {cache} {
         close $out
     }
 } {
+    # Load script
     namespace eval [::tincr::cache::namespace_path $cache] {
         set dir [::tincr::cache::directory_path array.site.site_type.bels]
         set file [file join $dir "array.site.site_type.bels.cache"]
@@ -229,7 +96,12 @@ proc ::tincr::cache::refresh {cache} {
 
 ::tincr::cache::define {
     array.bel.site_types
-} {} {} {
+} {
+    # Path script
+} {
+    # Generate script
+} {
+    # Save script
     namespace eval [::tincr::cache::namespace_path $cache] {
         set dir [::tincr::cache::directory_path array.bel.site_types]
         file mkdir $dir
@@ -238,6 +110,7 @@ proc ::tincr::cache::refresh {cache} {
         close $out
     }
 } {
+    # Load script
     namespace eval [::tincr::cache::namespace_path $cache] {
         set dir [::tincr::cache::directory_path array.bel.site_types]
         set file [file join $dir "array.bel.site_types.cache"]
@@ -254,7 +127,10 @@ proc ::tincr::cache::refresh {cache} {
 ::tincr::cache::define {
     array.bel_type.lib_cells
     array.lib_cell.bel_types
-} {} {
+} {
+    # Path script
+} {
+    # Generate script
     namespace eval [::tincr::cache::namespace_path $cache] {
         ::tincr::run_in_temporary_project {
             # If the input pins on all the cells are connected to a part, this will prevent Vivado from crashing when placing IO cells
@@ -313,6 +189,7 @@ proc ::tincr::cache::refresh {cache} {
         }
     }
 } {
+    # Save script
     namespace eval [::tincr::cache::namespace_path $cache] {
         set dir [::tincr::cache::directory_path array.lib_cell.bel_types]
         file mkdir $dir
@@ -321,6 +198,7 @@ proc ::tincr::cache::refresh {cache} {
         close $out
     }
 } {
+    # Load script
     namespace eval [::tincr::cache::namespace_path $cache] {
         set dir [::tincr::cache::directory_path array.lib_cell.bel_types]
         set file [file join $dir "array.lib_cell.bel_types.cache"]
@@ -346,7 +224,10 @@ proc ::tincr::cache::refresh {cache} {
     array.site.site_types
     array.site_type.sites
     list.site.site_type
-} {} {
+} {
+    # Path script
+} {
+    # Generate script
     namespace eval [::tincr::cache::namespace_path $cache] {
         tincr::run_in_temporary_project {
             set sites [get_sites]
@@ -362,6 +243,7 @@ proc ::tincr::cache::refresh {cache} {
         }
     }
 } {
+    # Save script
     namespace eval [::tincr::cache::namespace_path $cache] {
         set dir [::tincr::cache::directory_path array.site.site_types]
         file mkdir $dir
@@ -370,6 +252,7 @@ proc ::tincr::cache::refresh {cache} {
         close $out
     }
 } {
+    # Load script
     namespace eval [::tincr::cache::namespace_path $cache] {
         set dir [file join [::tincr::cache::directory_path array.site.site_types] "array.site.site_types.cache"]
         if {[file exists $dir]} {
@@ -406,6 +289,7 @@ proc ::tincr::cache::refresh {cache} {
     array.site_type.sites
     list.site.site_type
 } {
+    # Path script
     set part [get_part -of_objects [current_design]]
     set family [get_property FAMILY $part]
     set architecture [get_property ARCHITECTURE $part]
@@ -422,17 +306,26 @@ proc ::tincr::cache::refresh {cache} {
     set path [list $family $architecture $device $package]
     
     return $path
-} {} {} {}
+} {
+    # Generate script
+} {
+    # Save script
+} {
+    # Load script
+}
 
 # The array.part.site_types cache provides quick access to the list of site types on a given part.
 ::tincr::cache::define {
     array.part.site_types
 } {
+    # Path script
     return "all"
 } {
+    # Generate script
     namespace eval [::tincr::cache::namespace_path $cache] {
         set parts [get_parts]
         set i 0
+	puts "INFO: Generating data for [llength $parts] parts. This will take a long time."
         foreach part $parts {
             puts -nonewline "\rPercent complete: [expr ($i * 100) / [llength $parts]]%"
             tincr::run_in_temporary_project -part $part {
@@ -448,6 +341,7 @@ proc ::tincr::cache::refresh {cache} {
         return 1
     }
 } {
+    # Save script
     namespace eval [::tincr::cache::namespace_path $cache] {
         set dir [::tincr::cache::directory_path array.part.site_types]
         file mkdir $dir
@@ -456,6 +350,7 @@ proc ::tincr::cache::refresh {cache} {
         close $out
     }
 } {
+    # Load script
     namespace eval [::tincr::cache::namespace_path $cache] {
         set dir [file join [::tincr::cache::directory_path array.part.site_types] "array.part.site_types.cache"]
         if {[file exists $dir]} {
@@ -465,6 +360,10 @@ proc ::tincr::cache::refresh {cache} {
             
             # Since the list of parts isn't static across multiple versions of Vivado, fail when there is a discrepancy.
             if {[llength [struct::set difference [get_parts] [array names array.part.site_types]]] != 0} {
+                puts "INFO: The set of available parts has changed since array.part.site_types was last generated. Tincr will regenerate it now."
+                # Returning 0 will cause Tincr regenerate data for EVERY part. A better way to do this would be to have
+                # Tincr only regenerate the difference. Since this doesn't happen very often (i.e. the set of available
+                # parts might change with each release of Vivado), regenerating everything is fine for now.
                 return 0
             }
         } else {
@@ -485,7 +384,6 @@ proc ::tincr::cache::refresh {cache} {
     return [list $family "primitive_defs"]
 } {
     # Generate script
-    
 } {
     # Save script
 } {
@@ -509,7 +407,10 @@ proc ::tincr::cache::refresh {cache} {
 
 ::tincr::cache::define {
     array.lib_cell.bels
-} {} {
+} {
+    # Path script
+} {
+    # Generate script
     namespace eval [::tincr::cache::namespace_path $cache] {
         ::tincr::cache::get array.lib_cell.bel_types libcell2beltypes
         ::tincr::cache::get array.bel_type.bels beltype2bels
@@ -523,4 +424,8 @@ proc ::tincr::cache::refresh {cache} {
             set array.lib_cell.bels($lib_cell) $bels
         }
     }
-} {} {}
+} {
+    # Save script
+} {
+    # Load script
+}
