@@ -1,0 +1,18 @@
+	(primitive_def DCIRESET 2 3
+		(pin LOCKED LOCKED output)
+		(pin RST RST input)
+		(element LOCKED 1
+			(pin LOCKED input)
+			(conn LOCKED LOCKED <== DCIRESET LOCKED)
+		)
+		(element RST 1
+			(pin RST output)
+			(conn RST RST ==> DCIRESET RST)
+		)
+		(element DCIRESET 2 # BEL
+			(pin LOCKED output)
+			(pin RST input)
+			(conn DCIRESET LOCKED ==> LOCKED LOCKED)
+			(conn DCIRESET RST <== RST RST)
+		)
+	)

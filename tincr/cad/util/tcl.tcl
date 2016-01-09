@@ -50,4 +50,11 @@ proc ::tcl::source_with_args {file args} {
 	return -code $code $return
 }
 
+## Assert a condition is true.
+# @param cond The condition you wish to assert.
+# @param msg The error message to print when the assertion fails.
+proc ::tcl::assert {cond {msg "assertion failed"}} {
+    if {![uplevel 1 expr $cond]} {error $msg}
+}
+
 namespace import ::tcl::*
