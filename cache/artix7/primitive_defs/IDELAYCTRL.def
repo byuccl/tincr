@@ -1,0 +1,65 @@
+	(primitive_def IDELAYCTRL 7 12
+		(pin RST RST input)
+		(pin REFCLK REFCLK input)
+		(pin RDY RDY output)
+		(pin OUTN1 OUTN1 output)
+		(pin OUTN65 OUTN65 output)
+		(pin UPPULSEOUT UPPULSEOUT output)
+		(pin DNPULSEOUT DNPULSEOUT output)
+		(element BIAS_MODE 0
+			(cfg 0 1 2)
+		)
+		(element HIGH_PERFORMANCE_MODE 0
+			(cfg TRUE FALSE)
+		)
+		(element IDELAYCTRL_EN 0
+			(cfg DISABLE DEFAULT ENABLE)
+		)
+		(element RESET_STYLE 0
+			(cfg V5 V4)
+		)
+		(element DNPULSEOUT 1
+			(pin DNPULSEOUT input)
+			(conn DNPULSEOUT DNPULSEOUT <== IDELAYCTRL DNPULSEOUT)
+		)
+		(element OUTN1 1
+			(pin OUTN1 input)
+			(conn OUTN1 OUTN1 <== IDELAYCTRL OUTN1)
+		)
+		(element OUTN65 1
+			(pin OUTN65 input)
+			(conn OUTN65 OUTN65 <== IDELAYCTRL OUTN65)
+		)
+		(element RDY 1
+			(pin RDY input)
+			(conn RDY RDY <== IDELAYCTRL RDY)
+		)
+		(element REFCLK 1
+			(pin REFCLK output)
+			(conn REFCLK REFCLK ==> IDELAYCTRL REFCLK)
+		)
+		(element RST 1
+			(pin RST output)
+			(conn RST RST ==> IDELAYCTRL RST)
+		)
+		(element UPPULSEOUT 1
+			(pin UPPULSEOUT input)
+			(conn UPPULSEOUT UPPULSEOUT <== IDELAYCTRL UPPULSEOUT)
+		)
+		(element IDELAYCTRL 7 # BEL
+			(pin DNPULSEOUT output)
+			(pin OUTN1 output)
+			(pin OUTN65 output)
+			(pin RDY output)
+			(pin REFCLK input)
+			(pin RST input)
+			(pin UPPULSEOUT output)
+			(conn IDELAYCTRL DNPULSEOUT ==> DNPULSEOUT DNPULSEOUT)
+			(conn IDELAYCTRL OUTN1 ==> OUTN1 OUTN1)
+			(conn IDELAYCTRL OUTN65 ==> OUTN65 OUTN65)
+			(conn IDELAYCTRL RDY ==> RDY RDY)
+			(conn IDELAYCTRL UPPULSEOUT ==> UPPULSEOUT UPPULSEOUT)
+			(conn IDELAYCTRL REFCLK <== REFCLK REFCLK)
+			(conn IDELAYCTRL RST <== RST RST)
+		)
+	)

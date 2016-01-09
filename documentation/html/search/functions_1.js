@@ -1,7 +1,5 @@
 var searchData=
 [
-  ['clear',['clear',['../namespacetincr_1_1designs.html#af73170fb762aa87005007aaeeff1fcd1',1,'tincr::designs']]],
-  ['compare_5fobjects',['compare_objects',['../namespacetincr.html#a5a4d8cf6fa2082002ef609544a70fddf',1,'tincr']]],
-  ['compatible_5fwith',['compatible_with',['../namespacetincr_1_1cells.html#acee609fd5a3f1c4416a0a57a41d4f715',1,'tincr::cells::compatible_with()'],['../namespacetincr_1_1lib__cells.html#a6905a9d8d6426460ed3dabe806b504be',1,'tincr::lib_cells::compatible_with()']]],
-  ['copy',['copy',['../namespacetincr_1_1nets.html#abba1e704d9631d1191c4f7fb6a5fb929',1,'tincr::nets']]]
+  ['between_5fnodes',['between_nodes',['../namespacetincr_1_1pips.html#a6b13fb29ad559eb765611e5ca748d602',1,'tincr::pips']]],
+  ['between_5fpips',['between_pips',['../namespacetincr_1_1nodes.html#a69c38eb086abfc404b503cb558117f6e',1,'tincr::nodes']]]
 ];

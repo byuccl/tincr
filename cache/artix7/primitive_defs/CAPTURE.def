@@ -1,0 +1,21 @@
+	(primitive_def CAPTURE 2 4
+		(pin CAP CAP input)
+		(pin CLK CLK input)
+		(element ONESHOT 0
+			(cfg TRUE FALSE)
+		)
+		(element CAP 1
+			(pin CAP output)
+			(conn CAP CAP ==> CAPTURE CAP)
+		)
+		(element CLK 1
+			(pin CLK output)
+			(conn CLK CLK ==> CAPTURE CLK)
+		)
+		(element CAPTURE 2 # BEL
+			(pin CAP input)
+			(pin CLK input)
+			(conn CAPTURE CAP <== CAP CAP)
+			(conn CAPTURE CLK <== CLK CLK)
+		)
+	)

@@ -138,6 +138,9 @@ proc ::tincr::write_xdlrc { args } {
         }
         
         puts $outfile ")"
+                
+        # Newline
+        puts "\rPercent complete: 100%"
         
         set site_types [::tincr::sites get_types]
     
@@ -147,7 +150,7 @@ proc ::tincr::write_xdlrc { args } {
             
             # Append primitive definitions
             foreach site_type [lsort $site_types] {
-                set prim_def_file [file join $::env(TINCR_PATH) device_files primitive_definitions [get_property ARCHITECTURE [get_property PART [current_design]]] ${site_type}.def]
+                set prim_def_file [file join [::tincr::cache::directory_path dict.site_type.src_bel.src_pin.snk_bel.snk_pins] "$site_type.def"]
                 
                 #throw an error if a site type doesn't have a corresponding definition
                 if { ![file exists $prim_def_file] } {
@@ -180,9 +183,6 @@ proc ::tincr::write_xdlrc { args } {
         
         # Unallocate the semaphore
         unset _TINCR_XDLRC_PROCESS_COUNT
-                
-        # Newline
-        puts "\rPercent complete: 100%"
     }
     
     set end_time [clock seconds]

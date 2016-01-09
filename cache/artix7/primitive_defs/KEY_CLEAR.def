@@ -1,0 +1,11 @@
+	(primitive_def KEY_CLEAR 1 2
+		(pin KEYCLEARB KEYCLEARB input)
+		(element KEYCLEARB 1
+			(pin KEYCLEARB output)
+			(conn KEYCLEARB KEYCLEARB ==> KEY_CLEAR KEYCLEARB)
+		)
+		(element KEY_CLEAR 1 # BEL
+			(pin KEYCLEARB input)
+			(conn KEY_CLEAR KEYCLEARB <== KEYCLEARB KEYCLEARB)
+		)
+	)
