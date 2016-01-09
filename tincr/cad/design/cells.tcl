@@ -59,6 +59,10 @@ proc ::tincr::cells::new { name {lib_cell ""} } {
     return [create_cell -reference $lib_cell $name]
 }
 
+proc ::tincr::cells::delete { cell } {
+    remove_cell $cell
+}
+
 ## Queries Vivado's object database for a list of <CODE>cell</CODE> objects that fit the given criteria. This is mostly a wrapper function for Vivado's <CODE>get_cells</CODE> command, though it does add additional features (such as getting the cells of a cell).
 proc ::tincr::cells::get { args } {
     set hierarchical 0
