@@ -1,4 +1,4 @@
-![Alt text](http://bradselw.github.io/tincr/logo.png) # Tincr
+# ![Alt text](http://bradselw.github.io/tincr/logo.png) Tincr
 A Tcl-based CAD Tool Framework for Xilinx's Vivado Design Suite
 
 Tincr is a suite of Tcl libraries written for Xilinx's Vivado IDE. The goal of Tincr is to enable users to build their own CAD tools on top of Vivado. It facilitates this through two primary mechanisms, each of which are encapsulated by a distinct Tcl library, dubbed TincrCAD and TincrIO.
