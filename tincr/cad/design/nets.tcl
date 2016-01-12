@@ -47,6 +47,7 @@ namespace eval ::tincr::nets {
         list_pips \
         of_bus \
         get_route_throughs \
+        route \
         unroute \
         split_route
     namespace ensemble create
@@ -629,6 +630,13 @@ proc ::tincr::nets::get_route_throughs { {nets *} } {
     }
     return [get_bels -quiet [split [array names rt_bels]]]
 }
+
+## Route a net.
+# @param net The <CODE>net</CODE> object.
+# @param route A directed routing string to apply to <CODE>net</CODE>.
+proc ::tincr::nets::route { net route } {
+    set_property ROUTE $route $net
+} 
 
 ## Unroute a net.
 # @param net The <CODE>net</CODE> object.
