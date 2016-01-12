@@ -225,7 +225,7 @@ proc ::tincr::sites::has_alternate_types { site } {
 		error "ERROR Expected one site object."
 	}
 	
-	if {[llength [sites get_alternate_types $site]] != 0} {
+	if {[llength [get_alternate_types $site]] != 0} {
 		return 1
 	}
 	
