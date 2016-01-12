@@ -18,7 +18,8 @@ namespace eval ::tincr::pins {
         test \
         get \
         info \
-        remove
+        remove \
+        connect_net
     namespace ensemble create
 }
 
@@ -69,4 +70,11 @@ proc ::tincr::pins::info { pin {info name} } {
 proc ::tincr::pins::remove { pin } {
     # TODO Add return statement (i.e. catch Vivado DNE error)
     remove_pin $pin
+}
+
+## Connect a pin to a net.
+# @param pin The <CODE>pin</CODE> object.
+# @param net The <CODE>net</CODE> object.
+proc ::tincr::pin::connect_net { pin net } {
+    connect_net -quiet -hierarchical -net $net $pin
 }
