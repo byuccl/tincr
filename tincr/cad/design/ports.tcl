@@ -41,6 +41,6 @@ proc ::tincr::ports::get { args } {
 ## Connect a port to a net.
 # @param port The <CODE>port</CODE> object.
 # @param net The <CODE>net</CODE> object.
-proc ::tincr::port::connect_net { port net } {
+proc ::tincr::ports::connect_net { port net } {
     connect_net -quiet -hierarchical -net $net $port
 }
