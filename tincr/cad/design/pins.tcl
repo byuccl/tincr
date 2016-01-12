@@ -75,6 +75,6 @@ proc ::tincr::pins::remove { pin } {
 ## Connect a pin to a net.
 # @param pin The <CODE>pin</CODE> object.
 # @param net The <CODE>net</CODE> object.
-proc ::tincr::pin::connect_net { pin net } {
+proc ::tincr::pins::connect_net { pin net } {
     connect_net -quiet -hierarchical -net $net $pin
 }
