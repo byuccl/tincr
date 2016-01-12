@@ -18,8 +18,7 @@ namespace ensemble configure dict -map [dict merge [namespace ensemble configure
 namespace eval ::tcl {
     namespace export \
         lremove \
-        source_with_args \
-        assert
+        source_with_args
 }
 
 ## Remove an element from a list
@@ -49,15 +48,6 @@ proc ::tcl::source_with_args {file args} {
     set ::argv $argv
     set ::argc $argc
     return -code $code $return
-}
-
-## Assert a condition is true.
-# @param condition The condition you wish to assert.
-# @param message The error message to print when the assertion fails.
-proc ::tcl::assert {condition {message "Assertion failed."}} {
-    if {![uplevel 1 expr $condition]} {
-        error $message
-    }
 }
 
 namespace import ::tcl::*
