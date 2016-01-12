@@ -21,6 +21,7 @@ namespace eval ::tincr::cells {
         test \
         test_proc \
         new \
+        delete \
         get \
         get_name \
         get_type \
