@@ -5,32 +5,32 @@ eval ::tcltest::configure $argv
 package require tincr
 
 namespace eval ::tincr::cells::test {
-	namespace import ::tcltest::*
-	
-	set part [get_parts xc7k70tfbg484-2]
-	set cell_name TINCR_CELL
-	set cell ""
-	
-	variable SETUP {
-		#common setup code
-		if {[get_part -quiet -of [current_project -quiet]] != $part} {
-			link_design -quiet -part $part
-		}
-		
-		if {[get_cells -quiet $cell_name] == ""} {
-			set cell [create_cell -quiet -reference BUF $cell_name]
-		}
-	}
-	
-	variable CLEANUP {
-		#common cleanup code
-		
-	}
-	
-	test get_name-1 {Successfully retrieves the name of a cell} -setup $SETUP -body {
-		tincr::cells get_name $cell
-	} -cleanup $CLEANUP -result $cell_name
-	
-	cleanupTests
+    namespace import ::tcltest::*
+    
+    set part [get_parts xc7k70tfbg484-2]
+    set cell_name TINCR_CELL
+    set cell ""
+    
+    variable SETUP {
+        #common setup code
+        if {[get_part -quiet -of [current_project -quiet]] != $part} {
+            link_design -quiet -part $part
+        }
+        
+        if {[get_cells -quiet $cell_name] == ""} {
+            set cell [create_cell -quiet -reference BUF $cell_name]
+        }
+    }
+    
+    variable CLEANUP {
+        #common cleanup code
+        
+    }
+    
+    test get_name-1 {Successfully retrieves the name of a cell} -setup $SETUP -body {
+        tincr::cells get_name $cell
+    } -cleanup $CLEANUP -result $cell_name
+    
+    cleanupTests
 }
 namespace delete ::tincr::cells::test
