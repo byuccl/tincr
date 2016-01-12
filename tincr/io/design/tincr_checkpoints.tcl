@@ -132,7 +132,7 @@ proc ::tincr::write_placement_xdc {args} {
                     
                     if {$bel_pin != ""} {
                         #TODO These get_*_info commands should be deprecated
-                        lappend pins_to_lock "[::tincr::pins info $pin name]:[::tincr::bel_pins info $bel_pin name]"
+                        lappend pins_to_lock "[::tincr::pins info $pin name]:[::tincr::bel_pins get_info $bel_pin name]"
                     }
                 }
                             
