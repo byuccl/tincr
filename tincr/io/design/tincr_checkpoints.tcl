@@ -110,12 +110,15 @@ proc ::tincr::write_placement_xdc {args} {
     ::tincr::parse_args {} {} {} {filename} $args
     
     set filename [::tincr::add_extension ".xdc" $filename]
+    set filename2 [::tincr::add_extension ".txt" $filename]
     
     set xdc [open $filename w]
+    set txt [open $filename2 w]
     
     foreach port [get_ports] {
         if {[get_property PACKAGE_PIN $port] != ""} {
             puts $xdc "set_property PACKAGE_PIN [get_property PACKAGE_PIN $port] \[get_ports \{[get_name $port]\}\]"
+            puts $txt "PACKAGE_PIN [get_property PACKAGE_PIN $port] [get_ports [get_name $port]]"
         }
     }
     
@@ -123,6 +126,8 @@ proc ::tincr::write_placement_xdc {args} {
         if {[cells is_placed $cell]} {
             puts $xdc "set_property BEL [get_property BEL $cell] \[get_cells \{[get_name $cell]\}\]"
             puts $xdc "set_property LOC [get_property LOC $cell] \[get_cells \{[get_name $cell]\}\]"
+            puts $txt "BEL [get_property BEL $cell] [get_cells [get_name $cell]]"  
+            puts $txt "LOC [get_name $cell] [get_property LOC $cell] [get_property BEL $cell] [get_tile -of [get_sites -of $cell]]"
             
             set group [get_property PRIMITIVE_GROUP $cell]
             if {$group == "LUT" || $group == "INV" || $group == "BUF"} {
@@ -132,18 +137,20 @@ proc ::tincr::write_placement_xdc {args} {
                     
                     if {$bel_pin != ""} {
                         #TODO These get_*_info commands should be deprecated
-                        lappend pins_to_lock "[::tincr::pins info $pin name]:[::tincr::bel_pins get_info $bel_pin name]"
+                        lappend pins_to_lock "[::tincr::pins::info $pin name]:[::tincr::bel_pins::get_info $bel_pin name]"
                     }
                 }
                             
                 if {[llength $pins_to_lock] != 0} {
                     puts $xdc "set_property LOCK_PINS \{$pins_to_lock\} \[get_cells \{[get_name $cell]\}\]"
+                    puts $txt "LOCK_PINS \{$pins_to_lock\} [get_cells [get_name $cell]]"
                 }
             }
         }
     }
-    
+
     close $xdc
+    close $txt
 }
 
 proc ::tincr::write_routing_xdc {args} {
@@ -151,8 +158,10 @@ proc ::tincr::write_routing_xdc {args} {
     ::tincr::parse_args {} {global_logic} {} {filename} $args
     
     set filename [::tincr::add_extension ".xdc" $filename]
+    set filename2 [::tincr::add_extension ".txt" $filename]
     
     set xdc [open $filename w]
+    set txt [open $filename2 w]
         
     foreach site [get_sites -quiet -filter IS_USED] {
         set site_pips [get_site_pips -quiet -of_objects $site -filter IS_USED]
@@ -160,6 +169,8 @@ proc ::tincr::write_routing_xdc {args} {
         if {$site_pips != ""} {
             puts $xdc "set_property MANUAL_ROUTE [get_property SITE_TYPE $site] \[get_sites \{[get_property NAME $site]\}\]"
             puts $xdc "set_property SITE_PIPS \{$site_pips\} \[get_sites \{[get_property NAME $site]\}\]"
+            puts $txt "MANUAL_ROUTE [get_property SITE_TYPE $site] [get_property NAME $site]"
+            puts $txt "SITE_PIPS [get_property NAME $site] $site_pips"
         }
     }
     
@@ -171,9 +182,11 @@ proc ::tincr::write_routing_xdc {args} {
     foreach net $nets {
         puts $xdc "set_property ROUTE \{[get_property ROUTE $net]\} \[get_nets \{[get_property NAME $net]\}\]"
 #        puts $xdc "device::direct_route -route \{[get_property ROUTE $net]\} \[get_nets \{[get_property NAME $net]\}\]"
+        puts $txt "ROUTE [get_property NAME $net] [get_property ROUTE $net]"
     }
     
     close $xdc
+    close $txt
 }
 
 proc ::tincr::get_design_info {args} {
