@@ -21,7 +21,12 @@ namespace eval ::tincr::nets {
     namespace export \
         test \
         new \
-        set_name \
+        delete \
+        rename \
+        connect_pin \
+        connect_port \
+        disconnect_pin \
+        disconnect_port \
         get \
         get_source \
         get_source_node \
@@ -73,14 +78,45 @@ proc ::tincr::nets::new { name } {
     return [create_net $name]
 }
 
-## The <code>NAME</code> property of a net (or any Vivado object for that matter)
-# is read-only. This function lets you pseudo-rename a net by creating a duplicate
-# net with the new name and deleting the old net.
+## Delete a net.
+# @param net The net to delete.
+proc ::tincr::nets::delete { net } {
+    remove_net -quiet $net
+}
+
+## Rename a net.
+# @param net The net to rename.
+# @param name The new name.
+proc ::tincr::nets::rename { net name } {
+    rename_net -to $name $net
+}
+
+## Connect a net to a pin.
 # @param net The <CODE>net</CODE> object.
-# @param name The name of the new net.
-# @return The net with the new name.
-proc ::tincr::nets::set_name { name } {
-    # TODO Special care must be taken when renaming a net that is a "bit" of a bus (i.e. whole bus must be renamed, not just the individual "bit" net)
+# @param pin The <CODE>pin</CODE> object.
+proc ::tincr::nets::connect_pin { net pin } {
+    connect_net -quiet -hierarchical -net $net $pin
+}
+
+## Connect a net to a port.
+# @param net The <CODE>net</CODE> object.
+# @param port The <CODE>port</CODE> object.
+proc ::tincr::nets::connect_port { net port } {
+    connect_net -quiet -hierarchical -net $net $port
+}
+
+## Disconnect a net from a pin.
+# @param net The <CODE>net</CODE> object.
+# @param pin The <CODE>pin</CODE> object.
+proc ::tincr::nets::disconnect_pin { net pin } {
+    disconnect_net -quiet -net $net $pin
+}
+
+## Disconnect a net from a port.
+# @param net The <CODE>net</CODE> object.
+# @param port The <CODE>port</CODE> object.
+proc ::tincr::nets::disconnect_port { net port } {
+    disconnect_net -quiet -net $net $port
 }
 
 ## Queries Vivado's object database for a list of <CODE>net</CODE> objects that fit the given criteria. At the moment, this is just a wrapper function for Vivado's <CODE>get_nets</CODE> command.
