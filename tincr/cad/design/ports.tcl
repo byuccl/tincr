@@ -16,8 +16,12 @@ namespace eval ::tincr {
 namespace eval ::tincr::ports {
     namespace export \
         test \
+        new \
+        delete \
+        rename \
         get \
-        connect_net
+        connect_net \
+        disconnect_net
     namespace ensemble create
 }
 
@@ -25,6 +29,27 @@ namespace eval ::tincr::ports {
 # @param args The configuration arguments that will be passed to the <CODE>tcltest</CODE> unit testing suite.
 proc ::tincr::ports::test {args} {
     source_with_args [file join $::env(TINCR_PATH) tincr_test cad design ports all.tcl] {*}$args
+}
+
+## Create a new port.
+# @param name The name of the new port.
+# @param direction The direction of the new port. Valid values are IN, OUT, and INOUT.
+# $return The newly created <CODE>port</CODE> object.
+proc ::tincr::ports::new { name  direction } {
+    return [create_port -direction $direction $name]
+}
+
+## Delete a port.
+# @param name The name of the port to delete.
+proc ::tincr::ports::delete { port } {
+     remove_port -quiet $port
+}
+
+## Rename a port.
+# @param port The port to rename.
+# @param name The new name.
+proc ::tincr::ports::rename { port name } {
+    rename_port -to $name $port
 }
 
 ## Executes all unit tests for a particular proc in the <CODE>ports</CODE> ensemble.
@@ -43,4 +68,11 @@ proc ::tincr::ports::get { args } {
 # @param net The <CODE>net</CODE> object.
 proc ::tincr::ports::connect_net { port net } {
     connect_net -quiet -hierarchical -net $net $port
+}
+
+## Disconnect a port from a net.
+# @param port The <CODE>port</CODE> object.
+# @param net The <CODE>net</CODE> object.
+proc ::tincr::ports::disconnect_net { port net } {
+    disconnect_net -quiet -net $net $port
 }

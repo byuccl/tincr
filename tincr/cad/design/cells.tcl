@@ -22,6 +22,7 @@ namespace eval ::tincr::cells {
         test_proc \
         new \
         delete \
+        rename \
         get \
         get_name \
         get_type \
@@ -32,7 +33,8 @@ namespace eval ::tincr::cells {
         place \
         unplace \
         duplicate \
-        insert
+        insert \
+        tie_unused_pins
     namespace ensemble create
 }
 
@@ -53,15 +55,27 @@ proc ::tincr::cells::test_proc {proc args} {
 # @param name The name of the new cell.
 # @param lib_cell The name of the library cell this new cell will reference. If this parameter is not provided, or if it is left blank, a black-box cell will be created.
 # @return The newly created cell.
-proc ::tincr::cells::new { name {lib_cell ""} } {
+proc ::tincr::cells::new { name { lib_cell "" } } {
     if {$lib_cell == ""} {
-        return [create_cell -black_box $name]
+        set lib_cell "black_box"
+    }
+    if {[get_lib_cells -quiet $lib_cell] == ""} {
+        return [create_cell -reference $lib_cell -black_box $name]
     }
     return [create_cell -reference $lib_cell $name]
 }
 
+## Delete a cell.
+# @param The cell to delete.
 proc ::tincr::cells::delete { cell } {
-    remove_cell $cell
+    remove_cell -quiet $cell
+}
+
+## Rename a cell.
+# @param The cell to rename.
+# @param The new name.
+proc ::tincr::cells::rename { cell name } {
+    rename_cell -to $name $cell
 }
 
 ## Queries Vivado's object database for a list of <CODE>cell</CODE> objects that fit the given criteria. This is mostly a wrapper function for Vivado's <CODE>get_cells</CODE> command, though it does add additional features (such as getting the cells of a cell).
@@ -309,4 +323,10 @@ proc ::tincr::cells::insert { cell net {sinks ""} {inpin ""} {outpin ""} {downhi
     connect_net -hier -net $net -objects $inpin
     connect_net -hier -net $downhill_net -objects $outpin
     connect_net -hier -net $downhill_net -objects $sinks
+}
+
+## Tie up or down the unconnected pins of cells in the open synthesized or implemented design. The command uses an internal process to identify whether a pin should be tied up or down.
+# @param cell The <CODE>cell</CODE> object whose pins should be tied.
+proc ::tincr::cells::tie_unused_pins { cell } {
+    tie_unused_pins -of_objects $cell
 }

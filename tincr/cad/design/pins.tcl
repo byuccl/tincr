@@ -16,10 +16,14 @@ namespace eval ::tincr {
 namespace eval ::tincr::pins {
     namespace export \
         test \
+        new \
+        delete \
+        rename \
         get \
         info \
         remove \
-        connect_net
+        connect_net \
+        disconnect_net
     namespace ensemble create
 }
 
@@ -34,6 +38,32 @@ proc ::tincr::pins::test {args} {
 # @param args The configuration arguments that will be passed to the <CODE>tcltest</CODE> unit testing suite.
 proc ::tincr::pins::test_proc {proc args} {
     exec [file join $::env(TINCR_PATH) interpreter windows vivado_tclsh.bat] [file join $::env(TINCR_PATH) tincr_test cad design pins "$proc.test"] {*}$args
+}
+
+## Create a new pin.
+# @param name The name of the new pin.
+# @param direction The direction of the new pin. Valid values are IN, OUT, and INOUT.
+# @param cell The name of the cell to add this pin to, if one.
+# @return The newly created <CODE>pin</CODE> object.
+proc ::tincr::pins::new { name direction { cell "" } } {
+    if {$cell != ""} {
+        set name [join [list $cell $name] [get_hierarchy_separator]]
+    }
+    
+    return [create_pin -direction $direction $name]
+}
+
+## Delete a pin.
+# @param name The pin to delete.
+proc ::tincr::pins::delete { pin } {
+    remove_pin -quiet $pin
+}
+
+## Rename a pin.
+# @param pin The pin to rename.
+# @param name The new name.
+proc ::tincr::pins::rename { pin name } {
+    rename_pin -to $name $pin
 }
 
 proc ::tincr::pins::get { args } {
@@ -77,4 +107,11 @@ proc ::tincr::pins::remove { pin } {
 # @param net The <CODE>net</CODE> object.
 proc ::tincr::pins::connect_net { pin net } {
     connect_net -quiet -hierarchical -net $net $pin
+}
+
+## Disconnect a pin from a net.
+# @param pin The <CODE>pin</CODE> object.
+# @param net The <CODE>net</CODE> object.
+proc ::tincr::pins::disconnect_net { pin net } {
+    disconnect_net -quiet -net $net $pin
 }
