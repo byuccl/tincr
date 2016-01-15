@@ -12,7 +12,9 @@ namespace eval ::tincr:: {
         read_tcp \
         write_design_info \
         write_placement_xdc \
+        write_placement_json \
         write_routing_xdc \
+        write_routing_json \
         get_design_info
 }
 
@@ -153,6 +155,79 @@ proc ::tincr::write_placement_xdc {args} {
     close $txt
 }
 
+proc ::tincr::write_placement_json { filename } {
+    set filename [::tincr::add_extension ".json" $filename]
+    
+    set json [open $filename w]
+    puts $json "\{"
+    
+    set ports [get_ports]
+    set numPorts [llength $ports]
+    set cells [cells get_primitives]
+    set numCells [llength $cells]
+    if {$numPorts > 0} {
+        puts $json "    \"ports\":\["
+        
+        for {set i 0} {$i < $numPorts} {incr i} {
+            set port [lindex $ports $i]
+            if {[get_property PACKAGE_PIN $port] != ""} {
+                puts -nonewline $json "        \{\"name\":\"$port\", \"package_pin\":\"[get_property PACKAGE_PIN $port]\"\}"
+                if {$i == [expr $numPorts - 1]} {
+                    puts $json ""
+                } else {
+                    puts $json ","
+                }
+            }
+        }
+        
+        puts -nonewline $json "    \]"
+        if {$numCells > 0} {
+            puts $json ","
+        } else {
+            puts $json ""
+        }
+    }
+    
+    if {$numCells > 0} {
+        puts $json "    \"cells\":\["
+        for {set i 0} {$i < $numCells} {incr i} {
+            set cell [lindex $cells $i]
+            
+            if {[cells is_placed $cell]} {
+                puts -nonewline $json "        \{\"name\":\"$cell\", \"site\":\"[get_property LOC $cell]\", \"bel\":\"[get_property BEL $cell]\""
+                
+                set pin_mappings [list]
+                foreach pin [get_pins -of_object $cell -filter {DIRECTION == IN}] {
+                    set bel_pin [get_bel_pins -quiet -of_object $pin]
+                    
+                    if {$bel_pin != ""} {
+                        #TODO These get_*_info commands should be deprecated
+                        lappend pin_mappings "\"[::tincr::pins info $pin name]\":\"[::tincr::bel_pins get_info $bel_pin name]\""
+                    }
+                }
+                            
+                if {[llength $pin_mappings] > 0} {
+                    puts $json ", \"pins\":\{"
+                    puts -nonewline $json "                "
+                    puts $json [join $pin_mappings ",\n                "]
+                    puts $json "            \}"
+                }
+                
+                if {$i == [expr $numCells - 1]} {
+                    puts $json "        \}"
+                } else {
+                    puts $json "        \},"
+                }
+            }
+        }
+        puts $json "    \]"
+    }
+    
+    puts $json "\}"
+    puts $json ""
+    close $json
+}
+
 proc ::tincr::write_routing_xdc {args} {
     set global_logic 0
     ::tincr::parse_args {} {global_logic} {} {filename} $args
@@ -187,6 +262,62 @@ proc ::tincr::write_routing_xdc {args} {
     
     close $xdc
     close $txt
+}
+
+proc ::tincr::write_routing_json { filename { global_logic 0 } } {
+    set filename [::tincr::add_extension ".json" $filename]
+    
+    set json [open $filename w]
+    puts $json "\{"
+    
+    set site_routes [list]
+    foreach site [get_sites -quiet -filter IS_USED] {
+        set site_pips [get_site_pips -quiet -of_objects $site -filter IS_USED]
+        
+        if {$site_pips != ""} {
+            set site_route "            \"site\":\"$site\","
+            append site_route "\n            \"type\":\"[get_property SITE_TYPE $site]\","
+            append site_route "\n            \"pips\":\["
+            append site_route "\n                " [join $site_pips ",\n                "]
+            append site_route "\n            \]"
+            
+            lappend site_routes $site_route
+        }
+    }
+    
+    if {$global_logic} {
+        set nets [get_nets -quiet -hierarchical -filter {ROUTE_STATUS == ROUTED}]
+    } else {
+        set nets [get_nets -quiet -hierarchical -filter {TYPE != POWER && TYPE != GROUND && ROUTE_STATUS == ROUTED}]
+    }
+    
+    set net_routes [list]
+    foreach net $nets {
+        set net_route "            \"net\":\"$net\","
+        append net_route "\n            \"route\":\"[get_property ROUTE $net]\""
+        
+        lappend net_routes $net_route
+    }
+    
+    if {[llength $site_routes] > 0} {
+        puts $json "    \"site_routes\":\["
+        puts $json "        \{"
+        puts $json [join $site_routes "\n        \},\n        \{\n"]
+        puts $json "        \}"
+        puts $json "    \]"
+    }
+    
+    if {[llength $net_routes] > 0} {
+        puts $json "    \"net_routes\":\["
+        puts $json "        \{"
+        puts $json [join $net_routes "\n        \},\n        \{\n"]
+        puts $json "        \}"
+        puts $json "    \]"
+    }
+    
+    puts $json "\}"
+    puts $json ""
+    close $json
 }
 
 proc ::tincr::get_design_info {args} {
