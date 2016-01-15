@@ -8,10 +8,7 @@
     array.bel_type.bels
     array.bel.site_types
     array.site.site_type.bels
-} {
-    # Path script
-} {
-    # Generate script
+} {} {
     namespace eval [::tincr::cache::namespace_path $cache] {
         ::tincr::run_in_temporary_project {
             foreach site [get_sites -quiet] {
@@ -34,22 +31,13 @@
             }
         }
     }
-} {
-    # Save script
-} {
-    # Load script
-}
+} {} {}
 
 ::tincr::cache::define {
     array.bel_pin.bel
     array.bel_type.bels
     array.site.site_type.bels
-} {
-    # Path script
-} {
-    # Generate script
-} {
-    # Save script
+} {} {} {
     namespace eval [::tincr::cache::namespace_path $cache] {
         set dir [::tincr::cache::directory_path array.site.site_type.bels]
         file mkdir $dir
@@ -58,7 +46,6 @@
         close $out
     }
 } {
-    # Load script
     namespace eval [::tincr::cache::namespace_path $cache] {
         set dir [::tincr::cache::directory_path array.site.site_type.bels]
         set file [file join $dir "array.site.site_type.bels.cache"]
@@ -96,12 +83,7 @@
 
 ::tincr::cache::define {
     array.bel.site_types
-} {
-    # Path script
-} {
-    # Generate script
-} {
-    # Save script
+} {} {} {
     namespace eval [::tincr::cache::namespace_path $cache] {
         set dir [::tincr::cache::directory_path array.bel.site_types]
         file mkdir $dir
@@ -110,7 +92,6 @@
         close $out
     }
 } {
-    # Load script
     namespace eval [::tincr::cache::namespace_path $cache] {
         set dir [::tincr::cache::directory_path array.bel.site_types]
         set file [file join $dir "array.bel.site_types.cache"]
@@ -127,10 +108,7 @@
 ::tincr::cache::define {
     array.bel_type.lib_cells
     array.lib_cell.bel_types
-} {
-    # Path script
-} {
-    # Generate script
+} {} {
     namespace eval [::tincr::cache::namespace_path $cache] {
         ::tincr::run_in_temporary_project {
             # If the input pins on all the cells are connected to a part, this will prevent Vivado from crashing when placing IO cells
@@ -189,7 +167,6 @@
         }
     }
 } {
-    # Save script
     namespace eval [::tincr::cache::namespace_path $cache] {
         set dir [::tincr::cache::directory_path array.lib_cell.bel_types]
         file mkdir $dir
@@ -198,7 +175,6 @@
         close $out
     }
 } {
-    # Load script
     namespace eval [::tincr::cache::namespace_path $cache] {
         set dir [::tincr::cache::directory_path array.lib_cell.bel_types]
         set file [file join $dir "array.lib_cell.bel_types.cache"]
@@ -224,10 +200,7 @@
     array.site.site_types
     array.site_type.sites
     list.site.site_type
-} {
-    # Path script
-} {
-    # Generate script
+} {} {
     namespace eval [::tincr::cache::namespace_path $cache] {
         tincr::run_in_temporary_project {
             set sites [get_sites]
@@ -243,7 +216,6 @@
         }
     }
 } {
-    # Save script
     namespace eval [::tincr::cache::namespace_path $cache] {
         set dir [::tincr::cache::directory_path array.site.site_types]
         file mkdir $dir
@@ -252,7 +224,6 @@
         close $out
     }
 } {
-    # Load script
     namespace eval [::tincr::cache::namespace_path $cache] {
         set dir [file join [::tincr::cache::directory_path array.site.site_types] "array.site.site_types.cache"]
         if {[file exists $dir]} {
@@ -289,7 +260,6 @@
     array.site_type.sites
     list.site.site_type
 } {
-    # Path script
     set part [get_part -of_objects [current_design]]
     set family [get_property FAMILY $part]
     set architecture [get_property ARCHITECTURE $part]
@@ -306,22 +276,14 @@
     set path [list $family $architecture $device $package]
     
     return $path
-} {
-    # Generate script
-} {
-    # Save script
-} {
-    # Load script
-}
+} {} {} {}
 
 # The array.part.site_types cache provides quick access to the list of site types on a given part.
 ::tincr::cache::define {
     array.part.site_types
 } {
-    # Path script
     return "all"
 } {
-    # Generate script
     namespace eval [::tincr::cache::namespace_path $cache] {
         set parts [get_parts]
         set i 0
@@ -341,7 +303,6 @@
         return 1
     }
 } {
-    # Save script
     namespace eval [::tincr::cache::namespace_path $cache] {
         set dir [::tincr::cache::directory_path array.part.site_types]
         file mkdir $dir
@@ -350,7 +311,6 @@
         close $out
     }
 } {
-    # Load script
     namespace eval [::tincr::cache::namespace_path $cache] {
         set dir [file join [::tincr::cache::directory_path array.part.site_types] "array.part.site_types.cache"]
         if {[file exists $dir]} {
@@ -378,16 +338,10 @@
     # Cache name(s)
     dict.site_type.src_bel.src_pin.snk_bel.snk_pins
 } {
-    # Path script
     set part [get_part -of_objects [current_design]]
     set family [get_property FAMILY $part]
     return [list $family "primitive_defs"]
-} {
-    # Generate script
-} {
-    # Save script
-} {
-    # Load script
+} {} {} {
     namespace eval [::tincr::cache::namespace_path $cache] {
         set dict.site_type.src_bel.src_pin.snk_bel.snk_pins [dict create]
         foreach site_type [tincr::sites get_types] {
@@ -407,10 +361,7 @@
 
 ::tincr::cache::define {
     array.lib_cell.bels
-} {
-    # Path script
-} {
-    # Generate script
+} {} {
     namespace eval [::tincr::cache::namespace_path $cache] {
         ::tincr::cache::get array.lib_cell.bel_types libcell2beltypes
         ::tincr::cache::get array.bel_type.bels beltype2bels
@@ -424,8 +375,4 @@
             set array.lib_cell.bels($lib_cell) $bels
         }
     }
-} {
-    # Save script
-} {
-    # Load script
-}
+} {} {}
