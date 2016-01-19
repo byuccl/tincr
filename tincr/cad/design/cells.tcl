@@ -377,7 +377,7 @@ proc ::tincr::cells::set_lut_eqn { cell equation } {
     }
     
     set num_inputs [llength [get_input_pins $cell]]
-    set num_combinations [expr 2**$num_inputs]
+    set num_combinations [expr 1 << $num_inputs]
     
     # Legal Operator Set:
     #   XOR: @ ^
