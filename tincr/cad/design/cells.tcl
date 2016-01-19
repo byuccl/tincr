@@ -400,5 +400,5 @@ proc ::tincr::cells::set_lut_eqn { cell equation } {
     }
     
     # Format $result as a hexadecimal number that Vivado will accept.
-    set_property INIT "$num_combinations'h[format %[expr $num_combinations / 4]X $result]" $cell
+    set_property INIT "$num_combinations'h[format %[expr $num_combinations >> 2]X $result]" $cell
 }
