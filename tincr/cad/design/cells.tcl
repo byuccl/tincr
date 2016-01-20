@@ -365,14 +365,46 @@ proc ::tincr::cells::tie_unused_pins { cell } {
 # @param cell The cells whose equation you wish to retrieve.
 # @return The LUT's equation in sum-of-products form.
 proc ::tincr::cells::get_lut_eqn { cell } {
+    if {![is_lut $cell]} {
+        return
+    }
     
+    set num_inputs [llength [get_input_pins $cell]]
+    set num_combinations [expr 1 << $num_inputs]
+    
+    # Parse the hex value into an integer so that we can work with it
+    scan [get_property INIT $cell] "$num_combinations'h%x" init
+    
+    set terms [list]
+    for {set cnt 0} {$cnt < $num_combinations} {incr cnt} {
+        if {[expr $init & (1 << $cnt)]} {
+            set inner_terms [list]
+            for {set i 0} {$i < $num_inputs} {incr i} {
+                set sign ""
+                if {![expr ($cnt >> $i) & 1]} {
+                    set sign "~"
+                }
+                
+                lappend inner_terms "${sign}I$i"
+            }
+            
+            lappend terms "([join $inner_terms "&"])"
+        }
+    }
+    
+    if {![llength $terms]} {
+        return "O=0"
+    }
+    
+    # Format the output
+    return "O=[join $terms "|"]"
 }
 
 ## Set the LUT's equation.
 # @param cell The cell whose equation you wish to set.
 # @param equation The equation to set. Use I0, I1, etc. as inputs and O as the output. i.e. O=I0&~I1|(I1*I2).
 proc ::tincr::cells::set_lut_eqn { cell equation } {
-    if {[is_lut $cell] == 0} {
+    if {![is_lut $cell]} {
         return
     }
     
