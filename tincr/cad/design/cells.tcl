@@ -416,7 +416,7 @@ proc ::tincr::cells::set_lut_eqn { cell equation } {
     #   AND: * & .
     #   OR:  + |
     #   NOT: ~ !
-    set formatted_equation [string map {@ ^ * & . & + | ! ~ I $I O= ""} $equation]
+    set formatted_equation [string map {@ ^ * & . & + | ! ~ I $I O "" = ""} $equation]
     
     set result 0
     for {set cnt 0} {$cnt < $num_combinations} {incr cnt} {
