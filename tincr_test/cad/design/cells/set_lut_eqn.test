@@ -1,0 +1,34 @@
+package require tcltest 2.2
+
+eval ::tcltest::configure $::argv
+
+package require tincr
+
+namespace eval ::tincr::cells::test {
+    namespace import ::tcltest::*
+    
+    set part [get_parts xc7k70tfbg484-2]
+    
+    variable SIMPLE_UNROUTED_DESIGN {
+        #common setup code
+        if {[get_part -quiet -of [current_project -quiet]] != $part} {
+            link_design -quiet -part $part
+        }
+    }
+    
+    variable CLEANUP {
+        #common cleanup code
+        close_project
+    }
+    
+    test set_lut_eqn-1 {Successfully set the equation of a LUT} -setup $SIMPLE_UNROUTED_DESIGN -body {
+        set cell [create_cell -reference LUT3 lut]
+        
+        tincr::cells set_lut_eqn $cell "O=I0&~I1|(I1*I2)"
+        
+        get_property INIT $cell
+    } -cleanup $CLEANUP -result {8'hE2}
+    
+    cleanupTests
+}
+namespace delete ::tincr::cells::test
