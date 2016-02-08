@@ -27,14 +27,19 @@ namespace eval ::tincr::cells {
         get_name \
         get_type \
         get_primitives \
+        get_input_pins \
+        get_output_pins \
         is_placed \
         is_placement_legal \
+        is_lut \
         compatible_with \
         place \
         unplace \
         duplicate \
         insert \
-        tie_unused_pins
+        tie_unused_pins \
+        get_lut_eqn \
+        set_lut_eqn
     namespace ensemble create
 }
 
@@ -157,6 +162,20 @@ proc ::tincr::cells::get_primitives {} {
     return [get_cells -hierarchical -filter {PRIMITIVE_LEVEL==LEAF || PRIMITIVE_LEVEL==INTERNAL}]
 }
 
+## Get a cell's input pins.
+# @param cell The <CODE>cell</CODE> object.
+# @return The input pins of <CODE>cell</CODE>.
+proc ::tincr::cells::get_input_pins { cell } {
+    return [get_pins -quiet -of_objects $cell -filter {DIRECTION==IN}]
+}
+
+## Get a cell's output pins.
+# @param cell The <CODE>cell</CODE> object.
+# @return The output pins of <CODE>cell</CODE>.
+proc ::tincr::cells::get_output_pins { cell } {
+    return [get_pins -quiet -of_objects $cell -filter {DIRECTION==OUT}]
+}
+
 ## Is this cell placed?
 # @param cell The <CODE>cell</CODE> object.
 # @return TRUE (1) if cell is placed, FALSE (0) otherwise.
@@ -177,6 +196,17 @@ proc ::tincr::cells::is_placed { cell } {
 proc ::tincr::cells::is_placement_legal { cell bel } {
     if {[catch {place_cell [get_name $cell] [::tincr::get_name $bel]} fid] == 0} {
         unplace_cell [get_name $cell]
+        return 1
+    }
+    
+    return 0
+}
+
+## Is this cell a LUT?
+# @param cell The cell to test.
+# @return True (1) if <CODE>cell</CODE> is a LUT, false (0) otherwise.
+proc ::tincr::cells::is_lut { cell } {
+    if {[get_property PRIMITIVE_GROUP $cell] == "LUT"} {
         return 1
     }
     
@@ -329,4 +359,78 @@ proc ::tincr::cells::insert { cell net {sinks ""} {inpin ""} {outpin ""} {downhi
 # @param cell The <CODE>cell</CODE> object whose pins should be tied.
 proc ::tincr::cells::tie_unused_pins { cell } {
     tie_unused_pins -of_objects $cell
+}
+
+## Get the LUT's equation in sum-of-products form.
+# @param cell The cells whose equation you wish to retrieve.
+# @return The LUT's equation in sum-of-products form.
+proc ::tincr::cells::get_lut_eqn { cell } {
+    if {![is_lut $cell]} {
+        return
+    }
+    
+    set num_inputs [llength [get_input_pins $cell]]
+    set num_combinations [expr 1 << $num_inputs]
+    
+    # Parse the hex value into an integer so that we can work with it
+    scan [get_property INIT $cell] "$num_combinations'h%x" init
+    
+    set terms [list]
+    for {set cnt 0} {$cnt < $num_combinations} {incr cnt} {
+        if {[expr $init & (1 << $cnt)]} {
+            set inner_terms [list]
+            for {set i 0} {$i < $num_inputs} {incr i} {
+                set sign ""
+                if {![expr ($cnt >> $i) & 1]} {
+                    set sign "~"
+                }
+                
+                lappend inner_terms "${sign}I$i"
+            }
+            
+            lappend terms "([join $inner_terms "&"])"
+        }
+    }
+    
+    if {![llength $terms]} {
+        return "O=0"
+    }
+    
+    # Format the output
+    return "O=[join $terms "|"]"
+}
+
+## Set the LUT's equation.
+# @param cell The cell whose equation you wish to set.
+# @param equation The equation to set. Use I0, I1, etc. as inputs and O as the output. i.e. O=I0&~I1|(I1*I2).
+proc ::tincr::cells::set_lut_eqn { cell equation } {
+    if {![is_lut $cell]} {
+        return
+    }
+    
+    set num_inputs [llength [get_input_pins $cell]]
+    set num_combinations [expr 1 << $num_inputs]
+    
+    # Legal Operator Set:
+    #   XOR: @ ^
+    #   AND: * & .
+    #   OR:  + |
+    #   NOT: ~ !
+    set formatted_equation [string map {@ ^ * & . & + | ! ~ I $I O "" = ""} $equation]
+    
+    set result 0
+    for {set cnt 0} {$cnt < $num_combinations} {incr cnt} {
+        # Set the inputs
+        for {set i 0} {$i < $num_inputs} {incr i} {
+            set "I$i" [expr ($cnt >> $i) & 1]
+        }
+        
+        # If this equation equates as true, prepend a '1' to the beginning of $result
+        if {[expr $formatted_equation]} {
+            incr result [expr 1 << $cnt]
+        }
+    }
+    
+    # Format $result as a hexadecimal number that Vivado will accept.
+    set_property INIT "$num_combinations'h[format %[expr $num_combinations >> 2]X $result]" $cell
 }
