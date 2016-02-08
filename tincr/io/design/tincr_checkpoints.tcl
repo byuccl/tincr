@@ -31,6 +31,7 @@ proc ::tincr::write_tcp {filename} {
     write_xdc -force "${filename}/constraints.xdc"
     write_placement_xdc "${filename}/placement.xdc"
     write_routing_xdc -global_logic "${filename}/routing.xdc"
+    puts "Done!"
 }
 
 proc ::tincr::read_tcp {args} {
@@ -127,10 +128,23 @@ proc ::tincr::write_placement_xdc {args} {
             puts $xdc "set_property BEL [get_property BEL $cell] \[get_cells \{[get_name $cell]\}\]"
             puts $xdc "set_property LOC [get_property LOC $cell] \[get_cells \{[get_name $cell]\}\]"
             puts $txt "BEL [get_property BEL $cell] [get_cells [get_name $cell]]"  
-            puts $txt "LOC [get_name $cell] [get_property LOC $cell] [get_property BEL $cell] [get_tile -of [get_sites -of $cell]]"
+
+	    # To match the xdlrc file generated from TINCR's "write_xdlrc", IOB sites that are bonded
+	    # have been updated to use the package pin name rather than the actual site name.  
+	    # The Vivado .xdc files have not been changed, only the txt files used for parsing a design into rapidSmith2
+            set sitename [get_property LOC $cell]
+
+            if { [regexp {.*IOB*} $sitename]} {
+            	set site [get_sites $sitename]
+		if {[get_property IS_BONDED $site]} {
+			set sitename [get_property NAME [get_package_pins -quiet -of_object $site]]
+		}
+            }
+            puts $txt "LOC [get_name $cell] $sitename [get_property BEL $cell] [get_tile -of [get_sites -of $cell]]"
+            #
             
             set group [get_property PRIMITIVE_GROUP $cell]
-            if {$group == "LUT" || $group == "INV" || $group == "BUF"} {
+            if {$group == "LUT" || $group == "INV" || $group == "BUF"} {	
                 set pins_to_lock [list]
                 foreach pin [get_pins -of_object $cell -filter {DIRECTION == IN}] {
                     set bel_pin [get_bel_pins -quiet -of_object $pin]
@@ -143,7 +157,7 @@ proc ::tincr::write_placement_xdc {args} {
                             
                 if {[llength $pins_to_lock] != 0} {
                     puts $xdc "set_property LOCK_PINS \{$pins_to_lock\} \[get_cells \{[get_name $cell]\}\]"
-                    puts $txt "LOCK_PINS \{$pins_to_lock\} [get_cells [get_name $cell]]"
+                    puts $txt "LOCK_PINS $pins_to_lock [get_cells [get_name $cell]]"
                 }
             }
         }
