@@ -21,7 +21,8 @@ namespace eval ::tincr::ports {
         rename \
         get \
         connect_net \
-        disconnect_net
+        disconnect_net \
+        place
     namespace ensemble create
 }
 
@@ -75,4 +76,11 @@ proc ::tincr::ports::connect_net { port net } {
 # @param net The <CODE>net</CODE> object.
 proc ::tincr::ports::disconnect_net { port net } {
     disconnect_net -quiet -net $net $port
+}
+
+## Place a port on a package pin.
+# @param port The <CODE>port</CODE> object.
+# @param package_pin The <CODE>package_pin</CODE> object.
+proc ::tincr::ports::place { port package_pin } {
+    place_ports [list $port $package_pin]
 }
