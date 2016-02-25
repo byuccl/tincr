@@ -15,8 +15,8 @@ namespace eval ::tincr:: {
         write_routing_xdc \
         get_design_info \
         get_pins_to_lock\
-		write_placement_rs2\
-		write_routing_rs2 \
+        write_placement_rs2\
+        write_routing_rs2 \
         write_rscp       
 }
 
