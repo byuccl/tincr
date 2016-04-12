@@ -291,7 +291,7 @@ proc ::tincr::write_xdlrc_tile { tile outfile brief } {
         }
         
 #        puts "Printing PIP information..."
-        set pips [lsort [get_pips -quiet -of_object $tile -filter !IS_TEST_PIP]]
+        set pips [lsort [get_pips -quiet -of_objects $tile -filter {!IS_TEST_PIP && !IS_EXCLUDED_PIP}]]
         foreach pip $pips {
             set uphill_node [get_nodes -quiet -uphill -of_object $pip]
             set downhill_node [get_nodes -quiet -downhill -of_object $pip]
