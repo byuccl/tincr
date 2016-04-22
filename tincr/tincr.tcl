@@ -30,7 +30,7 @@ package provide tincr 0.0
 
 namespace eval ::tincr {
     # This variable controls the debug level of the Tincr suite. It may be changed by setting it to the appropriate debug level: set ::tincr::debug #
-	set ::tincr::debug 0
+    set ::tincr::debug 0
 }
 
 # Require both of Tincr's Tcl libraries, TincrCAD and TincrIO

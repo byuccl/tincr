@@ -151,7 +151,7 @@ proc ::tincr::write_placement_xdc {args} {
             
             set pins_to_lock [get_pins_to_lock $cell]
             if {[llength $pins_to_lock] != 0} {
-			   puts $xdc "set_property LOCK_PINS \{$pins_to_lock\} \[get_cells \{[get_name $cell]\}\]"
+               puts $xdc "set_property LOCK_PINS \{$pins_to_lock\} \[get_cells \{[get_name $cell]\}\]"
             }
         }
     }

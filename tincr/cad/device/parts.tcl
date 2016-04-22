@@ -9,21 +9,21 @@ package require Tcl 8.5
 
 ## @brief All of the Tcl procs provided in the design package are members of the <CODE>::tincr</CODE> namespace.
 namespace eval ::tincr {
-	namespace export parts
+    namespace export parts
 }
 
 ## @brief The <CODE>parts</CODE> ensemble encapsulates the <CODE>part</CODE> class from Vivado's Tcl data structure.
 namespace eval ::tincr::parts {
-	namespace export \
-		test \
-		get
-	namespace ensemble create
+    namespace export \
+        test \
+        get
+    namespace ensemble create
 }
 
 proc ::tincr::parts::test {args} {
-	source_with_args [file join $::env(TINCR_PATH) tincr_test cad device parts all.tcl] {*}$args
+    source_with_args [file join $::env(TINCR_PATH) tincr_test cad device parts all.tcl] {*}$args
 }
 
 proc ::tincr::parts::get { args } {
-	return [get_parts {*}$args]
+    return [get_parts {*}$args]
 }

@@ -5,39 +5,39 @@ eval ::tcltest::configure $argv
 package require tincr
 
 namespace eval ::tincr::util::test {
-	namespace import ::tcltest::*
-	
-	# Test of a script that returns normally.
-	test example-1.0 {normal return} {
-		format %s value
-	} value
-	
-	# Test of a script that requires context setup and cleanup. Note the bracing and indenting style that avoids any need for line continuation.
-	test example-1.1 {test file existence} -setup {
-		set file [makeFile {} test]
-	} -body {
-		file exists $file
-	} -cleanup {
-		removeFile test
-	} -result 1
-	
-	# Test of a script that raises an error.
-	test example-1.2 {error return} -body {
-		error message
-	} -returnCodes error -result message
-	
-	# Test with a constraint.
-	test example-1.3 {user owns created files} -constraints {
-		unix
-	} -setup {
-		set file [makeFile {} test]
-	} -body {
-		file attributes $file -owner
-	} -cleanup {
-		removeFile test
-	} -result $::tcl_platform(user)
-	
-	cleanupTests
+    namespace import ::tcltest::*
+    
+    # Test of a script that returns normally.
+    test example-1.0 {normal return} {
+        format %s value
+    } value
+    
+    # Test of a script that requires context setup and cleanup. Note the bracing and indenting style that avoids any need for line continuation.
+    test example-1.1 {test file existence} -setup {
+        set file [makeFile {} test]
+    } -body {
+        file exists $file
+    } -cleanup {
+        removeFile test
+    } -result 1
+    
+    # Test of a script that raises an error.
+    test example-1.2 {error return} -body {
+        error message
+    } -returnCodes error -result message
+    
+    # Test with a constraint.
+    test example-1.3 {user owns created files} -constraints {
+        unix
+    } -setup {
+        set file [makeFile {} test]
+    } -body {
+        file attributes $file -owner
+    } -cleanup {
+        removeFile test
+    } -result $::tcl_platform(user)
+    
+    cleanupTests
 }
 
 namespace delete ::tincr::util::test
