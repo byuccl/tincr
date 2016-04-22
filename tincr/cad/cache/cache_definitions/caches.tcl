@@ -287,7 +287,7 @@
     namespace eval [::tincr::cache::namespace_path $cache] {
         set parts [get_parts]
         set i 0
-	puts "INFO: Generating data for [llength $parts] parts. This will take a long time."
+    puts "INFO: Generating data for [llength $parts] parts. This will take a long time."
         foreach part $parts {
             puts -nonewline "\rPercent complete: [expr ($i * 100) / [llength $parts]]%"
             tincr::run_in_temporary_project -part $part {
