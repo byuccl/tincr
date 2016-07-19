@@ -1,0 +1,19 @@
+#-----------------------------------------------------------
+# Vivado v2015.4 (64-bit)
+# SW Build 1412921 on Wed Nov 18 09:43:45 MST 2015
+# IP Build 1412160 on Tue Nov 17 13:47:24 MST 2015
+# Start of session at: Sun Jul 10 15:02:35 2016
+# Process ID: 21300
+# Current directory: C:/Users/ecestudent/Documents/Research/Tincr/Import/Vivado_Checkpoints
+# Command line: vivado.exe -gui_launcher_event rodinguilauncherevent23816 C:\Users\ecestudent\Documents\Research\Tincr\Import\Vivado_Checkpoints\tx.dcp
+# Log file: C:/Users/ecestudent/Documents/Research/Tincr/Import/Vivado_Checkpoints/vivado.log
+# Journal file: C:/Users/ecestudent/Documents/Research/Tincr/Import/Vivado_Checkpoints\vivado.jou
+#-----------------------------------------------------------
+start_gui
+open_checkpoint {C:\Users\ecestudent\Documents\Research\Tincr\Import\Vivado_Checkpoints\tx.dcp}
+get_property ROUTE [get_selected]
+get_pips -of [get_selected]
+get_pips -of [get_selected]
+get_wires -of [get_selected]
+get_wires -of [get_selected]
+get_wires HCLK_CLB_X13Y78/HCLK_LEAF_CLK_B_BOTL5

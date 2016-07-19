@@ -1,0 +1,353 @@
+#-----------------------------------------------------------
+# Vivado v2015.4 (64-bit)
+# SW Build 1412921 on Wed Nov 18 09:43:45 MST 2015
+# IP Build 1412160 on Tue Nov 17 13:47:24 MST 2015
+# Start of session at: Mon May 02 16:04:13 2016
+# Process ID: 15156
+# Current directory: C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks
+# Command line: vivado.exe -mode tcl
+# Log file: C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/vivado.log
+# Journal file: C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks\vivado.jou
+#-----------------------------------------------------------
+Vivado% tincr::read_tcp hilbert.tcp
+Parsing device information file...
+Device information obtained.
+Reading netlist...
+Netlist added successfully. (0.476347 seconds)
+Linking the design...
+Design is defaulting to srcset: sources_1
+Design is defaulting to constrset: constrs_1
+Parsing EDIF File [./hilbert.tcp/netlist.edf]
+Finished Parsing EDIF File [./hilbert.tcp/netlist.edf]
+INFO: [Netlist 29-17] Analyzing 49 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
+INFO: [Project 1-479] Netlist was created with Vivado 2015.4
+INFO: [Device 21-403] Loading part xc7a100tcsg324-3
+INFO: [Project 1-570] Preparing netlist for logic optimization
+INFO: [Opt 31-138] Pushed 0 inverter(s) to 0 load pin(s).
+INFO: [Project 1-111] Unisim Transformation Summary:
+No Unisim elements were transformed.
+
+link_design: Time (s): cpu = 00:00:05 ; elapsed = 00:00:06 . Memory (MB): peak = 481.086 ; gain = 266.652
+Design linked successfully. (5.997563 seconds)
+Reading design constraints...
+Parsing XDC File [C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/hilbert.tcp/constraints.xdc]
+Finished Parsing XDC File [C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/hilbert.tcp/constraints.xdc]
+Design constraints added successfully. (0.11856 seconds)
+Reading placement constraints...
+Parsing XDC File [C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/hilbert.tcp/placement.xdc]
+Finished Parsing XDC File [C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/hilbert.tcp/placement.xdc]
+Placement constraints added successfully... (0.77826 seconds)
+Reading routing constraints...
+Parsing XDC File [C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/hilbert.tcp/routing.xdc]
+Finished Parsing XDC File [C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/hilbert.tcp/routing.xdc]
+Routing constraints added successfully. (0.634572 seconds)
+Unlocking the design...
+Unlocking Routing...
+Unlocking Placement...
+Design unlocked.
+Design importation complete. (8.005302 seconds)
+0.476347 5.997563 0.11856 0.77826 0.634572 8.005302
+Vivado% start_gui
+        route_design -nets  [get_selected] -preserve
+Command: route_design -nets {{td_reg[3]__0[15]}} -preserve
+Attempting to get a license for feature 'Implementation' and/or device 'xc7a100t'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xc7a100t'
+INFO: [Common 17-1223] The version limit for your license is '2016.01' and will expire in -92 days. A version limit expiration means that, although you may be able to continue to use the current version of tools or IP with this license, you will not be eligible for any updates or new releases.
+INFO: [Common 17-83] Releasing license: Implementation
+3 Infos, 0 Warnings, 0 Critical Warnings and 1 Errors encountered.
+route_design failed
+ERROR: [Common 17-69] Command failed: "-preserve" cannot be used with other options.
+route_design -nets  [get_selected]
+Command: route_design -nets {{td_reg[3]__0[15]}}
+Attempting to get a license for feature 'Implementation' and/or device 'xc7a100t'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xc7a100t'
+INFO: [Common 17-1223] The version limit for your license is '2016.01' and will expire in -92 days. A version limit expiration means that, although you may be able to continue to use the current version of tools or IP with this license, you will not be eligible for any updates or new releases.
+Running DRC as a precondition to command route_design
+INFO: [DRC 23-27] Running DRC with 2 threads
+INFO: [Vivado_Tcl 4-198] DRC finished with 0 Errors
+INFO: [Vivado_Tcl 4-199] Please refer to the DRC report (report_drc) for more information.
+
+Starting Interactive Router Task
+
+Phase 1 Build RT Design
+Phase 1 Build RT Design | Checksum: 31e311e9
+
+Time (s): cpu = 00:00:44 ; elapsed = 00:00:38 . Memory (MB): peak = 1686.305 ; gain = 140.543
+INFO: [Route 35-47] Routing for 1 net will be attempted.
+
+Phase 2 Router Initialization
+Phase 2 Router Initialization | Checksum: b54f8588
+
+Time (s): cpu = 00:00:44 ; elapsed = 00:00:39 . Memory (MB): peak = 1690.992 ; gain = 145.230
+ Number of Nodes with overlaps = 0
+ Number of Nodes with overlaps = 0
+INFO: [Route 35-58] 1 net was successfully routed.
+Ending Interactive Router Task | Checksum: b54f8588
+
+Time (s): cpu = 00:00:44 ; elapsed = 00:00:39 . Memory (MB): peak = 1691.984 ; gain = 146.223
+INFO: [Common 17-83] Releasing license: Implementation
+8 Infos, 0 Warnings, 0 Critical Warnings and 0 Errors encountered.
+route_design completed successfully
+route_design: Time (s): cpu = 00:00:45 ; elapsed = 00:00:40 . Memory (MB): peak = 1691.984 ; gain = 146.223
+route_design -nets  [get_selected]
+Command: route_design -nets {{td_reg[3]__0[14]}}
+Attempting to get a license for feature 'Implementation' and/or device 'xc7a100t'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xc7a100t'
+INFO: [Common 17-1223] The version limit for your license is '2016.01' and will expire in -92 days. A version limit expiration means that, although you may be able to continue to use the current version of tools or IP with this license, you will not be eligible for any updates or new releases.
+Running DRC as a precondition to command route_design
+INFO: [DRC 23-27] Running DRC with 2 threads
+INFO: [Vivado_Tcl 4-198] DRC finished with 0 Errors
+INFO: [Vivado_Tcl 4-199] Please refer to the DRC report (report_drc) for more information.
+
+Starting Interactive Router Task
+INFO: [Route 35-47] Routing for 1 net will be attempted.
+INFO: [Route 35-307] 283 nets already restored were skipped.
+
+Phase 1 Router Initialization
+Phase 1 Router Initialization | Checksum: 3541d8de
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.012 . Memory (MB): peak = 1738.172 ; gain = 0.000
+ Number of Nodes with overlaps = 0
+ Number of Nodes with overlaps = 0
+INFO: [Route 35-58] 1 net was successfully routed.
+Ending Interactive Router Task | Checksum: 70e616c4
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.020 . Memory (MB): peak = 1738.172 ; gain = 0.000
+INFO: [Common 17-83] Releasing license: Implementation
+9 Infos, 0 Warnings, 0 Critical Warnings and 0 Errors encountered.
+route_design completed successfully
+get_nets -filter {ROUTE_STATUS==PARTIALLY_ROUTED}
+WARNING: [Vivado 12-1023] No nets matched for command 'get_nets -filter ROUTE_STATUS==PARTIALLY_ROUTED'.
+get_nets -filter {ROUTE_STATUS==ANTENNAS}
+filter_in_IBUF[15] filter_in_IBUF[9] td_reg[0]__0[11] td_reg[0]__0[4] td_reg[0]__0[5] td_reg[0]__0[6] td_reg[2]__0[6] td_reg[2]__0[7] td_reg[3]__0[12] td_reg[3]__0[2] td_reg[3]__0[3] td_reg[3]__0[4] td_reg[3]__0[9] tdd_reg[3]__0[2] tdd_reg[3]__0[3] xmhd0invd[11] xmhd0invd[15] xmhd0invd[6]
+llength [get_nets -filter {ROUTE_STATUS==ANTENNAS}]
+18
+invalid command name "route_nets"
+route_design -nets [get_selected] -finalize
+Command: route_design -nets {{tdd_reg[3]__0[3]}} -finalize
+Attempting to get a license for feature 'Implementation' and/or device 'xc7a100t'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xc7a100t'
+INFO: [Common 17-1223] The version limit for your license is '2016.01' and will expire in -92 days. A version limit expiration means that, although you may be able to continue to use the current version of tools or IP with this license, you will not be eligible for any updates or new releases.
+INFO: [Common 17-83] Releasing license: Implementation
+3 Infos, 0 Warnings, 0 Critical Warnings and 1 Errors encountered.
+route_design failed
+ERROR: [Common 17-69] Command failed: "-finalize" cannot be used with other options.
+route_design -nets [get_selected]
+Command: route_design -nets {{tdd_reg[3]__0[3]}}
+Attempting to get a license for feature 'Implementation' and/or device 'xc7a100t'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xc7a100t'
+INFO: [Common 17-1223] The version limit for your license is '2016.01' and will expire in -92 days. A version limit expiration means that, although you may be able to continue to use the current version of tools or IP with this license, you will not be eligible for any updates or new releases.
+Running DRC as a precondition to command route_design
+INFO: [DRC 23-27] Running DRC with 2 threads
+INFO: [Vivado_Tcl 4-198] DRC finished with 0 Errors
+INFO: [Vivado_Tcl 4-199] Please refer to the DRC report (report_drc) for more information.
+
+Starting Interactive Router Task
+INFO: [Route 35-47] Routing for 1 net will be attempted.
+INFO: [Route 35-307] 283 nets already restored were skipped.
+
+Phase 1 Router Initialization
+Phase 1 Router Initialization | Checksum: 70e616c4
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.014 . Memory (MB): peak = 1740.789 ; gain = 0.000
+ Number of Nodes with overlaps = 0
+ Number of Nodes with overlaps = 0
+INFO: [Route 35-58] 1 net was successfully routed.
+Ending Interactive Router Task | Checksum: 73dc6b9f
+
+Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.023 . Memory (MB): peak = 1740.789 ; gain = 0.000
+INFO: [Common 17-83] Releasing license: Implementation
+9 Infos, 0 Warnings, 0 Critical Warnings and 0 Errors encountered.
+route_design completed successfully
+stop_gui
+Vivado% close_design
+Vivado% tincr::refresh_packages
+Refreshing all Tincr packages:
+	Refreshing tincr package...DONE
+	Refreshing tincr.cad package...DONE
+	Refreshing tincr.cad.cache package...DONE
+	Refreshing tincr.cad.design package...DONE
+	Refreshing tincr.cad.device package...DONE
+	Refreshing tincr.cad.placer package...DONE
+	Refreshing tincr.cad.router package...DONE
+	Refreshing tincr.cad.util package...DONE
+	Refreshing tincr.io package...DONE
+	Refreshing tincr.io.design package...DONE
+	Refreshing tincr.io.device package...DONE
+Vivado% tincr::read_tcp hilbert.tcp
+Parsing device information file...
+Device information obtained.
+Reading netlist...
+Netlist added successfully. (0.004899 seconds)
+Linking the design...
+Design is defaulting to srcset: sources_1
+Design is defaulting to constrset: constrs_1
+Parsing EDIF File [./hilbert.tcp/netlist.edf]
+Finished Parsing EDIF File [./hilbert.tcp/netlist.edf]
+INFO: [Netlist 29-17] Analyzing 49 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
+INFO: [Project 1-479] Netlist was created with Vivado 2015.4
+INFO: [Project 1-570] Preparing netlist for logic optimization
+INFO: [Opt 31-138] Pushed 0 inverter(s) to 0 load pin(s).
+INFO: [Project 1-111] Unisim Transformation Summary:
+No Unisim elements were transformed.
+
+Design linked successfully. (1.570581 seconds)
+Reading design constraints...
+Parsing XDC File [C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/hilbert.tcp/constraints.xdc]
+Finished Parsing XDC File [C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/hilbert.tcp/constraints.xdc]
+Design constraints added successfully. (0.099634 seconds)
+Reading placement constraints...
+Parsing XDC File [C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/hilbert.tcp/placement.xdc]
+Finished Parsing XDC File [C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/hilbert.tcp/placement.xdc]
+Placement constraints added successfully... (0.736408 seconds)
+Reading routing constraints...
+Parsing XDC File [C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/hilbert.tcp/routing.xdc]
+Finished Parsing XDC File [C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/hilbert.tcp/routing.xdc]
+Routing constraints added successfully. (0.499595 seconds)
+Unlocking the design...
+Unlocking Routing...
+Unlocking Placement...
+Design unlocked.
+Command: route_design -nets {filter_in_IBUF[15]}
+Attempting to get a license for feature 'Implementation' and/or device 'xc7a100t'
+INFO: [Common 17-349] Got license for feature 'Implementation' and/or device 'xc7a100t'
+INFO: [Common 17-1223] The version limit for your license is '2016.01' and will expire in -92 days. A version limit expiration means that, although you may be able to continue to use the current version of tools or IP with this license, you will not be eligible for any updates or new releases.
+Running DRC as a precondition to command route_design
+INFO: [DRC 23-27] Running DRC with 2 threads
+INFO: [Vivado_Tcl 4-198] DRC finished with 0 Errors
+INFO: [Vivado_Tcl 4-199] Please refer to the DRC report (report_drc) for more information.
+
+Starting Interactive Router Task
+
+Phase 1 Build RT Design
+INFO: [Common 17-41] Interrupt caught. Command should exit soon.
+Phase 1 Build RT Design | Checksum: 94271eef
+
+Time (s): cpu = 00:00:49 ; elapsed = 00:00:44 . Memory (MB): peak = 1740.789 ; gain = 0.000
+INFO: [Route 35-73] Router was interrupted by the user.
+Ending Interactive Router Task | Checksum: 94271eef
+
+Time (s): cpu = 00:00:49 ; elapsed = 00:00:44 . Memory (MB): peak = 1740.789 ; gain = 0.000
+INFO: [Common 17-83] Releasing license: Implementation
+14 Infos, 0 Warnings, 0 Critical Warnings and 0 Errors encountered.
+route_design failed
+route_design: Time (s): cpu = 00:00:50 ; elapsed = 00:00:46 . Memory (MB): peak = 1740.789 ; gain = 0.000
+INFO: [Common 17-344] 'route_design' was cancelled
+
+Vivado% close_design
+Vivado% tincr::refresh_packages
+Refreshing all Tincr packages:
+	Refreshing tincr package...DONE
+	Refreshing tincr.cad package...DONE
+	Refreshing tincr.cad.cache package...DONE
+	Refreshing tincr.cad.design package...DONE
+	Refreshing tincr.cad.device package...DONE
+	Refreshing tincr.cad.placer package...DONE
+	Refreshing tincr.cad.router package...DONE
+	Refreshing tincr.cad.util package...DONE
+	Refreshing tincr.io package...DONE
+	Refreshing tincr.io.design package...DONE
+	Refreshing tincr.io.device package...DONE
+Vivado% tincr::read_tcp hilbert.tcp
+Parsing device information file...
+Device information obtained.
+Reading netlist...
+WARNING: [filemgmt 56-12] File 'C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/hilbert.tcp/netlist.edf' cannot be added to the project because it already exists in the project, skipping this file
+Netlist added successfully. (0.136213 seconds)
+Linking the design...
+Design is defaulting to srcset: sources_1
+Design is defaulting to constrset: constrs_1
+Parsing EDIF File [./hilbert.tcp/netlist.edf]
+Finished Parsing EDIF File [./hilbert.tcp/netlist.edf]
+INFO: [Netlist 29-17] Analyzing 49 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
+INFO: [Project 1-479] Netlist was created with Vivado 2015.4
+INFO: [Project 1-570] Preparing netlist for logic optimization
+INFO: [Opt 31-138] Pushed 0 inverter(s) to 0 load pin(s).
+INFO: [Project 1-111] Unisim Transformation Summary:
+No Unisim elements were transformed.
+
+Design linked successfully. (1.646827 seconds)
+Reading design constraints...
+Parsing XDC File [C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/hilbert.tcp/constraints.xdc]
+Finished Parsing XDC File [C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/hilbert.tcp/constraints.xdc]
+Design constraints added successfully. (0.091684 seconds)
+Reading placement constraints...
+Parsing XDC File [C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/hilbert.tcp/placement.xdc]
+Finished Parsing XDC File [C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/hilbert.tcp/placement.xdc]
+Placement constraints added successfully... (0.712711 seconds)
+Reading routing constraints...
+Parsing XDC File [C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/hilbert.tcp/routing.xdc]
+Finished Parsing XDC File [C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/hilbert.tcp/routing.xdc]
+Routing constraints added successfully. (0.507004 seconds)
+Unlocking the design...
+Unlocking Routing...
+Unlocking Placement...
+Design unlocked.
+Design importation complete. (3.0944390000000004 seconds)
+0.136213 1.646827 0.091684 0.712711 0.507004 3.0944390000000004
+Vivado% llength [get_nets]
+664
+Vivado% llength [get_nets -filter {ROUTE_STATUS==ROUTED}]
+283
+Vivado% start_gui
+write_checkpoint C:/Users/ecestudent/Documents/Research/Tincr/Import/Vivado_Checkpoints/hilbert_design_diff_test.dcp
+Writing placer database...
+Writing XDEF routing.
+Writing XDEF routing logical nets.
+Writing XDEF routing special nets.
+Write XDEF Complete: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.341 . Memory (MB): peak = 1918.004 ; gain = 0.000
+C:/Users/ecestudent/Documents/Research/Tincr/Import/Vivado_Checkpoints/hilbert_design_diff_test.dcp
+stop_gui
+Vivado% close_design
+Vivado% ls
+WARNING: [Common 17-259] Unknown Tcl command 'ls' sending command to the OS shell for execution.
+Vivado% cd ..
+Vivado% cd Vivado-Checkpoints
+couldn't change working directory to "Vivado-Checkpoints": no such file or directory
+Vivado% cd Vivado_Checkpoints
+Vivado% ls
+WARNING: [Common 17-259] Unknown Tcl command 'ls' sending command to the OS shell for execution.
+Vivado% tincr::designs::diff hilbert.dcp hilbert_design_diff_test.dcp diff.txt
+invalid command name "get_name"
+Vivado% close_designs *
+invalid command name "close_designs"
+Vivado% close_design *
+ERROR: [Common 17-165] Too many positional options when parsing '*', please type 'close_design -help' for usage info.
+
+Vivado% close_design
+****** Webtalk v2015.4 (64-bit)
+  **** SW Build 1412921 on Wed Nov 18 09:43:45 MST 2015
+  **** IP Build 1412160 on Tue Nov 17 13:47:24 MST 2015
+    ** Copyright 1986-2015 Xilinx, Inc. All Rights Reserved.
+
+source C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/.Xil/Vivado-15156-/webtalk/labtool_webtalk.tcl -notrace
+INFO: [Common 17-206] Exiting Webtalk at Mon May 02 16:32:28 2016...
+close_design: Time (s): cpu = 00:00:01 ; elapsed = 00:00:08 . Memory (MB): peak = 1918.004 ; gain = 0.000
+Vivado% close_design
+Vivado% close_design
+ERROR: [Vivado 12-398] No designs are open
+
+Vivado% tincr::designs::diff hilbert.dcp hilbert_design_diff_test.dcp diff.txt
+
+Vivado% close_design
+ERROR: [Vivado 12-398] No designs are open
+
+Vivado% tincr::refresh_packages
+Refreshing all Tincr packages:
+	Refreshing tincr package...DONE
+	Refreshing tincr.cad package...DONE
+	Refreshing tincr.cad.cache package...DONE
+	Refreshing tincr.cad.design package...DONE
+	Refreshing tincr.cad.device package...DONE
+	Refreshing tincr.cad.placer package...DONE
+	Refreshing tincr.cad.router package...DONE
+	Refreshing tincr.cad.util package...DONE
+	Refreshing tincr.io package...DONE
+	Refreshing tincr.io.design package...DONE
+	Refreshing tincr.io.device package...DONE
+Vivado% tincr::designs::diff hilbert.dcp hilbert_design_diff_test.dcp diff.txt
+Vivado% exit
+INFO: [Common 17-206] Exiting Vivado at Tue May 03 12:40:27 2016...

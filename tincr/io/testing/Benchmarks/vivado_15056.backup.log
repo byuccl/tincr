@@ -1,0 +1,102 @@
+#-----------------------------------------------------------
+# Vivado v2015.4 (64-bit)
+# SW Build 1412921 on Wed Nov 18 09:43:45 MST 2015
+# IP Build 1412160 on Tue Nov 17 13:47:24 MST 2015
+# Start of session at: Mon May 02 15:51:35 2016
+# Process ID: 15056
+# Current directory: C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks
+# Command line: vivado.exe -mode tcl
+# Log file: C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/vivado.log
+# Journal file: C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks\vivado.jou
+#-----------------------------------------------------------
+Vivado% tincr::read_tcp fir.tcp
+Parsing device information file...
+Device information obtained.
+Reading netlist...
+Netlist added successfully. (0.465785 seconds)
+Linking the design...
+Design is defaulting to srcset: sources_1
+Design is defaulting to constrset: constrs_1
+Parsing EDIF File [./fir.tcp/netlist.edf]
+Finished Parsing EDIF File [./fir.tcp/netlist.edf]
+INFO: [Netlist 29-17] Analyzing 34 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
+INFO: [Project 1-479] Netlist was created with Vivado 2015.4
+INFO: [Device 21-403] Loading part xc7a100tcsg324-3
+INFO: [Project 1-570] Preparing netlist for logic optimization
+INFO: [Opt 31-138] Pushed 0 inverter(s) to 0 load pin(s).
+INFO: [Project 1-111] Unisim Transformation Summary:
+No Unisim elements were transformed.
+
+link_design: Time (s): cpu = 00:00:05 ; elapsed = 00:00:06 . Memory (MB): peak = 480.023 ; gain = 265.707
+Design linked successfully. (6.211668 seconds)
+Reading design constraints...
+Parsing XDC File [C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/fir.tcp/constraints.xdc]
+Finished Parsing XDC File [C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/fir.tcp/constraints.xdc]
+Design constraints added successfully. (0.10282 seconds)
+Reading placement constraints...
+Parsing XDC File [C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/fir.tcp/placement.xdc]
+Finished Parsing XDC File [C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/fir.tcp/placement.xdc]
+Placement constraints added successfully... (0.623442 seconds)
+Reading routing constraints...
+Parsing XDC File [C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/fir.tcp/routing.xdc]
+Finished Parsing XDC File [C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/fir.tcp/routing.xdc]
+Routing constraints added successfully. (0.774957 seconds)
+Unlocking the design...
+Unlocking Routing...
+Unlocking Placement...
+Design unlocked.
+Design importation complete. (8.178672 seconds)
+0.465785 6.211668 0.10282 0.623442 0.774957 8.178672
+Vivado% start_gui
+        source -notrace C:/Users/ecestudent/Documents/Research/Tincr/insert_rt_bufs.tcl
+insert_routethrough_buffers
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y63/A6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y63/B6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y63/C6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y63/D6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y62/A6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y62/B6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y62/C6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y62/D6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y61/A6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y61/B6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y61/C6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y61/D6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y60/A6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y60/B6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y60/C6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y60/D6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y59/A6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y59/B6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y59/C6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y59/D6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y58/A6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y58/B6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y58/C6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y58/D6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y57/A6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y57/B6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y57/C6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y57/D6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y56/A6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y56/B6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y56/C6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y56/D6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y55/A6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y55/B6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y55/C6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y55/D6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y54/A6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y54/B6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y54/C6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y54/D6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y53/A6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y53/B6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y53/C6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y53/D6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y52/B6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y52/C6LUT PIN: A6
+ROUTETHROUGH FOUND: BEL: SLICE_X13Y52/D6LUT PIN: A6
+exit
+INFO: [Common 17-206] Exiting Vivado at Mon May 02 16:04:06 2016...

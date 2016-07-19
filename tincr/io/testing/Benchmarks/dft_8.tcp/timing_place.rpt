@@ -1,0 +1,41 @@
+Copyright 1986-2015 Xilinx, Inc. All Rights Reserved.
+------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2015.4 (win64) Build 1412921 Wed Nov 18 09:43:45 MST 2015
+| Date         : Tue Mar 29 21:51:10 2016
+| Host         : CB461-EE09968 running 64-bit Service Pack 1  (build 7601)
+| Command      : report_timing -file ./dft_8.tcp/timing_place.rpt
+| Design       : top
+| Device       : 7a100t-csg324
+| Speed File   : -3  PRODUCTION 1.14 2014-09-11
+------------------------------------------------------------------------------------
+
+Timing Report
+
+Slack:                    inf
+  Source:                 SEL[1]
+                            (input port)
+  Destination:            XK_IM[7]
+                            (output port)
+  Path Group:             (none)
+  Path Type:              Max at Slow Process Corner
+  Data Path Delay:        8.719ns  (logic 3.493ns (40.061%)  route 5.226ns (59.939%))
+  Logic Levels:           4  (IBUF=1 LUT6=1 MUXF7=1 OBUF=1)
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+    M14                                               0.000     0.000 r  SEL[1] (IN)
+                         net (fo=0)                   0.000     0.000    SEL[1]
+    M14                  IBUF (Prop_ibuf_I_O)         0.816     0.816 r  SEL_IBUF[1]_inst/O
+                         net (fo=86, estimated)       2.217     3.033    SEL_IBUF[1]
+    SLICE_X55Y101        LUT6 (Prop_lut6_I2_O)        0.097     3.129 r  XK_IM_OBUF[7]_inst_i_2/O
+                         net (fo=1, routed)           0.000     3.129    XK_IM_OBUF[7]_inst_i_2_n_0
+    SLICE_X55Y101        MUXF7 (Prop_muxf7_I0_O)      0.163     3.293 r  XK_IM_OBUF[7]_inst_i_1/O
+                         net (fo=1, estimated)        3.009     6.301    XK_IM_OBUF[7]
+    V11                  OBUF (Prop_obuf_I_O)         2.417     8.719 r  XK_IM_OBUF[7]_inst/O
+                         net (fo=0)                   0.000     8.719    XK_IM[7]
+    V11                                                               r  XK_IM[7] (OUT)
+  -------------------------------------------------------------------    -------------------
+
+
+
+

@@ -1,0 +1,394 @@
+#-----------------------------------------------------------
+# Vivado v2015.4 (64-bit)
+# SW Build 1412921 on Wed Nov 18 09:43:45 MST 2015
+# IP Build 1412160 on Tue Nov 17 13:47:24 MST 2015
+# Start of session at: Sun Jul 17 18:28:55 2016
+# Process ID: 7216
+# Current directory: C:/Users/ecestudent/Documents/Research/Tincr/Import/Vivado_Checkpoints
+# Command line: vivado.exe -gui_launcher_event rodinguilauncherevent10852 C:\Users\ecestudent\Documents\Research\Tincr\Import\Vivado_Checkpoints\canny.dcp
+# Log file: C:/Users/ecestudent/Documents/Research/Tincr/Import/Vivado_Checkpoints/vivado.log
+# Journal file: C:/Users/ecestudent/Documents/Research/Tincr/Import/Vivado_Checkpoints\vivado.jou
+#-----------------------------------------------------------
+start_gui
+open_checkpoint {C:\Users\ecestudent\Documents\Research\Tincr\Import\Vivado_Checkpoints\canny.dcp}
+Command: open_checkpoint {C:\Users\ecestudent\Documents\Research\Tincr\Import\Vivado_Checkpoints\canny.dcp}
+INFO: [IP_Flow 19-234] Refreshing IP repositories
+INFO: [IP_Flow 19-1704] No user IP repositories specified
+INFO: [IP_Flow 19-2313] Loaded Vivado IP repository 'C:/Xilinx/Vivado/2015.4/data/ip'.
+INFO: [Netlist 29-17] Analyzing 643 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
+WARNING: [Netlist 29-101] Netlist 'top' is not ideal for floorplanning, since the cellview 'top' contains a large number of primitives.  Please consider enabling hierarchy in synthesis if you want to do floorplanning.
+INFO: [Project 1-479] Netlist was created with Vivado 2015.4
+INFO: [Device 21-403] Loading part xc7a100tcsg324-3
+INFO: [Project 1-570] Preparing netlist for logic optimization
+Reading XDEF placement.
+Reading placer database...
+Reading XDEF routing.
+Read XDEF File: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.764 . Memory (MB): peak = 978.234 ; gain = 7.992
+Restored from archive | CPU: 1.000000 secs | Memory: 0.000000 MB |
+Finished XDEF File Restore: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.765 . Memory (MB): peak = 978.234 ; gain = 7.992
+INFO: [Project 1-111] Unisim Transformation Summary:
+No Unisim elements were transformed.
+
+INFO: [Project 1-604] Checkpoint was created with Vivado v2015.4 (64-bit) build 1412921
+open_checkpoint: Time (s): cpu = 00:00:32 ; elapsed = 00:00:54 . Memory (MB): peak = 1098.027 ; gain = 483.617
+source -notrace C:/Users/ecestudent/Documents/Research/Tincr/Scripts/pblock.tcl
+set pblocks [group_cells_by_clock_domain]
+WARNING: [Vivado 12-180] No cells matched 'get_cells -of X0Y2'.
+WARNING: [Vivado 12-180] No cells matched 'get_cells -of X1Y2'.
+WARNING: [Vivado 12-180] No cells matched 'get_cells -of X0Y3'.
+WARNING: [Vivado 12-180] No cells matched 'get_cells -of X1Y3'.
+p0 p1 p2 p3
+get_cells -of [lindex $pblocks 2]
+data_in_IBUF[0]_inst edge/filterH/p8x[14]_i_3 edge/filterH/p8x[14]_i_4 edge/filterH/p8x[14]_i_5 edge/filterH/p8x_reg[14]_i_1 edge/filterH/p8x_reg[14] edge/filterH/p8x_reg[13] edge/filterH/p8x_reg[12] edge/filterH/p8x_reg[11] edge/filterH/p9ya_reg[5] edge/CacheSystem/pdata_out9_reg[1] edge/CacheSystem/cache1_reg[65] p8xb[13]_i_3 p8xb[13]_i_4 p8xb[13]_i_2 p8xb_reg[13]_i_1 edge/filterH/p8xb_reg[13] edge/filterH/p8xb_reg[12] edge/filterH/p8xb_reg[11] p8xa[14]_i_2 p8xa[14]_i_3 p8xa[14]_i_4 p8xa[14]_i_5 p8xa_reg[14]_i_1 edge/filterH/p8xa_reg[14] edge/filterH/p8xa_reg[13] edge/filterH/p8xa_reg[12] edge/filterH/p8xa_reg[11] sX2b[15]_i_2 sX2b[15]_i_3 sX2b[15]_i_4 sX2b[15]_i_5 sX2b_reg[15]_i_1 edge/filterH/sX2b_reg[15] edge/filterH/sX2b_reg[14] edge/filterH/sX2b_reg[13] edge/filterH/sX2b_reg[12] sX2[15]_i_2 sX2[15]_i_3 sX2[15]_i_4 sX2[15]_i_5 sX2_reg[15]_i_1 edge/filterH/sX2_reg[15] edge/filterH/sX2_reg[14] edge/filterH/sX2_reg[13] edge/filterH/sX2_reg[12] edge/CacheSystem2/nineLineBufferX/pdata_in_r_reg[9] edge/CacheSystem2/nineLineBufferX/pdata_in_r_reg[15] edge/CacheSystem2/nineLineBufferX/pdata_in_r_reg[14] edge/CacheSystem2/nineLineBufferX/pdata_in_r_reg[13] edge/CacheSystem2/nineLineBufferX/pdata_in_r_reg[12] edge/filterH/Xdata_o[15]_i_2 edge/filterH/Xdata_o[15]_i_3 edge/filterH/Xdata_o[15]_i_4 edge/filterH/Xdata_o[15]_i_5 edge/filterH/Xdata_o_reg[15]_i_1 edge/filterH/Xdata_o_reg[15] edge/filterH/Xdata_o_reg[14] edge/filterH/Xdata_o_reg[13] edge/filterH/Xdata_o_reg[12] edge/CacheSystem2/nineLineBufferX/pdata_in_r_reg[5] edge/CacheSystem2/nineLineBufferX/pdata_in_r_reg[30] edge/CacheSystem2/nineLineBufferX/pdata_in_r_reg[28] edge/CacheSystem2/nineLineBufferX/pdata_in_r_reg[27] edge/filterH/sX2c[15]_i_2 edge/filterH/sX2c[15]_i_3 edge/filterH/sX2c[15]_i_4 edge/filterH/sX2c[15]_i_5 edge/filterH/sX2c_reg[15]_i_1 edge/filterH/sX2c_reg[15] edge/filterH/sX2c_reg[14] edge/filterH/sX2c_reg[13] edge/filterH/sX2c_reg[12] edge/CacheSystem2/nineLineBufferX/LineBuffer1/ram_array_reg edge/CacheSystem2/nineLineBufferX/pdata_in_r_reg[7] edge/CacheSystem2/nineLineBufferX/pdata_in_r_reg[6] p6xa[10]_i_2 p6xa[10]_i_3 p6xa[10]_i_4 p6xa_reg[10]_i_1 edge/filterH/p6xa_reg[10] edge/filterH/p6xa_reg[9] edge/filterH/p6xa_reg[8] edge/filterH/p6xa_reg[7] edge/filterH/p5y[11]_i_2 edge/filterH/p5y[11]_i_3 edge/filterH/p5y[11]_i_4 edge/filterH/p5y[11]_i_5 edge/filterH/p5y_reg[11]_i_1 edge/filterH/p5y_reg[11] edge/filterH/p5y_reg[10] edge/filterH/p5y_reg[9] p5ya[11]_i_2 p5ya[11]_i_3 p5ya[11]_i_4 p5ya_reg[11]_i_1 edge/filterH/p5ya_reg[11] edge/filterH/p5ya_reg[10] edge/filterH/p5ya_reg[9] edge/filterH/p5ya_reg[8] p5yb_reg[13]_i_1 edge/filterH/p5yb_reg[13] edge/filterH/p5yb_reg[12] edge/CacheSystem2/nineLineBufferX/LineBuffer1/rIndex_reg_rep[9] edge/CacheSystem2/nineLineBufferX/LineBuffer1/rIndex_reg_rep[7] rIndex_rep[9]_i_3__3 rIndex_rep[9]_i_1__4 rIndex_rep[8]_i_1__3 rIndex_rep[9]_i_2__3 rIndex_rep[6]_i_1__3 rIndex_rep[7]_i_1__3 edge/CacheSystem2/nineLineBufferX/LineBuffer1/rIndex_reg_rep[8] edge/CacheSystem2/nineLineBufferX/LineBuffer1/rIndex_reg_rep[6] edge/filterV/p6x_reg[5] edge/filterV/p6x_reg[4] edge/filterV/p6x_reg[3] p6xb[6]_i_3 p6xb[10]_i_5 p6xb[6]_i_4 p6xb[6]_i_5 p6xb_reg[6]_i_1 edge/filterV/p6xb_reg[6] edge/filterV/p6xb_reg[5] edge/filterV/p6xb_reg[4] edge/filterV/p6xb_reg[3] p6xb[6]_i_2 edge/filterH/SX1c_reg[14] edge/filterH/SX1c_reg[13] edge/filterH/SX1c_reg[12] data_in_IBUF[2]_inst edge/CacheSystem/pdata_out9_reg[2] edge/CacheSystem/cache1_reg[66] edge/filterH/p8x_reg[17]_i_1 edge/filterH/p8x_reg[17] edge/filterH/p8x_reg[16] edge/filterH/p8x_reg[15] edge/filterH/p9ya_reg[8] edge/filterH/p9x[7]_i_2 edge/filterH/p9x[7]_i_3 edge/filterH/p9x[7]_i_4 edge/filterH/p9x[7]_i_5 edge/filterH/p9x_reg[7]_i_1 edge/filterH/p9x_reg[7] edge/filterH/p9x_reg[6] edge/filterH/p9x_reg[5] edge/filterH/p9ya_reg[6] edge/CacheSystem/pdata_out9_reg[6] edge/CacheSystem/cache1_reg[70] p8xa_reg[16]_i_1 edge/filterH/p9ya_reg[11] edge/filterH/p9ya_reg[10] edge/filterH/p8xa_reg[16] edge/filterH/p8xa_reg[15] sX2b[18]_i_3 sX2b_reg[18]_i_1 edge/filterH/sX2b_reg[18] edge/filterH/sX2b_reg[17] edge/filterH/sX2b_reg[16] sX2[19]_i_3 sX2[19]_i_4 sX2[19]_i_5 sX2_reg[19]_i_1 edge/filterH/sX2_reg[19] edge/filterH/sX2_reg[18] edge/filterH/sX2_reg[17] edge/filterH/sX2_reg[16] edge/filterV/p8xb_reg[3] edge/filterV/p8x_reg[3] edge/CacheSystem2/pdata_out8x_reg[1] edge/CacheSystem2/nineLineBufferX/pdata_in_r_reg[19] edge/CacheSystem2/nineLineBufferX/pdata_in_r_reg[16] edge/filterH/Xdata_o[19]_i_2 edge/filterH/Xdata_o[19]_i_3 edge/filterH/Xdata_o[19]_i_4 edge/filterH/Xdata_o[19]_i_5 edge/filterH/Xdata_o_reg[19]_i_1 edge/filterH/Xdata_o_reg[19] edge/filterH/Xdata_o_reg[18] edge/filterH/Xdata_o_reg[17] edge/filterH/Xdata_o_reg[16] edge/CacheSystem2/nineLineBufferX/pdata_in_r_reg[25] edge/CacheSystem2/nineLineBufferX/pdata_in_r_reg[24] edge/CacheSystem2/nineLineBufferX/pdata_in_r_reg[18] edge/CacheSystem2/nineLineBufferX/pdata_in_r_reg[17] edge/filterH/sX2c[19]_i_2 edge/filterH/sX2c[19]_i_3 edge/filterH/sX2c[19]_i_4 edge/filterH/sX2c[19]_i_5 edge/filterH/sX2c_reg[19]_i_1 edge/filterH/sX2c_reg[19] edge/filterH/sX2c_reg[18] edge/filterH/sX2c_reg[17] edge/filterH/sX2c_reg[16] p6xa[14]_i_3 p6xa[14]_i_4 p6xa[14]_i_5 p6xa_reg[14]_i_1 edge/filterH/p6xa_reg[14] edge/filterH/p6xa_reg[13] edge/filterH/p6xa_reg[12] edge/filterH/p6xa_reg[11] edge/filterH/p5y[15]_i_4 edge/filterH/p5y[15]_i_5 edge/filterH/p5y_reg[15]_i_1 edge/filterH/p5y_reg[15] edge/filterH/p5y_reg[14] edge/filterH/p5y_reg[13] edge/filterH/p5y_reg[12] p5ya[15]_i_2 p5ya[15]_i_3 p5ya[15]_i_4 p5ya[15]_i_5 p5ya_reg[15]_i_1 edge/filterH/p5ya_reg[15] edge/filterH/p5ya_reg[14] edge/filterH/p5ya_reg[13] edge/filterH/p5ya_reg[12] edge/filterV/p7x[5]_i_1 edge/filterH/p5y[8]_i_1 edge/filterV/p7x_reg[5] edge/filterH/p5y_reg[8] edge/CacheSystem2/nineLineBufferX/LineBuffer1/rIndex_reg_rep[4] edge/CacheSystem2/nineLineBufferX/LineBuffer1/rIndex_reg_rep[2] rIndex_rep[3]_i_1__3 rIndex_rep[4]_i_1__3 rIndex_rep[1]_i_1__3 rIndex_rep[2]_i_1__3 rIndex_rep[5]_i_1__3 rIndex_rep[0]_i_1__3 edge/CacheSystem2/nineLineBufferX/LineBuffer1/rIndex_reg_rep[3] edge/CacheSystem2/nineLineBufferX/LineBuffer1/rIndex_reg_rep[1] edge/CacheSystem2/nineLineBufferX/LineBuffer1/rIndex_reg_rep[5] edge/CacheSystem2/nineLineBufferX/LineBuffer1/rIndex_reg_rep[0] edge/filterV/p6x[6]_i_1 edge/filterV/p6x_reg[6] p6xb[10]_i_6 p6xb[14]_i_5 p6xb[10]_i_7 p6xb[10]_i_2 p6xb[10]_i_8 p6xb[10]_i_3 p6xb[10]_i_9 p6xb[10]_i_4 p6xb_reg[10]_i_1 edge/filterV/p6xb_reg[10] edge/filterV/p6xb_reg[9] edge/filterV/p6xb_reg[8] edge/filterV/p6xb_reg[7] data_in_IBUF[1]_inst data_in_r_reg[2] data_in_r_reg[1] edge/filterH/p9ya_reg[9] edge/filterH/p9ya_reg[7] edge/filterH/p9x_reg[11]_i_1 edge/filterH/p9x_reg[11] edge/filterH/p9x_reg[10] edge/filterH/p9x_reg[9] edge/filterH/p9x_reg[8] edge/filterH/p9xa[9]_i_2 edge/filterH/p9xa[9]_i_3 edge/filterH/p9xa[9]_i_4 edge/filterH/p9xa_reg[9]_i_1 edge/filterH/p9xa_reg[9] edge/filterH/p9xa_reg[8] edge/filterH/p9xa_reg[7] edge/filterH/p9xa_reg[6] sX2_reg[20]_i_1 edge/filterH/sX2_reg[20] edge/CacheSystem2/nineLineBufferX/pdata_in_r_reg[21] edge/filterH/Xdata_o[23]_i_5 edge/filterH/Xdata_o_reg[23]_i_1 edge/filterH/Xdata_o_reg[23] edge/filterH/Xdata_o_reg[22] edge/filterH/Xdata_o_reg[21] edge/filterH/Xdata_o_reg[20] edge/CacheSystem2/nineLineBufferX/pdata_in_r_reg[22] edge/CacheSystem2/nineLineBufferX/pdata_in_r_reg[20] edge/filterH/sX2c[31]_i_2 edge/filterH/sX2c_reg[31]_i_1 edge/filterV/p7xa_reg[5] edge/CacheSystem2/nineLineBufferX/pdata_in_r_reg[23] edge/filterH/sX2c_reg[31] edge/filterH/sX2c_reg[20] edge/filterV/p7x_reg[4] edge/CacheSystem2/pdata_out7x_reg[2] p6xa_reg[16]_i_1 edge/filterV/p7xa_reg[6] edge/filterH/p6xa_reg[16] edge/filterH/p6xa_reg[15] edge/filterV/p7xb_reg[5] edge/filterH/p5y_reg[18]_i_1 edge/filterH/p5y_reg[18] edge/filterH/p5y_reg[17] edge/filterH/p5y_reg[16] p5ya_reg[17]_i_1 edge/filterH/p5ya_reg[17] edge/filterH/p5ya_reg[16] edge/filterV/sX2[3]_i_2 edge/filterV/sX2[3]_i_3 edge/filterV/sX2[3]_i_4 edge/filterV/sX2[3]_i_5 edge/filterV/sX2_reg[3]_i_1 edge/filterV/sX2_reg[3] edge/filterV/sX2_reg[2] edge/filterV/sX2_reg[1] edge/filterV/sX2_reg[0] edge/filterV/p6xa_reg[6] edge/filterV/p6x_reg[1] edge/filterV/sX2a[3]_i_2 edge/filterV/sX2a[3]_i_3 edge/filterV/sX2a_reg[3]_i_1 edge/filterV/sX2a_reg[3] edge/filterV/sX2a_reg[2] edge/filterV/sX2a_reg[1] edge/filterV/sX2a_reg[0] edge/filterV/p6xa_reg[7] edge/filterV/p6x_reg[2] edge/filterV/p5x_reg[3] edge/filterV/p6x[9]_i_2 edge/filterV/p6x[9]_i_3 edge/filterV/p6x[9]_i_4 edge/filterV/p6x[9]_i_5 edge/filterV/p6x_reg[9]_i_1 edge/filterV/p6x_reg[9] edge/filterV/p6x_reg[8] edge/filterV/p6x_reg[7] edge/CacheSystem2/pdata_out6x_reg[1] p6xb[14]_i_6 p6xb[18]_i_5 p6xb[14]_i_7 p6xb[14]_i_2 p6xb[14]_i_8 p6xb[14]_i_3 p6xb[14]_i_9 p6xb[14]_i_4 p6xb_reg[14]_i_1 edge/filterV/p6xb_reg[14] edge/filterV/p6xb_reg[13] edge/filterV/p6xb_reg[12] edge/filterV/p6xb_reg[11] edge/CacheSystem2/pdata_out6x_reg[2] p6xa[11]_i_2 p6xa[11]_i_3 p6xa[11]_i_4 p6xa_reg[11]_i_1 edge/filterV/p6xa_reg[11] edge/filterV/p6xa_reg[10] edge/filterV/p6xa_reg[9] edge/filterV/p6xa_reg[8] data_in_IBUF[4]_inst edge/CacheSystem/pdata_out9_reg[5] edge/CacheSystem/pdata_out9_reg[4] edge/CacheSystem/pdata_out9_reg[3] edge/filterH/p9x_reg[15]_i_1 edge/filterH/p9x_reg[15] edge/filterH/p9x_reg[14] edge/filterH/p9x_reg[13] edge/filterH/p9x_reg[12] edge/filterH/p9xa[13]_i_4 edge/filterH/p9xa[13]_i_5 edge/filterH/p9xa_reg[13]_i_1 edge/filterH/p9xa_reg[13] edge/filterH/p9xa_reg[12] edge/filterH/p9xa_reg[11] edge/filterH/p9xa_reg[10] edge/filterV/p7x_reg[3] edge/CacheSystem2/nineLineBufferX/pdata_in_r_reg[26] edge/filterH/Xdata_o_reg[27]_i_1 edge/filterH/Xdata_o_reg[27] edge/filterH/Xdata_o_reg[26] edge/filterH/Xdata_o_reg[25] edge/filterH/Xdata_o_reg[24] edge/CacheSystem2/nineLineBufferX/LineBuffer3/rIndex_reg_rep[9] edge/CacheSystem2/nineLineBufferX/LineBuffer3/rIndex_reg_rep[7] rIndex_rep[9]_i_1__11 rIndex_rep[8]_i_1__10 rIndex_rep[9]_i_2__10 rIndex_rep[6]_i_1__10 rIndex_rep[7]_i_1__10 rIndex_rep[0]_i_1__10 edge/CacheSystem2/nineLineBufferX/LineBuffer3/rIndex_reg_rep[8] edge/CacheSystem2/nineLineBufferX/LineBuffer3/rIndex_reg_rep[6] edge/CacheSystem2/nineLineBufferX/LineBuffer3/rIndex_reg_rep[0] edge/CacheSystem2/nineLineBufferX/LineBuffer3/rIndex_reg_rep[4] edge/CacheSystem2/nineLineBufferX/LineBuffer3/rIndex_reg_rep[2] rIndex_rep[9]_i_3__10 rIndex_rep[3]_i_1__10 rIndex_rep[4]_i_1__10 rIndex_rep[1]_i_1__10 rIndex_rep[2]_i_1__10 rIndex_rep[5]_i_1__10 edge/CacheSystem2/nineLineBufferX/LineBuffer3/rIndex_reg_rep[3] edge/CacheSystem2/nineLineBufferX/LineBuffer3/rIndex_reg_rep[1] edge/CacheSystem2/nineLineBufferX/LineBuffer3/rIndex_reg_rep[5] edge/filterV/p7xb_reg[8] edge/filterV/p7xb_reg[7] edge/filterV/p7xb_reg[6] edge/filterV/p7xa[10]_i_2 edge/filterV/p7xa[10]_i_3 edge/filterV/p7xa[10]_i_4 edge/filterV/p7xa_reg[10]_i_1 edge/filterV/p7xa_reg[10] edge/filterV/p7xa_reg[9] edge/filterV/p7xa_reg[8] edge/filterV/p7xa_reg[7] edge/filterV/p7x[8]_i_2 edge/filterV/p7x[8]_i_3 edge/filterV/p7x[8]_i_4 edge/filterV/p7x[8]_i_5 edge/filterV/p7x_reg[8]_i_1 edge/filterV/p7x_reg[8] edge/filterV/p7x_reg[7] edge/filterV/p7x_reg[6] edge/filterV/sX2[7]_i_2 edge/filterV/sX2[7]_i_3 edge/filterV/sX2[7]_i_4 edge/filterV/sX2[7]_i_5 edge/filterV/sX2_reg[7]_i_1 edge/filterV/sX2_reg[7] edge/filterV/sX2_reg[6] edge/filterV/sX2_reg[5] edge/filterV/sX2_reg[4] edge/filterV/p5x_reg[2] edge/filterV/sX2a[7]_i_2 edge/filterV/sX2a[7]_i_3 edge/filterV/sX2a[7]_i_4 edge/filterV/sX2a[7]_i_5 edge/filterV/sX2a_reg[7]_i_1 edge/filterV/sX2a_reg[7] edge/filterV/sX2a_reg[6] edge/filterV/sX2a_reg[5] edge/filterV/sX2a_reg[4] edge/filterV/p5x_reg[7] edge/filterV/p5x_reg[6] edge/filterV/p5x_reg[5] edge/filterV/p5x_reg[4] edge/filterV/p6x[13]_i_2 edge/filterV/p6x[13]_i_3 edge/filterV/p6x[13]_i_4 edge/filterV/p6x[13]_i_5 edge/filterV/p6x_reg[13]_i_1 edge/filterV/p6x_reg[13] edge/filterV/p6x_reg[12] edge/filterV/p6x_reg[11] edge/filterV/p6x_reg[10] p6xb[18]_i_6 p6xb[22]_i_5 p6xb[18]_i_7 p6xb[18]_i_2 p6xb[18]_i_8 p6xb[18]_i_3 p6xb[18]_i_9 p6xb[18]_i_4 p6xb_reg[18]_i_1 edge/filterV/p6xb_reg[18] edge/filterV/p6xb_reg[17] edge/filterV/p6xb_reg[16] edge/filterV/p6xb_reg[15] edge/CacheSystem2/pdata_out6x_reg[6] edge/CacheSystem2/pdata_out6x_reg[4] edge/CacheSystem2/pdata_out6x_reg[3] p6xa[15]_i_2 p6xa[15]_i_3 p6xa[15]_i_4 p6xa[15]_i_5 p6xa_reg[15]_i_1 edge/filterV/p6xa_reg[15] edge/filterV/p6xa_reg[14] edge/filterV/p6xa_reg[13] edge/filterV/p6xa_reg[12] data_in_IBUF[3]_inst counter1_r[0]_i_7 counter1_r_reg[0]_i_2 edge/counter1_r_reg[3] edge/counter1_r_reg[2] edge/counter1_r_reg[1] edge/counter1_r_reg[0] edge/CacheSystem/cache1_reg[67] edge/filterH/p9x_reg[16]_i_1 edge/CacheSystem/cache1_reg[71] edge/CacheSystem/cache1_reg[69] edge/CacheSystem/cache1_reg[68] edge/filterH/p9x_reg[16] edge/filterH/p9xa_reg[15]_i_2 edge/filterH/p9xa_reg[15] edge/filterH/p9xa_reg[14] edge/CacheSystem/pdata_out9_reg[7] edge/filterV/p8x_reg[2] edge/CacheSystem2/pdata_out8x_reg[5] edge/CacheSystem2/nineLineBufferX/pdata_in_r_reg[31] edge/CacheSystem2/nineLineBufferX/pdata_in_r_reg[29] edge/filterH/Xdata_o_reg[31]_i_1 edge/filterH/Xdata_o_reg[31] edge/filterH/Xdata_o_reg[30] edge/filterH/Xdata_o_reg[29] edge/filterH/Xdata_o_reg[28] edge/CacheSystem2/pdata_out7x_reg[6] edge/CacheSystem2/pdata_out7x_reg[3] edge/CacheSystem2/pdata_out7x_reg[0] edge/filterV/sX2b[3]_i_2 ...
+select [get_cells {data_in_IBUF[0]_inst}]
+INFO: [Coretcl 2-12] 'data_in_IBUF[0]_inst' selected.
+get_selected
+{data_in_IBUF[0]_inst} {data_in[0]}
+report_property [get_cells {data_in_IBUF[0]_inst}]
+Property            Type    Read-only  Value
+BEL                 string  false      IOB33.INBUF_EN
+CLASS               string  true       cell
+FILE_NAME           string  true       C:/Users/ecestudent/Documents/Research/Tincr/629_checkpoints/SourceCode/canny/top.vhd
+IS_BEL_FIXED        bool    false      0
+IS_BLACKBOX         bool    true       0
+IS_DEBUGGABLE       bool    true       1
+IS_LOC_FIXED        bool    false      0
+IS_ORIG_CELL        bool    true       0
+IS_PRIMITIVE        bool    true       1
+IS_SEQUENTIAL       bool    true       0
+LINE_NUMBER         int     true       7
+LOC                 site    false      IOB_X0Y50
+NAME                string  true       data_in_IBUF[0]_inst
+PBLOCK              pblock  true       p2
+PRIMITIVE_COUNT     int     true       1
+PRIMITIVE_GROUP     string  true       IO
+PRIMITIVE_LEVEL     enum    true       LEAF
+PRIMITIVE_SUBGROUP  string  true       ibuf
+PRIMITIVE_TYPE      enum    false      IO.ibuf.IBUF
+REF_NAME            string  true       IBUF
+STATUS              enum    true       PLACED
+set c [create_cell -reference IDELAYE2 c1]
+c1
+report_property $c
+Property               Type    Read-only  Value
+CINVCTRL_SEL           string  false      FALSE
+CLASS                  string  true       cell
+DELAY_SRC              string  false      IDATAIN
+HIGH_PERFORMANCE_MODE  string  false      FALSE
+IDELAY_TYPE            string  false      FIXED
+IDELAY_VALUE           int     false      0
+IS_BLACKBOX            bool    true       0
+IS_DEBUGGABLE          bool    true       1
+IS_ORIG_CELL           bool    true       0
+IS_PRIMITIVE           bool    true       1
+IS_SEQUENTIAL          bool    true       1
+NAME                   string  true       c1
+PIPE_SEL               string  false      FALSE
+PRIMITIVE_COUNT        int     true       1
+PRIMITIVE_GROUP        string  true       IO
+PRIMITIVE_LEVEL        enum    true       LEAF
+PRIMITIVE_SUBGROUP     string  true       iodelay
+PRIMITIVE_TYPE         enum    false      IO.iodelay.IDELAYE2
+REFCLK_FREQUENCY       double  false      200.0
+REF_NAME               string  true       IDELAYE2
+SIGNAL_PATTERN         string  false      DATA
+STATUS                 enum    true       UNPLACED
+set p4 [create_pblock p4]
+p4
+add_cells_to_pblock $p4 [get_selected]
+WARNING: [Vivado 12-156] No cells matched 'IOB_X0Y68'
+WARNING: [Vivado 12-156] No cells matched 'V15'
+WARNING: [Vivado 12-156] No cells matched 'fsync_out'
+WARNING: [Vivado 12-156] No cells matched 'IOB_X0Y67'
+WARNING: [Vivado 12-156] No cells matched 'V16'
+WARNING: [Vivado 12-156] No cells matched 'data_out[7]'
+WARNING: [Vivado 12-156] No cells matched 'IOB_X0Y66'
+WARNING: [Vivado 12-156] No cells matched 'U17'
+WARNING: [Vivado 12-156] No cells matched 'data_out[6]'
+WARNING: [Vivado 12-156] No cells matched 'IOB_X0Y65'
+WARNING: [Vivado 12-156] No cells matched 'U18'
+WARNING: [Vivado 12-156] No cells matched 'data_out[5]'
+WARNING: [Vivado 12-156] No cells matched 'IOB_X0Y64'
+WARNING: [Vivado 12-156] No cells matched 'U16'
+WARNING: [Vivado 12-156] No cells matched 'data_out[4]'
+WARNING: [Vivado 12-156] No cells matched 'IOB_X0Y63'
+WARNING: [Vivado 12-156] No cells matched 'V17'
+WARNING: [Vivado 12-156] No cells matched 'data_out[3]'
+WARNING: [Vivado 12-156] No cells matched 'IOB_X0Y62'
+WARNING: [Vivado 12-156] No cells matched 'T11'
+WARNING: [Vivado 12-156] No cells matched 'data_out[2]'
+WARNING: [Vivado 12-156] No cells matched 'IOB_X0Y61'
+WARNING: [Vivado 12-156] No cells matched 'U11'
+WARNING: [Vivado 12-156] No cells matched 'data_out[1]'
+WARNING: [Vivado 12-156] No cells matched 'IOB_X0Y60'
+WARNING: [Vivado 12-156] No cells matched 'U12'
+WARNING: [Vivado 12-156] No cells matched 'data_out[0]'
+WARNING: [Vivado 12-156] No cells matched 'IOB_X0Y59'
+WARNING: [Vivado 12-156] No cells matched 'V12'
+WARNING: [Vivado 12-156] No cells matched 'rstn'
+WARNING: [Vivado 12-156] No cells matched 'IOB_X0Y58'
+WARNING: [Vivado 12-156] No cells matched 'V10'
+WARNING: [Vivado 12-156] No cells matched 'fsync_in'
+WARNING: [Vivado 12-156] No cells matched 'IOB_X0Y57'
+WARNING: [Vivado 12-156] No cells matched 'V11'
+WARNING: [Vivado 12-156] No cells matched 'data_in[7]'
+WARNING: [Vivado 12-156] No cells matched 'IOB_X0Y56'
+WARNING: [Vivado 12-156] No cells matched 'U14'
+WARNING: [Vivado 12-156] No cells matched 'data_in[6]'
+WARNING: [Vivado 12-156] No cells matched 'IOB_X0Y55'
+WARNING: [Vivado 12-156] No cells matched 'V14'
+WARNING: [Vivado 12-156] No cells matched 'data_in[5]'
+WARNING: [Vivado 12-156] No cells matched 'IOB_X0Y54'
+WARNING: [Vivado 12-156] No cells matched 'T13'
+WARNING: [Vivado 12-156] No cells matched 'data_in[4]'
+WARNING: [Vivado 12-156] No cells matched 'IOB_X0Y53'
+WARNING: [Vivado 12-156] No cells matched 'U13'
+WARNING: [Vivado 12-156] No cells matched 'data_in[3]'
+WARNING: [Vivado 12-156] No cells matched 'IOB_X0Y52'
+WARNING: [Vivado 12-156] No cells matched 'T9'
+WARNING: [Vivado 12-156] No cells matched 'data_in[2]'
+WARNING: [Vivado 12-156] No cells matched 'IOB_X0Y51'
+WARNING: [Vivado 12-156] No cells matched 'T10'
+WARNING: [Vivado 12-156] No cells matched 'data_in[1]'
+WARNING: [Vivado 12-156] No cells matched 'IOB_X0Y50'
+WARNING: [Vivado 12-156] No cells matched 'R10'
+WARNING: [Vivado 12-156] No cells matched 'data_in[0]'
+WARNING: [Vivado 12-156] No cells matched 'IOB_X0Y78'
+WARNING: [Vivado 12-156] No cells matched 'N15'
+WARNING: [Vivado 12-156] No cells matched 'clk'
+ERROR: [Vivado 12-1433] Expecting a non-empty list of cells to be added to the pblock.  Please verify the correctness of the <cells> argument.
+add_cells_to_pblock $p4 [get_cells -of [get_selected]]
+ERROR: [Common 17-679] Invalid object type, 'package_pin', used with '-of_objects' switch. Supported types are: 'net, pblock, pin, timing path, bel, site, slr'.
+ERROR: [Common 17-39] 'get_cells' failed due to earlier errors.
+remove_cells_from_pblock $p4
+ERROR: [Common 17-163] Missing value for option 'cells', please type 'remove_cells_from_pblock -help' for usage info.
+remove_cells_from_pblock $p4 *
+ERROR: [Vivado 12-796] Pblock 'p4' does not contain the instance 'sX1a[11]_i_5'
+get_cells -of $p4
+WARNING: [Vivado 12-180] No cells matched 'get_cells -of p4'.
+add_cells_to_pblock $p4 [get_cells -of [get_selected]]
+ERROR: [Common 17-679] Invalid object type, 'package_pin', used with '-of_objects' switch. Supported types are: 'net, pblock, pin, timing path, bel, site, slr'.
+ERROR: [Common 17-39] 'get_cells' failed due to earlier errors.
+add_cells_to_pblock $p4 [get_cells -of [get_selected]]
+ERROR: [Common 17-679] Invalid object type, 'package_pin', used with '-of_objects' switch. Supported types are: 'net, pblock, pin, timing path, bel, site, slr'.
+ERROR: [Common 17-39] 'get_cells' failed due to earlier errors.
+add_cells_to_pblock $p4 [get_cells -of [get_selected]]
+ERROR: [Common 17-679] Invalid object type, 'package_pin', used with '-of_objects' switch. Supported types are: 'net, pblock, pin, timing path, bel, site, slr'.
+ERROR: [Common 17-39] 'get_cells' failed due to earlier errors.
+resize_pblock IOB_X0Y78:IOB_X0Y50 $p4
+ERROR: [Common 17-165] Too many positional options when parsing 'p4', please type 'resize_pblock -help' for usage info.
+resize_pblock -add IOB_X0Y78:IOB_X0Y50 $p4
+get_cells -of $p4
+WARNING: [Vivado 12-180] No cells matched 'get_cells -of p4'.
+report_property $p4
+Property              Type     Read-only  Value
+CELL_COUNT            int      true       0
+CLASS                 string   true       pblock
+CONTAIN_ROUTING       bool     false      0
+DERIVED_RANGES        string*  true       IOB_X0Y50:IOB_X0Y78
+EXCLUDE_PLACEMENT     bool     false      0
+GRID_RANGES           string*  true       IOB_X0Y50:IOB_X0Y78
+NAME                  string   false      p4
+PARENT                string   false      ROOT
+PARTPIN_SPREADING     int      false      5
+PRIMITIVE_COUNT       int      true       0
+RECTANGLE_COUNT       int      true       1
+RESET_AFTER_RECONFIG  bool     false      0
+SNAPPING_MODE         enum     false      
+get_tiles [get_sites {IOB_X0Y50:IOB_X0Y78}]
+WARNING: [Vivado 12-3731] No sites matched 'IOB_X0Y50:IOB_X0Y78'
+NULL_X0Y208 NULL_X1Y208 NULL_X2Y208 NULL_X3Y208 T_TERM_INT_X4Y208 T_TERM_INT_X5Y208 NULL_X6Y208 NULL_X7Y208 TERM_CMT_X8Y208 NULL_X9Y208 NULL_X10Y208 T_TERM_INT_X11Y208 T_TERM_INT_X12Y208 NULL_X13Y208 NULL_X14Y208 T_TERM_INT_X15Y208 T_TERM_INT_X16Y208 NULL_X17Y208 NULL_X18Y208 NULL_X19Y208 NULL_X20Y208 T_TERM_INT_X21Y208 T_TERM_INT_X22Y208 NULL_X23Y208 NULL_X24Y208 T_TERM_INT_X25Y208 T_TERM_INT_X26Y208 NULL_X27Y208 NULL_X28Y208 NULL_X29Y208 NULL_X30Y208 T_TERM_INT_X31Y208 T_TERM_INT_X32Y208 NULL_X33Y208 NULL_X34Y208 NULL_X35Y208 T_TERM_INT_X36Y208 T_TERM_INT_X37Y208 NULL_X38Y208 NULL_X39Y208 T_TERM_INT_X40Y208 T_TERM_INT_X41Y208 NULL_X42Y208 NULL_X43Y208 T_TERM_INT_X44Y208 T_TERM_INT_X45Y208 NULL_X46Y208 NULL_X47Y208 NULL_X48Y208 T_TERM_INT_X49Y208 T_TERM_INT_X50Y208 NULL_X51Y208 NULL_X52Y208 T_TERM_INT_X53Y208 T_TERM_INT_X54Y208 NULL_X55Y208 NULL_X56Y208 T_TERM_INT_X57Y208 T_TERM_INT_X58Y208 NULL_X59Y208 NULL_X60Y208 NULL_X61Y208 T_TERM_INT_X62Y208 T_TERM_INT_X63Y208 NULL_X64Y208 NULL_X65Y208 T_TERM_INT_X66Y208 T_TERM_INT_X67Y208 NULL_X68Y208 NULL_X69Y208 T_TERM_INT_X70Y208 T_TERM_INT_X71Y208 NULL_X72Y208 NULL_X73Y208 NULL_X74Y208 T_TERM_INT_X75Y208 T_TERM_INT_X76Y208 NULL_X77Y208 CLK_TERM_X78Y208 NULL_X79Y208 NULL_X80Y208 T_TERM_INT_X81Y208 T_TERM_INT_X82Y208 NULL_X83Y208 NULL_X84Y208 T_TERM_INT_X85Y208 T_TERM_INT_X86Y208 NULL_X87Y208 NULL_X88Y208 NULL_X89Y208 NULL_X90Y208 T_TERM_INT_X91Y208 T_TERM_INT_X92Y208 NULL_X93Y208 NULL_X94Y208 NULL_X95Y208 T_TERM_INT_X96Y208 T_TERM_INT_X97Y208 NULL_X98Y208 NULL_X99Y208 NULL_X100Y208 T_TERM_INT_X101Y208 T_TERM_INT_X102Y208 NULL_X103Y208 NULL_X104Y208 T_TERM_INT_X105Y208 T_TERM_INT_X106Y208 NULL_X107Y208 NULL_X108Y208 NULL_X109Y208 T_TERM_INT_X110Y208 T_TERM_INT_X111Y208 NULL_X112Y208 NULL_X113Y208 NULL_X114Y208 T_TERM_INT_X115Y208 T_TERM_INT_X116Y208 NULL_X117Y208 NULL_X118Y208 NULL_X119Y208 NULL_X120Y208 T_TERM_INT_X121Y208 T_TERM_INT_X122Y208 NULL_X123Y208 NULL_X124Y208 T_TERM_INT_X125Y208 T_TERM_INT_X126Y208 NULL_X127Y208 NULL_X128Y208 NULL_X129Y208 NULL_X130Y208 NULL_X131Y208 NULL_X132Y208 NULL_X133Y208 NULL_X134Y208 NULL_X135Y208 NULL_X136Y208 NULL_X137Y208 NULL_X138Y208 NULL_X139Y208 NULL_X140Y208 NULL_X141Y208 NULL_X142Y208 NULL_X143Y208 NULL_X144Y208 NULL_X145Y208 NULL_X146Y208 NULL_X147Y208 LIOB33_SING_X0Y199 LIOI3_SING_X0Y199 L_TERM_INT_X2Y207 IO_INT_INTERFACE_L_X0Y199 INT_L_X0Y199 INT_R_X1Y199 INT_INTERFACE_R_X1Y199 CMT_PMV_X7Y207 NULL_X8Y207 VBRK_X9Y207 CLBLL_L_X2Y199 INT_L_X2Y199 INT_R_X3Y199 CLBLM_R_X3Y199 CLBLL_L_X4Y199 INT_L_X4Y199 INT_R_X5Y199 CLBLM_R_X5Y199 VBRK_X18Y207 NULL_X19Y207 BRAM_INT_INTERFACE_L_X6Y199 INT_L_X6Y199 INT_R_X7Y199 CLBLM_R_X7Y199 CLBLM_L_X8Y199 INT_L_X8Y199 INT_R_X9Y199 INT_INTERFACE_R_X9Y199 NULL_X28Y207 VBRK_X29Y207 CLBLM_L_X10Y199 INT_L_X10Y199 INT_R_X11Y199 CLBLM_R_X11Y199 VBRK_X34Y207 CLBLL_L_X12Y199 INT_L_X12Y199 INT_R_X13Y199 CLBLL_R_X13Y199 CLBLL_L_X14Y199 INT_L_X14Y199 INT_R_X15Y199 CLBLL_R_X15Y199 CLBLL_L_X16Y199 INT_L_X16Y199 INT_R_X17Y199 CLBLL_R_X17Y199 VFRAME_X47Y207 INT_INTERFACE_L_X18Y199 INT_L_X18Y199 INT_R_X19Y199 CLBLL_R_X19Y199 CLBLM_L_X20Y199 INT_L_X20Y199 INT_R_X21Y199 CLBLL_R_X21Y199 CLBLM_L_X22Y199 INT_L_X22Y199 INT_R_X23Y199 CLBLL_R_X23Y199 VBRK_X60Y207 CLBLM_L_X24Y199 INT_L_X24Y199 INT_R_X25Y199 CLBLL_R_X25Y199 CLBLM_L_X26Y199 INT_L_X26Y199 INT_R_X27Y199 CLBLL_R_X27Y199 CLBLM_L_X28Y199 INT_L_X28Y199 INT_R_X29Y199 CLBLL_R_X29Y199 VBRK_X73Y207 CLBLM_L_X30Y199 INT_L_X30Y199 INT_R_X31Y199 INT_INTERFACE_R_X31Y199 CLK_FEED_X78Y207 VBRK_X79Y207 CLBLL_L_X32Y199 INT_L_X32Y199 INT_R_X33Y199 CLBLM_R_X33Y199 CLBLM_L_X34Y199 INT_L_X34Y199 INT_R_X35Y199 INT_INTERFACE_R_X35Y199 NULL_X88Y207 VBRK_X89Y207 CLBLM_L_X36Y199 INT_L_X36Y199 INT_R_X37Y199 CLBLM_R_X37Y199 NULL_X94Y207 BRAM_INT_INTERFACE_L_X38Y199 INT_L_X38Y199 INT_R_X39Y199 CLBLM_R_X39Y199 VBRK_X99Y207 CLBLL_L_X40Y199 INT_L_X40Y199 INT_R_X41Y199 CLBLM_R_X41Y199 CLBLL_L_X42Y199 INT_L_X42Y199 INT_R_X43Y199 CLBLM_R_X43Y199 NULL_X108Y207 BRAM_INT_INTERFACE_L_X44Y199 INT_L_X44Y199 INT_R_X45Y199 CLBLL_R_X45Y199 VBRK_X113Y207 CLBLM_L_X46Y199 INT_L_X46Y199 INT_R_X47Y199 CLBLM_R_X47Y199 VBRK_X118Y207 NULL_X119Y207 INT_INTERFACE_L_X48Y199 INT_L_X48Y199 INT_R_X49Y199 CLBLM_R_X49Y199 CLBLM_L_X50Y199 INT_L_X50Y199 INT_R_X51Y199 GTP_INT_INTERFACE_X51Y199 R_TERM_INT_GTX_X128Y207 VBRK_EXT_X129Y207 NULL_X130Y207 NULL_X131Y207 NULL_X132Y207 NULL_X133Y207 NULL_X134Y207 NULL_X135Y207 NULL_X136Y207 NULL_X137Y207 NULL_X138Y207 NULL_X139Y207 NULL_X140Y207 NULL_X141Y207 NULL_X142Y207 NULL_X143Y207 NULL_X144Y207 NULL_X145Y207 NULL_X146Y207 NULL_X147Y207 NULL_X0Y206 NULL_X1Y206 L_TERM_INT_X2Y206 IO_INT_INTERFACE_L_X0Y198 INT_L_X0Y198 INT_R_X1Y198 INT_INTERFACE_R_X1Y198 NULL_X7Y206 NULL_X8Y206 VBRK_X9Y206 CLBLL_L_X2Y198 INT_L_X2Y198 INT_R_X3Y198 CLBLM_R_X3Y198 CLBLL_L_X4Y198 INT_L_X4Y198 INT_R_X5Y198 CLBLM_R_X5Y198 VBRK_X18Y206 NULL_X19Y206 BRAM_INT_INTERFACE_L_X6Y198 INT_L_X6Y198 INT_R_X7Y198 CLBLM_R_X7Y198 CLBLM_L_X8Y198 INT_L_X8Y198 INT_R_X9Y198 INT_INTERFACE_R_X9Y198 NULL_X28Y206 VBRK_X29Y206 CLBLM_L_X10Y198 INT_L_X10Y198 INT_R_X11Y198 CLBLM_R_X11Y198 VBRK_X34Y206 CLBLL_L_X12Y198 INT_L_X12Y198 INT_R_X13Y198 CLBLL_R_X13Y198 CLBLL_L_X14Y198 INT_L_X14Y198 INT_R_X15Y198 CLBLL_R_X15Y198 CLBLL_L_X16Y198 INT_L_X16Y198 INT_R_X17Y198 CLBLL_R_X17Y198 VFRAME_X47Y206 INT_INTERFACE_L_X18Y198 INT_L_X18Y198 INT_R_X19Y198 CLBLL_R_X19Y198 CLBLM_L_X20Y198 INT_L_X20Y198 INT_R_X21Y198 CLBLL_R_X21Y198 CLBLM_L_X22Y198 INT_L_X22Y198 INT_R_X23Y198 CLBLL_R_X23Y198 VBRK_X60Y206 CLBLM_L_X24Y198 INT_L_X24Y198 INT_R_X25Y198 CLBLL_R_X25Y198 CLBLM_L_X26Y198 INT_L_X26Y198 INT_R_X27Y198 CLBLL_R_X27Y198 CLBLM_L_X28Y198 INT_L_X28Y198 INT_R_X29Y198 CLBLL_R_X29Y198 VBRK_X73Y206 CLBLM_L_X30Y198 INT_L_X30Y198 INT_R_X31Y198 INT_INTERFACE_R_X31Y198 CLK_FEED_X78Y206 VBRK_X79Y206 CLBLL_L_X32Y198 INT_L_X32Y198 INT_R_X33Y198 CLBLM_R_X33Y198 CLBLM_L_X34Y198 INT_L_X34Y198 INT_R_X35Y198 INT_INTERFACE_R_X35Y198 NULL_X88Y206 VBRK_X89Y206 CLBLM_L_X36Y198 INT_L_X36Y198 INT_R_X37Y198 CLBLM_R_X37Y198 NULL_X94Y206 BRAM_INT_INTERFACE_L_X38Y198 INT_L_X38Y198 INT_R_X39Y198 CLBLM_R_X39Y198 VBRK_X99Y206 CLBLL_L_X40Y198 INT_L_X40Y198 INT_R_X41Y198 CLBLM_R_X41Y198 CLBLL_L_X42Y198 INT_L_X42Y198 INT_R_X43Y198 CLBLM_R_X43Y198 NULL_X108Y206 BRAM_INT_INTERFACE_L_X44Y198 INT_L_X44Y198 INT_R_X45Y198 CLBLL_R_X45Y198 VBRK_X113Y206 CLBLM_L_X46Y198 INT_L_X46Y198 INT_R_X47Y198 CLBLM_R_X47Y198 VBRK_X118Y206 NULL_X119Y206 INT_INTERFACE_L_X48Y198 INT_L_X48Y198 INT_R_X49Y198 CLBLM_R_X49Y198 CLBLM_L_X50Y198 INT_L_X50Y198 INT_R_X51Y198 GTP_INT_INTERFACE_X51Y198 R_TERM_INT_GTX_X128Y206 VBRK_EXT_X129Y206 NULL_X130Y206 NULL_X131Y206 NULL_X132Y206 NULL_X133Y206 NULL_X134Y206 NULL_X135Y206 NULL_X136Y206 NULL_X137Y206 NULL_X138Y206 NULL_X139Y206 NULL_X140Y206 NULL_X141Y206 NULL_X142Y206 NULL_X143Y206 NULL_X144Y206 NULL_X145Y206 NULL_X146Y206 NULL_X147Y206 LIOB33_X0Y197 LIOI3_X0Y197 L_TERM_INT_X2Y205 IO_INT_INTERFACE_L_X0Y197 INT_L_X0Y197 INT_R_X1Y197 INT_INTERFACE_R_X1Y197 NULL_X7Y205 NULL_X8Y205 VBRK_X9Y205 CLBLL_L_X2Y197 INT_L_X2Y197 INT_R_X3Y197 CLBLM_R_X3Y197 CLBLL_L_X4Y197 INT_L_X4Y197 INT_R_X5Y197 CLBLM_R_X5Y197 VBRK_X18Y205 NULL_X19Y205 BRAM_INT_INTERFACE_L_X6Y197 INT_L_X6Y197 INT_R_X7Y197 CLBLM_R_X7Y197 CLBLM_L_X8Y197 INT_L_X8Y197 INT_R_X9Y197 INT_INTERFACE_R_X9Y197 NULL_X28Y205 VBRK_X29Y205 CLBLM_L_X10Y197 INT_L_X10Y197 INT_R_X11Y197 CLBLM_R_X11Y197 VBRK_X34Y205 CLBLL_L_X12Y197 INT_L_X12Y197 INT_R_X13Y197 CLBLL_R_X13Y197 CLBLL_L_X14Y197 INT_L_X14Y197 INT_R_X15Y197 CLBLL_R_X15Y197 CLBLL_L_X16Y197 INT_L_X16Y197 INT_R_X17Y197 CLBLL_R_X17Y197 VFRAME_X47Y205 INT_INTERFACE_L_X18Y197 INT_L_X18Y197 INT_R_X19Y197 CLBLL_R_X19Y197 CLBLM_L_X20Y197 INT_L_X20Y197 INT_R_X21Y197 CLBLL_R_X21Y197 ...
+get_tiles -of [get_sites {IOB_X0Y50:IOB_X0Y78}]
+WARNING: [Vivado 12-3731] No sites matched 'IOB_X0Y50:IOB_X0Y78'
+WARNING: [Common 17-346] No tiles matched '*'
+set p5 [create_pblock p5]
+p5
+resize_pblock -add ILOGIC_X0Y78:OLOGIC_X0Y50 $p5
+ERROR: [Place 30-342] pblock resize has invalid range ILOGIC_X0Y78:OLOGIC_X0Y50
+resize_pblock -add ILOGIC_X0Y78:ILOGIC_X0Y50 $p5
+get_sites -of $p5
+ILOGIC_X0Y77 ILOGIC_X0Y78 ILOGIC_X0Y75 ILOGIC_X0Y76 ILOGIC_X0Y73 ILOGIC_X0Y74 ILOGIC_X0Y71 ILOGIC_X0Y72 ILOGIC_X0Y69 ILOGIC_X0Y70 ILOGIC_X0Y67 ILOGIC_X0Y68 ILOGIC_X0Y65 ILOGIC_X0Y66 ILOGIC_X0Y63 ILOGIC_X0Y64 ILOGIC_X0Y61 ILOGIC_X0Y62 ILOGIC_X0Y59 ILOGIC_X0Y60 ILOGIC_X0Y57 ILOGIC_X0Y58 ILOGIC_X0Y55 ILOGIC_X0Y56 ILOGIC_X0Y53 ILOGIC_X0Y54 ILOGIC_X0Y51 ILOGIC_X0Y52 ILOGIC_X0Y50
+get_sites -of $p0
+can't read "p0": no such variable
+get_sites -of $p1
+can't read "p1": no such variable
+get_sites -of [lindex pblocks 0]
+ERROR: [Common 17-161] Invalid option value 'pblocks' specified for 'of_objects'.
+get_sites -of [lindex $pblocks 0]
+SLICE_X1Y49 SLICE_X0Y49 SLICE_X2Y49 SLICE_X3Y49 SLICE_X5Y49 SLICE_X4Y49 SLICE_X6Y49 SLICE_X7Y49 SLICE_X8Y49 SLICE_X9Y49 SLICE_X11Y49 SLICE_X10Y49 SLICE_X13Y49 SLICE_X12Y49 SLICE_X14Y49 SLICE_X15Y49 SLICE_X17Y49 SLICE_X16Y49 SLICE_X18Y49 SLICE_X19Y49 SLICE_X21Y49 SLICE_X20Y49 SLICE_X22Y49 SLICE_X23Y49 SLICE_X25Y49 SLICE_X24Y49 SLICE_X26Y49 SLICE_X27Y49 SLICE_X28Y49 SLICE_X29Y49 SLICE_X31Y49 SLICE_X30Y49 SLICE_X32Y49 SLICE_X33Y49 SLICE_X35Y49 SLICE_X34Y49 SLICE_X36Y49 SLICE_X37Y49 SLICE_X39Y49 SLICE_X38Y49 SLICE_X40Y49 SLICE_X41Y49 SLICE_X43Y49 SLICE_X42Y49 SLICE_X44Y49 SLICE_X45Y49 SLICE_X47Y49 SLICE_X46Y49 SLICE_X48Y49 SLICE_X49Y49 SLICE_X51Y49 SLICE_X50Y49 SLICE_X1Y48 SLICE_X0Y48 SLICE_X2Y48 SLICE_X3Y48 SLICE_X5Y48 SLICE_X4Y48 SLICE_X6Y48 SLICE_X7Y48 SLICE_X8Y48 SLICE_X9Y48 SLICE_X11Y48 SLICE_X10Y48 SLICE_X13Y48 SLICE_X12Y48 SLICE_X14Y48 SLICE_X15Y48 SLICE_X17Y48 SLICE_X16Y48 SLICE_X18Y48 SLICE_X19Y48 SLICE_X21Y48 SLICE_X20Y48 SLICE_X22Y48 SLICE_X23Y48 SLICE_X25Y48 SLICE_X24Y48 SLICE_X26Y48 SLICE_X27Y48 SLICE_X28Y48 SLICE_X29Y48 SLICE_X31Y48 SLICE_X30Y48 SLICE_X32Y48 SLICE_X33Y48 SLICE_X35Y48 SLICE_X34Y48 SLICE_X36Y48 SLICE_X37Y48 SLICE_X39Y48 SLICE_X38Y48 SLICE_X40Y48 SLICE_X41Y48 SLICE_X43Y48 SLICE_X42Y48 SLICE_X44Y48 SLICE_X45Y48 SLICE_X47Y48 SLICE_X46Y48 SLICE_X48Y48 SLICE_X49Y48 SLICE_X51Y48 SLICE_X50Y48 SLICE_X1Y47 SLICE_X0Y47 SLICE_X2Y47 SLICE_X3Y47 SLICE_X5Y47 SLICE_X4Y47 SLICE_X6Y47 SLICE_X7Y47 SLICE_X8Y47 SLICE_X9Y47 SLICE_X11Y47 SLICE_X10Y47 SLICE_X13Y47 SLICE_X12Y47 SLICE_X14Y47 SLICE_X15Y47 SLICE_X17Y47 SLICE_X16Y47 SLICE_X18Y47 SLICE_X19Y47 SLICE_X21Y47 SLICE_X20Y47 SLICE_X22Y47 SLICE_X23Y47 SLICE_X25Y47 SLICE_X24Y47 SLICE_X26Y47 SLICE_X27Y47 SLICE_X28Y47 SLICE_X29Y47 SLICE_X31Y47 SLICE_X30Y47 SLICE_X32Y47 SLICE_X33Y47 SLICE_X35Y47 SLICE_X34Y47 SLICE_X36Y47 SLICE_X37Y47 SLICE_X39Y47 SLICE_X38Y47 SLICE_X40Y47 SLICE_X41Y47 SLICE_X43Y47 SLICE_X42Y47 SLICE_X44Y47 SLICE_X45Y47 SLICE_X47Y47 SLICE_X46Y47 SLICE_X48Y47 SLICE_X49Y47 SLICE_X51Y47 SLICE_X50Y47 SLICE_X1Y46 SLICE_X0Y46 SLICE_X2Y46 SLICE_X3Y46 SLICE_X5Y46 SLICE_X4Y46 SLICE_X6Y46 SLICE_X7Y46 SLICE_X8Y46 SLICE_X9Y46 SLICE_X11Y46 SLICE_X10Y46 SLICE_X13Y46 SLICE_X12Y46 SLICE_X14Y46 SLICE_X15Y46 SLICE_X17Y46 SLICE_X16Y46 SLICE_X18Y46 SLICE_X19Y46 SLICE_X21Y46 SLICE_X20Y46 SLICE_X22Y46 SLICE_X23Y46 SLICE_X25Y46 SLICE_X24Y46 SLICE_X26Y46 SLICE_X27Y46 SLICE_X28Y46 SLICE_X29Y46 SLICE_X31Y46 SLICE_X30Y46 SLICE_X32Y46 SLICE_X33Y46 SLICE_X35Y46 SLICE_X34Y46 SLICE_X36Y46 SLICE_X37Y46 SLICE_X39Y46 SLICE_X38Y46 SLICE_X40Y46 SLICE_X41Y46 SLICE_X43Y46 SLICE_X42Y46 SLICE_X44Y46 SLICE_X45Y46 SLICE_X47Y46 SLICE_X46Y46 SLICE_X48Y46 SLICE_X49Y46 SLICE_X51Y46 SLICE_X50Y46 SLICE_X1Y45 SLICE_X0Y45 SLICE_X2Y45 SLICE_X3Y45 SLICE_X5Y45 SLICE_X4Y45 SLICE_X6Y45 SLICE_X7Y45 SLICE_X8Y45 SLICE_X9Y45 SLICE_X11Y45 SLICE_X10Y45 SLICE_X13Y45 SLICE_X12Y45 SLICE_X14Y45 SLICE_X15Y45 SLICE_X17Y45 SLICE_X16Y45 SLICE_X18Y45 SLICE_X19Y45 SLICE_X21Y45 SLICE_X20Y45 SLICE_X22Y45 SLICE_X23Y45 SLICE_X25Y45 SLICE_X24Y45 SLICE_X26Y45 SLICE_X27Y45 SLICE_X28Y45 SLICE_X29Y45 SLICE_X31Y45 SLICE_X30Y45 SLICE_X32Y45 SLICE_X33Y45 SLICE_X35Y45 SLICE_X34Y45 SLICE_X36Y45 SLICE_X37Y45 SLICE_X39Y45 SLICE_X38Y45 SLICE_X40Y45 SLICE_X41Y45 SLICE_X43Y45 SLICE_X42Y45 SLICE_X44Y45 SLICE_X45Y45 SLICE_X47Y45 SLICE_X46Y45 SLICE_X48Y45 SLICE_X49Y45 SLICE_X51Y45 SLICE_X50Y45 SLICE_X1Y44 SLICE_X0Y44 SLICE_X2Y44 SLICE_X3Y44 SLICE_X5Y44 SLICE_X4Y44 SLICE_X6Y44 SLICE_X7Y44 SLICE_X8Y44 SLICE_X9Y44 SLICE_X11Y44 SLICE_X10Y44 SLICE_X13Y44 SLICE_X12Y44 SLICE_X14Y44 SLICE_X15Y44 SLICE_X17Y44 SLICE_X16Y44 SLICE_X18Y44 SLICE_X19Y44 SLICE_X21Y44 SLICE_X20Y44 SLICE_X22Y44 SLICE_X23Y44 SLICE_X25Y44 SLICE_X24Y44 SLICE_X26Y44 SLICE_X27Y44 SLICE_X28Y44 SLICE_X29Y44 SLICE_X31Y44 SLICE_X30Y44 SLICE_X32Y44 SLICE_X33Y44 SLICE_X35Y44 SLICE_X34Y44 SLICE_X36Y44 SLICE_X37Y44 SLICE_X39Y44 SLICE_X38Y44 SLICE_X40Y44 SLICE_X41Y44 SLICE_X43Y44 SLICE_X42Y44 SLICE_X44Y44 SLICE_X45Y44 SLICE_X47Y44 SLICE_X46Y44 SLICE_X48Y44 SLICE_X49Y44 SLICE_X51Y44 SLICE_X50Y44 SLICE_X1Y43 SLICE_X0Y43 SLICE_X2Y43 SLICE_X3Y43 SLICE_X5Y43 SLICE_X4Y43 SLICE_X6Y43 SLICE_X7Y43 SLICE_X8Y43 SLICE_X9Y43 SLICE_X11Y43 SLICE_X10Y43 SLICE_X13Y43 SLICE_X12Y43 SLICE_X14Y43 SLICE_X15Y43 SLICE_X17Y43 SLICE_X16Y43 SLICE_X18Y43 SLICE_X19Y43 SLICE_X21Y43 SLICE_X20Y43 SLICE_X22Y43 SLICE_X23Y43 SLICE_X25Y43 SLICE_X24Y43 SLICE_X26Y43 SLICE_X27Y43 SLICE_X28Y43 SLICE_X29Y43 SLICE_X31Y43 SLICE_X30Y43 SLICE_X32Y43 SLICE_X33Y43 SLICE_X35Y43 SLICE_X34Y43 SLICE_X36Y43 SLICE_X37Y43 SLICE_X39Y43 SLICE_X38Y43 SLICE_X40Y43 SLICE_X41Y43 SLICE_X43Y43 SLICE_X42Y43 SLICE_X44Y43 SLICE_X45Y43 SLICE_X47Y43 SLICE_X46Y43 SLICE_X48Y43 SLICE_X49Y43 SLICE_X51Y43 SLICE_X50Y43 SLICE_X1Y42 SLICE_X0Y42 SLICE_X2Y42 SLICE_X3Y42 SLICE_X5Y42 SLICE_X4Y42 SLICE_X6Y42 SLICE_X7Y42 SLICE_X8Y42 SLICE_X9Y42 SLICE_X11Y42 SLICE_X10Y42 SLICE_X13Y42 SLICE_X12Y42 SLICE_X14Y42 SLICE_X15Y42 SLICE_X17Y42 SLICE_X16Y42 SLICE_X18Y42 SLICE_X19Y42 SLICE_X21Y42 SLICE_X20Y42 SLICE_X22Y42 SLICE_X23Y42 SLICE_X25Y42 SLICE_X24Y42 SLICE_X26Y42 SLICE_X27Y42 SLICE_X28Y42 SLICE_X29Y42 SLICE_X31Y42 SLICE_X30Y42 SLICE_X32Y42 SLICE_X33Y42 SLICE_X35Y42 SLICE_X34Y42 SLICE_X36Y42 SLICE_X37Y42 SLICE_X39Y42 SLICE_X38Y42 SLICE_X40Y42 SLICE_X41Y42 SLICE_X43Y42 SLICE_X42Y42 SLICE_X44Y42 SLICE_X45Y42 SLICE_X47Y42 SLICE_X46Y42 SLICE_X48Y42 SLICE_X49Y42 SLICE_X51Y42 SLICE_X50Y42 SLICE_X1Y41 SLICE_X0Y41 SLICE_X2Y41 SLICE_X3Y41 SLICE_X5Y41 SLICE_X4Y41 SLICE_X6Y41 SLICE_X7Y41 SLICE_X8Y41 SLICE_X9Y41 SLICE_X11Y41 SLICE_X10Y41 SLICE_X13Y41 SLICE_X12Y41 SLICE_X14Y41 SLICE_X15Y41 SLICE_X17Y41 SLICE_X16Y41 SLICE_X18Y41 SLICE_X19Y41 SLICE_X21Y41 SLICE_X20Y41 SLICE_X22Y41 SLICE_X23Y41 SLICE_X25Y41 SLICE_X24Y41 SLICE_X26Y41 SLICE_X27Y41 SLICE_X28Y41 SLICE_X29Y41 SLICE_X31Y41 SLICE_X30Y41 SLICE_X32Y41 SLICE_X33Y41 SLICE_X35Y41 SLICE_X34Y41 SLICE_X36Y41 SLICE_X37Y41 SLICE_X39Y41 SLICE_X38Y41 SLICE_X40Y41 SLICE_X41Y41 SLICE_X43Y41 SLICE_X42Y41 SLICE_X44Y41 SLICE_X45Y41 SLICE_X47Y41 SLICE_X46Y41 SLICE_X48Y41 SLICE_X49Y41 SLICE_X51Y41 SLICE_X50Y41 SLICE_X1Y40 SLICE_X0Y40 SLICE_X2Y40 SLICE_X3Y40 SLICE_X5Y40 SLICE_X4Y40 SLICE_X6Y40 SLICE_X7Y40 SLICE_X8Y40 SLICE_X9Y40 SLICE_X11Y40 SLICE_X10Y40 SLICE_X13Y40 SLICE_X12Y40 SLICE_X14Y40 SLICE_X15Y40 SLICE_X17Y40 SLICE_X16Y40 SLICE_X18Y40 SLICE_X19Y40 SLICE_X21Y40 SLICE_X20Y40 SLICE_X22Y40 SLICE_X23Y40 SLICE_X25Y40 SLICE_X24Y40 SLICE_X26Y40 SLICE_X27Y40 SLICE_X28Y40 SLICE_X29Y40 SLICE_X31Y40 SLICE_X30Y40 ...
+report_property [get_selected]
+Property            Type    Read-only  Value
+BEL                 string  false      SLICEL.CARRY4
+CLASS               string  true       cell
+FILE_NAME           string  true       C:/Users/ecestudent/Documents/Research/Tincr/629_checkpoints/SourceCode/canny/kernel.vhd
+IS_BEL_FIXED        bool    false      0
+IS_BLACKBOX         bool    true       0
+IS_DEBUGGABLE       bool    true       1
+IS_LOC_FIXED        bool    false      0
+IS_ORIG_CELL        bool    true       0
+IS_PRIMITIVE        bool    true       1
+IS_SEQUENTIAL       bool    true       0
+LINE_NUMBER         int     true       158
+LOC                 site    false      SLICE_X0Y49
+NAME                string  true       edge/filterH/p8x_reg[10]_i_1
+PBLOCK              pblock  true       p0
+PRIMITIVE_COUNT     int     true       1
+PRIMITIVE_GROUP     string  true       CARRY
+PRIMITIVE_LEVEL     enum    true       LEAF
+PRIMITIVE_SUBGROUP  string  true       others
+PRIMITIVE_TYPE      enum    false      CARRY.others.CARRY4
+REF_NAME            string  true       CARRY4
+STATUS              enum    true       PLACED
+place_cell $c [get_selected]
+ERROR: [Vivado 12-825] incorrect site name found, must have instance name followed by site name
+puts $c
+c1
+report_property $c
+Property               Type    Read-only  Value
+CINVCTRL_SEL           string  false      FALSE
+CLASS                  string  true       cell
+DELAY_SRC              string  false      IDATAIN
+HIGH_PERFORMANCE_MODE  string  false      FALSE
+IDELAY_TYPE            string  false      FIXED
+IDELAY_VALUE           int     false      0
+IS_BLACKBOX            bool    true       0
+IS_DEBUGGABLE          bool    true       1
+IS_ORIG_CELL           bool    true       0
+IS_PRIMITIVE           bool    true       1
+IS_SEQUENTIAL          bool    true       1
+NAME                   string  true       c1
+PIPE_SEL               string  false      FALSE
+PRIMITIVE_COUNT        int     true       1
+PRIMITIVE_GROUP        string  true       IO
+PRIMITIVE_LEVEL        enum    true       LEAF
+PRIMITIVE_SUBGROUP     string  true       iodelay
+PRIMITIVE_TYPE         enum    false      IO.iodelay.IDELAYE2
+REFCLK_FREQUENCY       double  false      200.0
+REF_NAME               string  true       IDELAYE2
+SIGNAL_PATTERN         string  false      DATA
+STATUS                 enum    true       UNPLACED
+place_cell $c [get_selected]
+report_property [get_selected]
+Property               Type    Read-only  Value
+BEL                    string  false      IDELAYE2.IDELAYE2
+CINVCTRL_SEL           string  false      FALSE
+CLASS                  string  true       cell
+DELAY_SRC              string  false      IDATAIN
+HIGH_PERFORMANCE_MODE  string  false      FALSE
+IDELAY_TYPE            string  false      FIXED
+IDELAY_VALUE           int     false      0
+IS_BEL_FIXED           bool    false      0
+IS_BLACKBOX            bool    true       0
+IS_DEBUGGABLE          bool    true       1
+IS_LOC_FIXED           bool    false      1
+IS_ORIG_CELL           bool    true       0
+IS_PRIMITIVE           bool    true       1
+IS_SEQUENTIAL          bool    true       1
+LOC                    site    false      IDELAY_X0Y52
+NAME                   string  true       c1
+PIPE_SEL               string  false      FALSE
+PRIMITIVE_COUNT        int     true       1
+PRIMITIVE_GROUP        string  true       IO
+PRIMITIVE_LEVEL        enum    true       LEAF
+PRIMITIVE_SUBGROUP     string  true       iodelay
+PRIMITIVE_TYPE         enum    false      IO.iodelay.IDELAYE2
+REFCLK_FREQUENCY       double  false      200.0
+REF_NAME               string  true       IDELAYE2
+SIGNAL_PATTERN         string  false      DATA
+STATUS                 enum    true       FIXED
+report_property [get_selected]
+Property                    Type    Read-only  Value
+CLASS                       string  true       bel
+CONFIG.DDR_CLK_EDGE.VALUES  string  true       SAME_EDGE_PIPELINED, SAME_EDGE, OPPOSITE_EDGE
+CONFIG.IFFTYPE.VALUES       string  true       DDR, LATCH, FF
+CONFIG.INIT_Q1.VALUES       string  true       0, 1
+CONFIG.INIT_Q2.VALUES       string  true       0, 1
+CONFIG.PLH_TEST.VALUES      string  true       TRUE, FALSE
+CONFIG.SRTYPE.VALUES        string  true       SYNC, ASYNC
+CONFIG.SRVAL_Q1.VALUES      string  true       0, 1
+CONFIG.SRVAL_Q2.VALUES      string  true       0, 1
+IS_RESERVED                 bool    true       0
+IS_TEST                     bool    true       0
+IS_USED                     bool    true       0
+NAME                        string  true       ILOGIC_X0Y52/IFF
+NUM_BIDIR                   int     true       0
+NUM_CONFIGS                 int     true       8
+NUM_INPUTS                  int     true       6
+NUM_OUTPUTS                 int     true       2
+NUM_PINS                    int     true       8
+PROHIBIT                    bool    false      0
+TYPE                        string  true       ILOGICE3_IFF
+set c2 [create_cell -reference FFCE c2]
+ERROR: [Coretcl 2-33] Could not find master cell 'FFCE'.
+set c2 [create_cell -reference FFDR c2]
+ERROR: [Coretcl 2-33] Could not find master cell 'FFDR'.
+get_lib_cells
+BUFGCE PLLE2_BASE AND2 AND2B1 AND2B1L AND2B2 AND3 AND3B1 AND3B2 AND3B3 AND4 AND4B1 AND4B2 AND4B3 AND4B4 AND5 AND5B1 AND5B2 AND5B3 AND5B4 AND5B5 AUTOBUF BSCAN_SPARTAN6 BSCAN_VIRTEX4 BSCAN_VIRTEX5 BSCAN_VIRTEX6 BSCANE2 BUF BUFG BUFG_LB BUFGCE_1 BUFGCTRL BUFGMUX BUFGMUX_CTRL BUFGMUX_VIRTEX4 BUFGMUX_1 BUFGP BUFH BUFHCE BUFIO BUFIODQS BUFMR BUFMRCE BUFR CAPTURE_SPARTAN3 CAPTURE_SPARTAN3A CAPTURE_VIRTEX4 CAPTURE_VIRTEX5 CAPTURE_VIRTEX6 CAPTUREE2 CARRY4 CFGLUT5 CLKDLL CLKDLLE CLKDLLHF DCIRESET DCM DCM_ADV DCM_BASE DCM_CLKGEN DCM_PS DCM_SP DNA_PORT DRP_AMS_ADC DRP_AMS_DAC DSP48 DSP48E DSP48E1 EFUSE_USR FD FD_1 FDC FDC_1 FDCE FDCE_1 FDCP FDCP_1 FDCPE FDCPE_1 FDE FDE_1 FDP FDP_1 FDPE FDPE_1 FDR FDR_1 FDRE FDRE_1 FDRS FDRS_1 FDRSE FDRSE_1 FDS FDS_1 FDSE FDSE_1 FIFO16 FIFO18 FIFO18_36 FIFO18E1 FIFO36 FIFO36_EXP FIFO36_72 FIFO36_72_EXP FIFO36E1 FRAME_ECC_VIRTEX6 FRAME_ECCE2 GND GTHE2_CHANNEL GTHE2_COMMON GTPE2_CHANNEL GTPE2_COMMON GTXE2_CHANNEL GTXE2_COMMON GTZE2_OCTAL IBUF IBUF_AGP IBUF_CTT IBUF_GTL IBUF_GTL_DCI IBUF_GTLP IBUF_GTLP_DCI IBUF_HSTL_I IBUF_HSTL_I_DCI IBUF_HSTL_I_DCI_18 IBUF_HSTL_I_18 IBUF_HSTL_II IBUF_HSTL_II_DCI IBUF_HSTL_II_DCI_18 IBUF_HSTL_II_18 IBUF_HSTL_III IBUF_HSTL_III_DCI IBUF_HSTL_III_DCI_18 IBUF_HSTL_III_18 IBUF_HSTL_IV IBUF_HSTL_IV_DCI IBUF_HSTL_IV_DCI_18 IBUF_HSTL_IV_18 IBUF_IBUFDISABLE IBUF_INTERMDISABLE IBUF_LVCMOS2 IBUF_LVCMOS12 IBUF_LVCMOS15 IBUF_LVCMOS18 IBUF_LVCMOS25 IBUF_LVCMOS33 IBUF_LVDCI_DV2_15 IBUF_LVDCI_DV2_18 IBUF_LVDCI_DV2_25 IBUF_LVDCI_DV2_33 IBUF_LVDCI_15 IBUF_LVDCI_18 IBUF_LVDCI_25 IBUF_LVDCI_33 IBUF_LVDS IBUF_LVPECL IBUF_LVTTL IBUF_PCIX IBUF_PCIX66_3 IBUF_PCI33_3 IBUF_PCI33_5 IBUF_PCI66_3 IBUF_SSTL2_I IBUF_SSTL2_I_DCI IBUF_SSTL2_II IBUF_SSTL2_II_DCI IBUF_SSTL3_I IBUF_SSTL3_I_DCI IBUF_SSTL3_II IBUF_SSTL3_II_DCI IBUF_SSTL18_I IBUF_SSTL18_I_DCI IBUF_SSTL18_II IBUF_SSTL18_II_DCI IBUFDS IBUFDS_BLVDS_25 IBUFDS_DIFF_OUT IBUFDS_DIFF_OUT_IBUFDISABLE IBUFDS_DIFF_OUT_INTERMDISABLE IBUFDS_GTE2 IBUFDS_IBUFDISABLE IBUFDS_IBUFDISABLE_INT IBUFDS_INTERMDISABLE IBUFDS_INTERMDISABLE_INT IBUFDS_LDT_25 IBUFDS_LVDS_25 IBUFDS_LVDS_25_DCI IBUFDS_LVDS_33 IBUFDS_LVDS_33_DCI IBUFDS_LVDSEXT_25 IBUFDS_LVDSEXT_25_DCI IBUFDS_LVDSEXT_33 IBUFDS_LVDSEXT_33_DCI IBUFDS_LVPECL_25 IBUFDS_LVPECL_33 IBUFDS_ULVDS_25 IBUFG IBUFG_AGP IBUFG_CTT IBUFG_GTL IBUFG_GTL_DCI IBUFG_GTLP IBUFG_GTLP_DCI IBUFG_HSTL_I IBUFG_HSTL_I_DCI IBUFG_HSTL_I_DCI_18 IBUFG_HSTL_I_18 IBUFG_HSTL_II IBUFG_HSTL_II_DCI IBUFG_HSTL_II_DCI_18 IBUFG_HSTL_II_18 IBUFG_HSTL_III IBUFG_HSTL_III_DCI IBUFG_HSTL_III_DCI_18 IBUFG_HSTL_III_18 IBUFG_HSTL_IV IBUFG_HSTL_IV_DCI IBUFG_HSTL_IV_DCI_18 IBUFG_HSTL_IV_18 IBUFG_LVCMOS2 IBUFG_LVCMOS12 IBUFG_LVCMOS15 IBUFG_LVCMOS18 IBUFG_LVCMOS25 IBUFG_LVCMOS33 IBUFG_LVDCI_DV2_15 IBUFG_LVDCI_DV2_18 IBUFG_LVDCI_DV2_25 IBUFG_LVDCI_DV2_33 IBUFG_LVDCI_15 IBUFG_LVDCI_18 IBUFG_LVDCI_25 IBUFG_LVDCI_33 IBUFG_LVDS IBUFG_LVPECL IBUFG_LVTTL IBUFG_PCIX IBUFG_PCIX66_3 IBUFG_PCI33_3 IBUFG_PCI33_5 IBUFG_PCI66_3 IBUFG_SSTL2_I IBUFG_SSTL2_I_DCI IBUFG_SSTL2_II IBUFG_SSTL2_II_DCI IBUFG_SSTL3_I IBUFG_SSTL3_I_DCI IBUFG_SSTL3_II IBUFG_SSTL3_II_DCI IBUFG_SSTL18_I IBUFG_SSTL18_I_DCI IBUFG_SSTL18_II IBUFG_SSTL18_II_DCI IBUFGDS IBUFGDS_BLVDS_25 IBUFGDS_DIFF_OUT IBUFGDS_LDT_25 IBUFGDS_LVDS_25 IBUFGDS_LVDS_25_DCI IBUFGDS_LVDS_33 IBUFGDS_LVDS_33_DCI IBUFGDS_LVDSEXT_25 IBUFGDS_LVDSEXT_25_DCI IBUFGDS_LVDSEXT_33 IBUFGDS_LVDSEXT_33_DCI IBUFGDS_LVPECL_25 IBUFGDS_LVPECL_33 IBUFGDS_ULVDS_25 ICAP_SPARTAN3A ICAP_SPARTAN6 ICAP_VIRTEX4 ICAP_VIRTEX5 ICAP_VIRTEX6 ICAPE2 IDDR IDDR_2CLK IDDR2 IDELAY IDELAYCTRL IDELAYE2 IDELAYE2_FINEDELAY IN_FIFO INV IOBUF IOBUF_AGP IOBUF_CTT IOBUF_DCIEN IOBUF_F_2 IOBUF_F_4 IOBUF_F_6 IOBUF_F_8 IOBUF_F_12 IOBUF_F_16 IOBUF_F_24 IOBUF_GTL IOBUF_GTL_DCI IOBUF_GTLP IOBUF_GTLP_DCI IOBUF_HSTL_I IOBUF_HSTL_I_18 IOBUF_HSTL_II IOBUF_HSTL_II_DCI IOBUF_HSTL_II_DCI_18 IOBUF_HSTL_II_18 IOBUF_HSTL_III IOBUF_HSTL_III_18 IOBUF_HSTL_IV IOBUF_HSTL_IV_DCI IOBUF_HSTL_IV_DCI_18 IOBUF_HSTL_IV_18 IOBUF_INTERMDISABLE IOBUF_LVCMOS2 IOBUF_LVCMOS12 IOBUF_LVCMOS12_F_2 IOBUF_LVCMOS12_F_4 IOBUF_LVCMOS12_F_6 IOBUF_LVCMOS12_F_8 IOBUF_LVCMOS12_S_2 IOBUF_LVCMOS12_S_4 IOBUF_LVCMOS12_S_6 IOBUF_LVCMOS12_S_8 IOBUF_LVCMOS15 IOBUF_LVCMOS15_F_2 IOBUF_LVCMOS15_F_4 IOBUF_LVCMOS15_F_6 IOBUF_LVCMOS15_F_8 IOBUF_LVCMOS15_F_12 IOBUF_LVCMOS15_F_16 IOBUF_LVCMOS15_S_2 IOBUF_LVCMOS15_S_4 IOBUF_LVCMOS15_S_6 IOBUF_LVCMOS15_S_8 IOBUF_LVCMOS15_S_12 IOBUF_LVCMOS15_S_16 IOBUF_LVCMOS18 IOBUF_LVCMOS18_F_2 IOBUF_LVCMOS18_F_4 IOBUF_LVCMOS18_F_6 IOBUF_LVCMOS18_F_8 IOBUF_LVCMOS18_F_12 IOBUF_LVCMOS18_F_16 IOBUF_LVCMOS18_S_2 IOBUF_LVCMOS18_S_4 IOBUF_LVCMOS18_S_6 IOBUF_LVCMOS18_S_8 IOBUF_LVCMOS18_S_12 IOBUF_LVCMOS18_S_16 IOBUF_LVCMOS25 IOBUF_LVCMOS25_F_2 IOBUF_LVCMOS25_F_4 IOBUF_LVCMOS25_F_6 IOBUF_LVCMOS25_F_8 IOBUF_LVCMOS25_F_12 IOBUF_LVCMOS25_F_16 IOBUF_LVCMOS25_F_24 IOBUF_LVCMOS25_S_2 IOBUF_LVCMOS25_S_4 IOBUF_LVCMOS25_S_6 IOBUF_LVCMOS25_S_8 IOBUF_LVCMOS25_S_12 IOBUF_LVCMOS25_S_16 IOBUF_LVCMOS25_S_24 IOBUF_LVCMOS33 IOBUF_LVCMOS33_F_2 IOBUF_LVCMOS33_F_4 IOBUF_LVCMOS33_F_6 IOBUF_LVCMOS33_F_8 IOBUF_LVCMOS33_F_12 IOBUF_LVCMOS33_F_16 IOBUF_LVCMOS33_F_24 IOBUF_LVCMOS33_S_2 IOBUF_LVCMOS33_S_4 IOBUF_LVCMOS33_S_6 IOBUF_LVCMOS33_S_8 IOBUF_LVCMOS33_S_12 IOBUF_LVCMOS33_S_16 IOBUF_LVCMOS33_S_24 IOBUF_LVDCI_DV2_15 IOBUF_LVDCI_DV2_18 IOBUF_LVDCI_DV2_25 IOBUF_LVDCI_DV2_33 IOBUF_LVDCI_15 IOBUF_LVDCI_18 IOBUF_LVDCI_25 IOBUF_LVDCI_33 IOBUF_LVDS IOBUF_LVPECL IOBUF_LVTTL IOBUF_LVTTL_F_2 IOBUF_LVTTL_F_4 IOBUF_LVTTL_F_6 IOBUF_LVTTL_F_8 IOBUF_LVTTL_F_12 IOBUF_LVTTL_F_16 IOBUF_LVTTL_F_24 IOBUF_LVTTL_S_2 IOBUF_LVTTL_S_4 IOBUF_LVTTL_S_6 IOBUF_LVTTL_S_8 IOBUF_LVTTL_S_12 IOBUF_LVTTL_S_16 IOBUF_LVTTL_S_24 IOBUF_PCIX IOBUF_PCIX66_3 IOBUF_PCI33_3 IOBUF_PCI33_5 IOBUF_PCI66_3 IOBUF_S_2 IOBUF_S_4 IOBUF_S_6 IOBUF_S_8 IOBUF_S_12 IOBUF_S_16 IOBUF_S_24 IOBUF_SSTL2_I IOBUF_SSTL2_II IOBUF_SSTL2_II_DCI IOBUF_SSTL3_I IOBUF_SSTL3_II IOBUF_SSTL3_II_DCI IOBUF_SSTL18_I IOBUF_SSTL18_II IOBUF_SSTL18_II_DCI IOBUFDS IOBUFDS_BLVDS_25 IOBUFDS_DCIEN IOBUFDS_DIFF_OUT IOBUFDS_DIFF_OUT_DCIEN IOBUFDS_DIFF_OUT_INTERMDISABLE IOBUFDS_INTERMDISABLE IODELAY IODELAYE1 ISERDES ISERDES_NODELAY ISERDESE1 ISERDESE2 KEEPER KEY_CLEAR LD LD_1 LDC LDC_1 LDCE LDCE_1 LDCP LDCP_1 LDCPE LDCPE_1 LDE LDE_1 LDP LDP_1 LDPE LDPE_1 LUT1 LUT1_D LUT1_L LUT2 LUT2_D LUT2_L LUT3 LUT3_D LUT3_L LUT4 LUT4_D LUT4_L LUT5 LUT5_D LUT5_L LUT6 LUT6_D LUT6_L LUT6_2 MMCM_ADV MMCM_BASE MMCME2_ADV MMCME2_BASE MULT_AND MULT18X18 MULT18X18S MUXCY MUXCY_D MUXCY_L MUXF5 MUXF5_D MUXF5_L MUXF6 MUXF6_D MUXF6_L MUXF7 MUXF7_D MUXF7_L MUXF8 MUXF8_D MUXF8_L NAND2 NAND2B1 NAND2B2 NAND3 ...
+set c2 [create_cell -reference FDRE c2]
+c2
+place_cell $c2 [get_selected]
+ERROR: [Vivado 12-1409] Cannot set loc and bel property of instances, loc is blocked
+place_cell $c2 [get_selected]
+ERROR: [Vivado 12-1409] Cannot set loc and bel property of instances, Illegal site, cannot place non-IO FF/Latch on IO site
+set c3 [create_cell -reference IDDR_2CLK c3]
+c3
+place_cell $c3 [get_selected_objects ]
+report_property $c3
+Property            Type    Read-only  Value
+BEL                 string  false      ILOGICE3.IFF
+CLASS               string  true       cell
+DDR_CLK_EDGE        string  false      OPPOSITE_EDGE
+INIT_Q1             binary  false      1'b0
+INIT_Q2             binary  false      1'b0
+IS_BEL_FIXED        bool    false      1
+IS_BLACKBOX         bool    true       0
+IS_DEBUGGABLE       bool    true       1
+IS_LOC_FIXED        bool    false      1
+IS_ORIG_CELL        bool    true       0
+IS_PRIMITIVE        bool    true       1
+IS_SEQUENTIAL       bool    true       1
+LOC                 site    false      ILOGIC_X0Y43
+NAME                string  true       c3
+PRIMITIVE_COUNT     int     true       1
+PRIMITIVE_GROUP     string  true       IO
+PRIMITIVE_LEVEL     enum    true       LEAF
+PRIMITIVE_SUBGROUP  string  true       ddr
+PRIMITIVE_TYPE      enum    false      IO.ddr.IDDR_2CLK
+REF_NAME            string  true       IDDR_2CLK
+SRTYPE              string  false      SYNC
+STATUS              enum    true       FIXED
+place_cell $c2 [get_selected]
+ERROR: [Vivado 12-1409] Cannot set loc and bel property of instances, Illegal site, cannot place non-IO FF/Latch on IO site
+set c4 [create_cell -reference IDDR c4]
+c4
+place_cell $c4 [get_selected]
+ERROR: [Vivado 12-1409] Cannot set loc and bel property of instances, Illegal to place instance c4 on site OLOGIC_X0Y43. The location site type does not match the instance type.
+set c5 [create_cell -reference ODDR c5]
+c5
+place_cell $c5 [get_selected]
+report_property $c5
+Property            Type    Read-only  Value
+BEL                 string  false      OLOGICE3.OUTFF
+CLASS               string  true       cell
+DDR_CLK_EDGE        string  false      OPPOSITE_EDGE
+INIT                binary  false      1'b0
+IS_BEL_FIXED        bool    false      1
+IS_BLACKBOX         bool    true       0
+IS_DEBUGGABLE       bool    true       1
+IS_LOC_FIXED        bool    false      1
+IS_ORIG_CELL        bool    true       0
+IS_PRIMITIVE        bool    true       1
+IS_SEQUENTIAL       bool    true       1
+LOC                 site    false      OLOGIC_X0Y43
+NAME                string  true       c5
+PRIMITIVE_COUNT     int     true       1
+PRIMITIVE_GROUP     string  true       IO
+PRIMITIVE_LEVEL     enum    true       LEAF
+PRIMITIVE_SUBGROUP  string  true       ddr
+PRIMITIVE_TYPE      enum    false      IO.ddr.ODDR
+REF_NAME            string  true       ODDR
+SRTYPE              string  false      SYNC
+STATUS              enum    true       FIXED
+exit
+INFO: [Common 17-206] Exiting Vivado at Sun Jul 17 20:11:32 2016...

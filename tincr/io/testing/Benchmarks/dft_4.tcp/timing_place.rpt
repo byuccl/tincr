@@ -1,0 +1,39 @@
+Copyright 1986-2015 Xilinx, Inc. All Rights Reserved.
+------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2015.4 (win64) Build 1412921 Wed Nov 18 09:43:45 MST 2015
+| Date         : Tue Mar 29 21:12:15 2016
+| Host         : CB461-EE09968 running 64-bit Service Pack 1  (build 7601)
+| Command      : report_timing -file ./dft_4.tcp/timing_place.rpt
+| Design       : top
+| Device       : 7a100t-csg324
+| Speed File   : -3  PRODUCTION 1.14 2014-09-11
+------------------------------------------------------------------------------------
+
+Timing Report
+
+Slack:                    inf
+  Source:                 SEL[1]
+                            (input port)
+  Destination:            XK_IM[3]
+                            (output port)
+  Path Group:             (none)
+  Path Type:              Max at Slow Process Corner
+  Data Path Delay:        7.528ns  (logic 3.182ns (42.271%)  route 4.346ns (57.729%))
+  Logic Levels:           3  (IBUF=1 LUT6=1 OBUF=1)
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+    M14                                               0.000     0.000 r  SEL[1] (IN)
+                         net (fo=0)                   0.000     0.000    SEL[1]
+    M14                  IBUF (Prop_ibuf_I_O)         0.816     0.816 r  SEL_IBUF[1]_inst/O
+                         net (fo=43, estimated)       2.228     3.043    SEL_IBUF[1]
+    SLICE_X35Y67         LUT6 (Prop_lut6_I3_O)        0.097     3.140 r  XK_IM_OBUF[3]_inst_i_1/O
+                         net (fo=1, estimated)        2.118     5.259    XK_IM_OBUF[3]
+    U13                  OBUF (Prop_obuf_I_O)         2.270     7.528 r  XK_IM_OBUF[3]_inst/O
+                         net (fo=0)                   0.000     7.528    XK_IM[3]
+    U13                                                               r  XK_IM[3] (OUT)
+  -------------------------------------------------------------------    -------------------
+
+
+
+

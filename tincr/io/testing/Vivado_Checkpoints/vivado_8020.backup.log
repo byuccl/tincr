@@ -1,0 +1,42 @@
+#-----------------------------------------------------------
+# Vivado v2015.4 (64-bit)
+# SW Build 1412921 on Wed Nov 18 09:43:45 MST 2015
+# IP Build 1412160 on Tue Nov 17 13:47:24 MST 2015
+# Start of session at: Sun Jul 17 18:23:48 2016
+# Process ID: 8020
+# Current directory: C:/Users/ecestudent/Documents/Research/Tincr/Import/Vivado_Checkpoints
+# Command line: vivado.exe -gui_launcher_event rodinguilauncherevent8892 C:\Users\ecestudent\Documents\Research\Tincr\Import\Vivado_Checkpoints\canny.dcp
+# Log file: C:/Users/ecestudent/Documents/Research/Tincr/Import/Vivado_Checkpoints/vivado.log
+# Journal file: C:/Users/ecestudent/Documents/Research/Tincr/Import/Vivado_Checkpoints\vivado.jou
+#-----------------------------------------------------------
+start_gui
+open_checkpoint {C:\Users\ecestudent\Documents\Research\Tincr\Import\Vivado_Checkpoints\canny.dcp}
+Command: open_checkpoint {C:\Users\ecestudent\Documents\Research\Tincr\Import\Vivado_Checkpoints\canny.dcp}
+INFO: [IP_Flow 19-234] Refreshing IP repositories
+INFO: [IP_Flow 19-1704] No user IP repositories specified
+INFO: [IP_Flow 19-2313] Loaded Vivado IP repository 'C:/Xilinx/Vivado/2015.4/data/ip'.
+INFO: [Netlist 29-17] Analyzing 643 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
+WARNING: [Netlist 29-101] Netlist 'top' is not ideal for floorplanning, since the cellview 'top' contains a large number of primitives.  Please consider enabling hierarchy in synthesis if you want to do floorplanning.
+INFO: [Project 1-479] Netlist was created with Vivado 2015.4
+INFO: [Device 21-403] Loading part xc7a100tcsg324-3
+INFO: [Project 1-570] Preparing netlist for logic optimization
+Reading XDEF placement.
+Reading placer database...
+Reading XDEF routing.
+Read XDEF File: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.809 . Memory (MB): peak = 990.121 ; gain = 8.031
+Restored from archive | CPU: 0.000000 secs | Memory: 0.000000 MB |
+Finished XDEF File Restore: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.809 . Memory (MB): peak = 990.121 ; gain = 8.031
+INFO: [Project 1-111] Unisim Transformation Summary:
+No Unisim elements were transformed.
+
+INFO: [Project 1-604] Checkpoint was created with Vivado v2015.4 (64-bit) build 1412921
+open_checkpoint: Time (s): cpu = 00:00:33 ; elapsed = 00:00:59 . Memory (MB): peak = 1115.336 ; gain = 510.063
+source -notrace C:/Users/ecestudent/Documents/Research/Tincr/Scripts/pblock.tcl
+set pblocks [group_cells_by_clock_domain]
+WARNING: [Vivado 12-180] No cells matched 'get_cells -of X0Y2'.
+ERROR: [Vivado 12-1433] Expecting a non-empty list of cells to be added to the pblock.  Please verify the correctness of the <cells> argument.
+puts $pblocks
+can't read "pblocks": no such variable
+exit
+INFO: [Common 17-206] Exiting Vivado at Sun Jul 17 18:28:43 2016...

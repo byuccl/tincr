@@ -1,0 +1,69 @@
+#-----------------------------------------------------------
+# Vivado v2015.4 (64-bit)
+# SW Build 1412921 on Wed Nov 18 09:43:45 MST 2015
+# IP Build 1412160 on Tue Nov 17 13:47:24 MST 2015
+# Start of session at: Sun Jul 17 15:11:26 2016
+# Process ID: 180
+# Current directory: C:/Users/ecestudent/Documents/Research/Tincr/Import/Vivado_Checkpoints
+# Command line: vivado.exe -gui_launcher_event rodinguilauncherevent5268 C:\Users\ecestudent\Documents\Research\Tincr\Import\Vivado_Checkpoints\canny.dcp
+# Log file: C:/Users/ecestudent/Documents/Research/Tincr/Import/Vivado_Checkpoints/vivado.log
+# Journal file: C:/Users/ecestudent/Documents/Research/Tincr/Import/Vivado_Checkpoints\vivado.jou
+#-----------------------------------------------------------
+start_gui
+open_checkpoint {C:\Users\ecestudent\Documents\Research\Tincr\Import\Vivado_Checkpoints\canny.dcp}
+get_clock_regions
+set cr [get_clock_regions X0Y0]
+get_cells -of $cr
+get_tiles -of $cr
+select [get_tiles LIOB33_SING_X0Y49 ]
+select [get_tiles LIOB33_SING_X0Y49 ]
+set tiles [get_tiles -of $cr]
+lindex $tiles end
+select [lindex $tiles end]
+select {[lindex $tiles end] [lindex $tiles 0]}
+set cells [get_cells -of $cr]
+set pblock [create_pblock ps1]
+add_cells_to_pblock $pblock $cells
+get_cells -of $pblock
+set tiles [get_tiles -of $cr]
+resize_pblock -add "[lindex $tiles 0]:[lindex $tiles end]" $pblock
+get_selected
+resize_pblock -add CLBLL_L_X2Y49:CLBLM_L_X30Y0 $pblock
+get_selected
+resize_pblock -add SLICE_X1Y49:SLICE_X50Y0 $pblock
+resize_pblock -remove SLICE_X1Y49:SLICE_X50Y0 $pblock
+set ps1 [get_sites -of [lindex $tiles 0]]
+set ps2 [get_sites -of [lindex $tiles end]]
+resize_pblock -remove IOB_X0Y49:TIEOFF_X32Y0 $pblock
+resize_pblock -add IOB_X0Y49:TIEOFF_X32Y0 $pblock
+set row [get_property ROW [get_selected]]
+set row [get_property ROW [get_selected]]
+set tiles_in_row [get_tiles -filter {ROW==$row}]
+set tiles_in_row [get_tiles -filter {ROW==207}]
+set tiles_in_row [get_tiles -filter ROW==207]
+set r 1
+incr r
+puts $r
+incr r -1
+report_property [get_designs]
+report_property [get_parts xc7a100tcsg324-3]
+source -notrace C:/Users/ecestudent/Documents/Research/Tincr/Scripts/pblock.tcl
+select [get_closest_clb_tile [get_selected]]
+select [get_closest_clb_tile [get_selected] 1]
+get_sites -of [get_selected]
+get_sites -of [get_selected]
+get_sites -of [get_selected]
+resize_pblock -remove SLICE_X0Y49:SLICE_X51Y0 $pblock
+resize_pblock -add SLICE_X0Y49:SLICE_X51Y0 $pblock
+resize_pblock -remove SLICE_X0Y49:SLICE_X51Y0 $pblock
+resize_pblock -add ILOGIC_X0Y49:SLICE_X51Y0 $pblock
+get_clock_regions
+set pblocks
+delete_pblocks *
+source -notrace C:/Users/ecestudent/Documents/Research/Tincr/Scripts/pblock.tcl
+set pblocks [group_cells_by_clock_domain]
+set pblocks [group_cells_by_clock_domain]
+source -notrace C:/Users/ecestudent/Documents/Research/Tincr/Scripts/pblock.tcl
+set pblocks [group_cells_by_clock_domain]
+source -notrace C:/Users/ecestudent/Documents/Research/Tincr/Scripts/pblock.tcl
+set pblocks [group_cells_by_clock_domain]

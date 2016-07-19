@@ -1,0 +1,49 @@
+#-----------------------------------------------------------
+# Vivado v2015.4 (64-bit)
+# SW Build 1412921 on Wed Nov 18 09:43:45 MST 2015
+# IP Build 1412160 on Tue Nov 17 13:47:24 MST 2015
+# Start of session at: Mon May 02 16:04:13 2016
+# Process ID: 15156
+# Current directory: C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks
+# Command line: vivado.exe -mode tcl
+# Log file: C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks/vivado.log
+# Journal file: C:/Users/ecestudent/Documents/Research/Tincr/Import/Benchmarks\vivado.jou
+#-----------------------------------------------------------
+tincr::read_tcp hilbert.tcp
+start_gui
+route_design -nets  [get_selected] -preserve
+route_design -nets  [get_selected]
+route_design -nets  [get_selected]
+get_nets -filter {ROUTE_STATUS==PARTIALLY_ROUTED}
+get_nets -filter {ROUTE_STATUS==ANTENNAS}
+llength [get_nets -filter {ROUTE_STATUS==ANTENNAS}]
+route_design -nets [get_selected] -finalize
+route_design -nets [get_selected]
+stop_gui
+close_design
+tincr::refresh_packages
+tincr::read_tcp hilbert.tcp
+close_design
+tincr::refresh_packages
+tincr::read_tcp hilbert.tcp
+llength [get_nets]
+llength [get_nets -filter {ROUTE_STATUS==ROUTED}]
+start_gui
+write_checkpoint C:/Users/ecestudent/Documents/Research/Tincr/Import/Vivado_Checkpoints/hilbert_design_diff_test.dcp
+stop_gui
+close_design
+ls
+cd ..
+cd Vivado-Checkpoints
+cd Vivado_Checkpoints
+ls
+tincr::designs::diff hilbert.dcp hilbert_design_diff_test.dcp diff.txt
+close_designs *
+close_design *
+close_design
+close_design
+close_design
+tincr::designs::diff hilbert.dcp hilbert_design_diff_test.dcp diff.txt
+close_design
+tincr::refresh_packages
+tincr::designs::diff hilbert.dcp hilbert_design_diff_test.dcp diff.txt
