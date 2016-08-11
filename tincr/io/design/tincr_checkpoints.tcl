@@ -521,7 +521,7 @@ proc ::tincr::write_routing_rs2 {args} {
 				# assuming that the second tile in the tile list is the interconnect tile
 				set switchbox_tile [lindex $tiles 1]
 				set route_string [string range [get_property ROUTE $net] 3 end-3]
-				set route_string "( \{$switchbox_tile/$route_string\} )"
+				set route_string "( \{ $switchbox_tile/$route_string \} )"
 			}
 		}
 		
