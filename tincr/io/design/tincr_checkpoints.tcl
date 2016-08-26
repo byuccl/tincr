@@ -223,14 +223,15 @@ proc ::tincr::read_tcp {args} {
 	# this may work for importing designs...need to test using a design diff function...which TINCR has!
 	# need to test with a custom routed design that uses a different input pin for the bel route-through
 	# possible hack to complete nets that use a BEL route-through
-	foreach net [get_nets -filter {ROUTE_STATUS==ANTENNAS}] {
+	foreach net [get_nets $q -filter {ROUTE_STATUS==ANTENNAS}] {
 		route_design -nets -directive Quick $net -quiet
 	}
 	
-	
 	# unlock the design at the end of the import process...do we want to do this?
-	puts "Design importation complete. ($total_runtime seconds)"
-	remove_files -quiet *
+	if {!$quiet} {
+		puts "Design importation complete. ($total_runtime seconds)"
+	}
+	# remove_files -quiet *
 	return $runtimes
 }
 
@@ -520,7 +521,7 @@ proc ::tincr::write_routing_rs2 {args} {
 			if {[llength $tiles] == 2} {
 				# assuming that the second tile in the tile list is the interconnect tile
 				set switchbox_tile [lindex $tiles 1]
-				set route_string [string range [get_property ROUTE $net] 3 end-3]
+				set route_string [string range [get_property ROUTE $net] 3 end-4]
 				set route_string "( \{ $switchbox_tile/$route_string \} )"
 			}
 		}
