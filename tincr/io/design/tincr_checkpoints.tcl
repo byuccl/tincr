@@ -114,7 +114,7 @@ proc get_time_in_seconds { tcl_time_string } {
 }
 
 proc ::tincr::read_tcp {args} {
-	   set quiet 0
+	set quiet 0
 	::tincr::parse_args {} {quiet} {} {filename} $args
 	
 	if {$quiet == 1} {
@@ -125,84 +125,39 @@ proc ::tincr::read_tcp {args} {
 	
 	#TODO: use this to make sure that the files are removed before implementation...test this?
 	#set_property used_in_implementation false [get_files dont_touch.xdc]
-	
-	#set the xilinx tools to use the maximum number of threads while importing 
-	#set_param general.maxThreads 8
-	#set_param synth.maxThreads 8
-	
+		
 	set filename [::tincr::add_extension ".tcp" $filename]
 	
-	# When running the TINCR import function on the bft design, Vivado just crashes. 
-	# I am testing linking the design in different locations to see if it still crashes,
-	# and if it does, where the crash happened...
-	if {!$quiet} {
-		puts "Parsing device information file..."
-	}
+	::tincr::print_quiet "Parsing device information file..." $quiet
 	set part [get_design_info "$filename" part]
-	if {!$quiet} {
-		puts "Device information obtained."
-	}
-	  
-	set runtimes [list]
-	
+		
 	# NOTE: The edif must be read in before the design is linked, but the other files do not have to be
-	if {!$quiet} {
-		puts "Reading netlist..."
-	}
-	set edif_time_string [time {read_edif $q "${filename}/netlist.edf"}]
-	set edif_runtime [get_time_in_seconds $edif_time_string]
-	lappend runtimes $edif_runtime
-	if {!$quiet} {
-		puts "Netlist added successfully. ($edif_runtime seconds)"
-	}
-   
-	if {!$quiet} {
-		puts "Linking the design..."
-	}
-	set link_time_string [time {link_design $q -part $part}]
-	set link_runtime [get_time_in_seconds $link_time_string]
-	lappend runtimes $link_runtime
-	if {!$quiet} {
-		puts "Design linked successfully. ($link_runtime seconds)"
-	}
+	::tincr::print_quiet "Reading netlist..." $quiet
+	set edif_runtime [::tincr::time_command "read_edif $q ${filename}/netlist.edf"]
+	::tincr::print_quiet "Netlist added successfully. ($edif_runtime seconds)" $quiet
+			
+	::tincr::print_quiet "Linking design..." $quiet
+	set link_runtime [::tincr::time_command "link_design $q -part $part"]
+	::tincr::print_quiet "Design linked successfully. ($link_runtime seconds)" $quiet
 	
 	# Disabling placement checks
 	# set placer_checks [get_drc_ruledecks placer_checks]
 	# set_property IS_ENABLED 0 $placer_checks
+		
+	::tincr::print_quiet "Reading design constraints..." $quiet
+	set constraint_runtime [::tincr::time_command "read_xdc $q -no_add ${filename}/constraints.xdc"]
+	::tincr::print_quiet "Design constraints added successfully. ($constraint_runtime seconds)" $quiet
 	
-	if {!$quiet} {
-		puts "Reading design constraints..."
-	}
-	set constraint_time_string [time {read_xdc $q -no_add "${filename}/constraints.xdc"}]
-	set constraint_runtime [get_time_in_seconds $constraint_time_string]
-	lappend runtimes $constraint_runtime
-	if {!$quiet} {
-		puts "Design constraints added successfully. ($constraint_runtime seconds)"
-	}
+	::tincr::print_quiet "Reading placement constraints..." $quiet
+	set place_runtime [::tincr::time_command "read_xdc $q -no_add ${filename}/placement.xdc"]
+	::tincr::print_quiet "Placement constraints added successfully. ($place_runtime seconds)" $quiet
 	
-	if {!$quiet} {
-		puts "Reading placement constraints..."
-	}
-	set place_time_string [time {read_xdc $q -no_add "${filename}/placement.xdc"}]
-	set place_runtime [get_time_in_seconds $place_time_string]
-	lappend runtimes $place_runtime
-	if {!$quiet} {
-		puts "Placement constraints added successfully... ($place_runtime seconds)"
-	}
+	::tincr::print_quiet "Reading routing constraints..." $quiet
+	set route_runtime [::tincr::time_command "read_xdc $q -no_add ${filename}/routing.xdc"]
+	::tincr::print_quiet "Routing constraints added successfully. ($route_runtime seconds)" $quiet
 	
-	if {!$quiet} {
-		puts "Reading routing constraints..."
-	}
-	set route_time_string [time {read_xdc $q -no_add "${filename}/routing.xdc"}]
-	set route_runtime [get_time_in_seconds $route_time_string]
-	lappend runtimes $route_runtime
-	if {!$quiet} {
-		puts "Routing constraints added successfully. ($route_runtime seconds)"
-	}
-	
-	#compute the total runtime
+	# Compute the total runtime
 	set total_runtime [expr { $edif_runtime + $link_runtime + $constraint_runtime + $place_runtime + $route_runtime } ]
-	lappend runtimes $total_runtime
 	
 	#set space "        "
 	#puts $outfile "|   read_edif   |   link_design   |   constraints   |   placement.xdc   |   routing.xdc   |   # of nets   |   # of cells   |   total run time"
@@ -212,27 +167,21 @@ proc ::tincr::read_tcp {args} {
 	#close $outfile
 	
 	# Unlock the design ... is this necessary?
-	if {!$quiet} {
-		puts "Unlocking the design..."
-	}
-	lock_design $q -level placement -unlock
-	if {!$quiet} {
-		puts "Design unlocked."
-	}
+	::tincr::print_quiet "Unlocking the design..." $quiet
+	lock_design $q -level placement -unlock 
 	
 	# this may work for importing designs...need to test using a design diff function...which TINCR has!
 	# need to test with a custom routed design that uses a different input pin for the bel route-through
 	# possible hack to complete nets that use a BEL route-through
-	foreach net [get_nets $q -filter {ROUTE_STATUS==ANTENNAS}] {
-		route_design -nets -directive Quick $net -quiet
-	}
+	# foreach net [get_nets $q -filter {ROUTE_STATUS==ANTENNAS}] {
+	#	route_design -nets -directive Quick $net -quiet
+	# }
 	
-	# unlock the design at the end of the import process...do we want to do this?
-	if {!$quiet} {
-		puts "Design importation complete. ($total_runtime seconds)"
-	}
-	# remove_files -quiet *
-	return $runtimes
+	# unlock the design at the end of the import process...do we need to do this?
+	::tincr::print_quiet "Design importation complete. ($total_runtime seconds)" $quiet 
+	
+	remove_files -quiet *
+	return {$edif_runtime $link_runtime $constraint_runtime $place_runtime $route_runtime $total_runtime}
 }
 
 # TODO: When filtering through cells in sites should we use the PRIMITIVE_LEVEL==LEAF if our search? 
@@ -375,7 +324,7 @@ proc ::tincr::write_routing_xdc {args} {
 				# assuming that the second tile in the tile list is the interconnect tile
 				set switchbox_tile [lindex $tiles 1]
 				set route_string [string range [get_property ROUTE $net] 3 end-3]
-				set route_string "\{$switchbox_tile/$route_string\}"
+				set route_string "\{ $switchbox_tile/$route_string \}"
 			} else {
 				set route_string "\{$route_string\}" 
 			}
@@ -503,7 +452,7 @@ proc ::tincr::write_routing_rs2 {args} {
 		}
 	}
 	
-	# TODO: include more than just the routed nets
+	# TODO: add support for partially routed nets
 	if {$global_logic} {
 		set nets [get_nets -quiet -hierarchical -filter {ROUTE_STATUS == ROUTED}]
 	} else {
@@ -515,13 +464,18 @@ proc ::tincr::write_routing_rs2 {args} {
 		
 		set route_string [get_property ROUTE $net]
 		set type [get_property TYPE $net]
-		# special case for VCC nets
+		
+		# Special case for VCC/GND nets with only a single source.
+		# Inserts the tile of the source TIEOFF into the ROUTE string. 
+		# This is necessary because otherwise the ROUTE string is ambiguous
+		# Example : { VCC_WIRE IMUX_L15 IOI_OLOGIC0_T1 LIOI_OLOGIC0_TQ LIOI_T0 }
+		#		 -> { INT_L_X0Y54/VCC_WIRE IMUX_L15 IOI_OLOGIC0_T1 LIOI_OLOGIC0_TQ LIOI_T0 } 		
 		if { $type == "POWER" || $type == "GROUND" } {
 			set tiles [get_tiles -of $net]
 			if {[llength $tiles] == 2} {
 				# assuming that the second tile in the tile list is the interconnect tile
 				set switchbox_tile [lindex $tiles 1]
-				set route_string [string range [get_property ROUTE $net] 3 end-4]
+				set route_string [string range [get_property ROUTE $net] 3 end-3]
 				set route_string "( \{ $switchbox_tile/$route_string \} )"
 			}
 		}

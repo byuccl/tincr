@@ -51,7 +51,9 @@ namespace eval ::tincr {
         process_handler \
         spawn_vivado_run \
         run_in_temporary_project \
-        organize_by
+        organize_by \
+		print_quiet \
+		time_command
 }
 
 # ================== Files and Other I/O ================== #
@@ -1337,6 +1339,18 @@ proc ::tincr::catch_info { cmd } {
 #  namespace import ::tincr::*
 interp alias {} ::tincr::import_all {} namespace import ::tincr::*
 
+proc ::tincr::print_quiet { message quiet {newline ""} } {
+	if {!$quiet} {
+		puts $newline $message
+	}
+}
+
+proc ::tincr::time_command { command } {
+	
+	set time_string [time { {*}$command }]
+	set runtime [get_time_in_seconds $time_string]
+	return $runtime
+}
 
 # ================== Basic Vivado Functions ================== #
 
