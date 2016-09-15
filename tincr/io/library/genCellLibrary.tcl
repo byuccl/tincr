@@ -330,15 +330,16 @@ proc createCellLibrary { {part xc7a100t-csg324-3} {filename ""} } {
 		
 		set libcell [get_lib_cells $cname -quiet]
 		set c [create_cell -reference $libcell "brent_$cnt" -quiet]		
-		set level [string tolower [get_property PRIMITIVE_LEVEL $c]]
+		set level [get_property PRIMITIVE_LEVEL $c]
 		
 		puts "Processing: $cname"
 		
-		puts $fo "    <$level>"
-		puts $fo "      <type>[get_property NAME $libcell]</type>"
+		puts $fo "    <cell>"
+        puts $fo "      <type>[get_property NAME $libcell]</type>"
+        puts $fo "      <level>$level</level>"
 		puts $fo "      <pins>"
 
-		#print the cell pin information		 
+		#print the cell pin information
 		foreach p [get_pins -of $c] {
 			puts $fo "        <pin>"
 			puts $fo "          <name>[get_property REF_PIN_NAME $p]</name>"
@@ -374,13 +375,13 @@ proc createCellLibrary { {part xc7a100t-csg324-3} {filename ""} } {
 			}
 			
 			if {$level == "macro"} { 
-				processMacroCell $c $s $fo
+				# processMacroCell $c $s $fo
 			} else {
 				processLeafCell $c $s $fo
 			}
 		}
 		puts $fo "      </bels>"
-		puts $fo "    </$level>"
+		puts $fo "    </cell>"
 		puts $fo ""
 	}
 

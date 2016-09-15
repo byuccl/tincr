@@ -1339,17 +1339,24 @@ proc ::tincr::catch_info { cmd } {
 #  namespace import ::tincr::*
 interp alias {} ::tincr::import_all {} namespace import ::tincr::*
 
-proc ::tincr::print_quiet { message quiet {newline ""} } {
-	if {!$quiet} {
-		puts $newline $message
-	}
-}
-
-proc ::tincr::time_command { command } {
-	
-	set time_string [time { {*}$command }]
-	set runtime [get_time_in_seconds $time_string]
-	return $runtime
+proc ::tincr::print_verbose { message {newline 1} } {
+    # Summary: 
+    # Prints a message to the console if the global variable ::tincr::verbose has been enabled
+    
+    # Argument Usage:
+    # message : Message to print to the screen formatted as a string
+    # [newline 0] : Optional newline specifier. Set this to 0 if you don't want a newline printed
+ 
+    # Return Value: none
+    
+    # Categories: xilinxtclstore, byu, tincr, util
+    
+    if {$::tincr::verbose} {
+        puts -nonewline $message
+        if {$newline} {
+            puts {}
+        }
+    }
 }
 
 # ================== Basic Vivado Functions ================== #
