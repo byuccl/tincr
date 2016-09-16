@@ -94,9 +94,9 @@ proc ::tincr::write_rscp {filename} {
 
     write_design_info "${filename}/design.info"
     write_edif -force "${filename}/netlist.edf"
-    write_xdc -force "${filename}/constraints.rcp"
-    write_placement_rs2 "${filename}/placement.rcp"
-    write_routing_rs2 -global_logic "${filename}/routing.rcp"
+    write_xdc -force "${filename}/constraints.rsc"
+    write_placement_rs2 "${filename}/placement.rsc"
+    write_routing_rs2 -global_logic "${filename}/routing.rsc"
 
     puts "Successfully Created RapidSmith2 Checkpoint!"
 }
