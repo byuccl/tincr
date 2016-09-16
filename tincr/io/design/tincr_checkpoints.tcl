@@ -452,10 +452,10 @@ proc ::tincr::write_routing_rs2 {args} {
         set status [get_property ROUTE_STATUS $net]
 
         if {$status == "INTRASITE"} {
-            puts $txt "INTRASITE [get_bel_pins -of $net IS_OUTPUT]"
+            puts $txt "INTRASITE [get_property NAME $net]"
         } elseif {$status == "ROUTED"} {
 
-            puts $txt "INTERSITE [get_site_pins -of $net]"
+            puts $txt "INTERSITE [get_property NAME $net] [get_site_pins -of $net]"
 
             set route_string [get_property ROUTE $net]
             set type [get_property TYPE $net]
