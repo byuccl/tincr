@@ -51,7 +51,9 @@ namespace eval ::tincr {
         process_handler \
         spawn_vivado_run \
         run_in_temporary_project \
-        organize_by
+        organize_by \
+		print_quiet \
+		time_command
 }
 
 # ================== Files and Other I/O ================== #
@@ -1337,6 +1339,25 @@ proc ::tincr::catch_info { cmd } {
 #  namespace import ::tincr::*
 interp alias {} ::tincr::import_all {} namespace import ::tincr::*
 
+proc ::tincr::print_verbose { message {newline 1} } {
+    # Summary: 
+    # Prints a message to the console if the global variable ::tincr::verbose has been enabled
+    
+    # Argument Usage:
+    # message : Message to print to the screen formatted as a string
+    # [newline 0] : Optional newline specifier. Set this to 0 if you don't want a newline printed
+ 
+    # Return Value: none
+    
+    # Categories: xilinxtclstore, byu, tincr, util
+    
+    if {$::tincr::verbose} {
+        puts -nonewline $message
+        if {$newline} {
+            puts {}
+        }
+    }
+}
 
 # ================== Basic Vivado Functions ================== #
 

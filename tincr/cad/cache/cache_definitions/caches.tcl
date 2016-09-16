@@ -260,7 +260,7 @@
     array.site_type.sites
     list.site.site_type
 } {
-    set part [get_part -of_objects [current_design]]
+    set part [get_parts -of_objects [current_design]]
     set family [get_property FAMILY $part]
     set architecture [get_property ARCHITECTURE $part]
     set device [get_property DEVICE $part]
@@ -338,7 +338,7 @@
     # Cache name(s)
     dict.site_type.src_bel.src_pin.snk_bel.snk_pins
 } {
-    set part [get_part -of_objects [current_design]]
+    set part [get_parts -of_objects [current_design]]
     set family [get_property FAMILY $part]
     return [list $family "primitive_defs"]
 } {} {} {
