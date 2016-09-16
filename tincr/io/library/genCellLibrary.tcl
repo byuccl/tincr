@@ -93,7 +93,7 @@ proc uniqueSites {} {
 
     # If a site in the alternate dictionary is not already in the default dictionary, add it
     # NOTE: IOB sites cause Vivado to crash when you set alternate site types that are IOBs
-    #		so, unfortunately, we have to ignore these until the bug is fixed.
+    #   so, unfortunately, we have to ignore these until the bug is fixed.
     dict for {type site} $alternates {
         if {![dict exists $sites $type] &&  ![regexp {.*IOB*} $type]} {
             dict set sites $type $site
@@ -291,6 +291,110 @@ proc processMacroCell {c s fo} {
     }
 }
 
+proc doPorts { fo } {
+
+    puts "Doing ports..."
+
+    set lc [get_lib_cells]
+    set dict [uniqueSites]
+
+    puts $fo "    <cell>"
+    puts $fo "      <type>IPORT</type>"
+    puts $fo "          <is_port/>"
+    puts $fo "      <level>LEAF</level>"
+    puts $fo "      <pins>"
+    puts $fo "        <pin>"
+    puts $fo "          <name>PAD</name>"
+    puts $fo "          <direction>output</direction>"
+    puts $fo "        </pin>"
+    puts $fo "      </pins>"
+    puts $fo "      <bels>"
+    
+    dict for {type site} $dict {
+        set b [get_bels -of $site]
+        set ispad 0
+        foreach b [get_bels -of $site] {
+            if { [get_property TYPE $b] == "PAD" } {
+                if { [get_property NUM_OUTPUTS $site] > 0 } {
+                    puts $fo "        <bel>"
+                    puts $fo "          <id>"
+                    puts $fo "            <primitive_type>$type</primitive_type>"
+                    puts $fo "            <name>PAD</name>"
+                    puts $fo "          </id>"
+                    puts $fo "        </bel>"
+                }
+            }
+        }
+        
+    }
+    puts $fo "      </bels>"
+    puts $fo "    </cell>"
+
+    puts $fo "    <cell>"
+    puts $fo "      <type>OPORT</type>"
+    puts $fo "          <is_port/>"
+    puts $fo "      <level>LEAF</level>"
+    puts $fo "      <pins>"
+    puts $fo "        <pin>"
+    puts $fo "          <name>PAD</name>"
+    puts $fo "          <direction>input</direction>"
+    puts $fo "        </pin>"
+    puts $fo "      </pins>"
+    puts $fo "      <bels>"
+    
+    dict for {type site} $dict {
+        set b [get_bels -of $site]
+        set ispad 0
+        foreach b [get_bels -of $site] {
+            if { [get_property TYPE $b] == "PAD" } {
+                if { [get_property NUM_INPUTS $site] > 0 } {
+                    puts $fo "        <bel>"
+                    puts $fo "          <id>"
+                    puts $fo "            <primitive_type>$type</primitive_type>"
+                    puts $fo "            <name>PAD</name>"
+                    puts $fo "          </id>"
+                    puts $fo "        </bel>"
+                }
+            }
+        }
+        
+    }
+    puts $fo "      </bels>"
+    puts $fo "    </cell>"
+
+    puts $fo "    <cell>"
+    puts $fo "      <type>IOPORT</type>"
+    puts $fo "          <is_port/>"
+    puts $fo "      <level>LEAF</level>"
+    puts $fo "      <pins>"
+    puts $fo "        <pin>"
+    puts $fo "          <name>PAD</name>"
+    puts $fo "          <direction>inout</direction>"
+    puts $fo "        </pin>"
+    puts $fo "      </pins>"
+    puts $fo "      <bels>"
+    
+    dict for {type site} $dict {
+        set b [get_bels -of $site]
+        set ispad 0
+        foreach b [get_bels -of $site] {
+            if { [get_property TYPE $b] == "PAD" } {
+                if { [get_property NUM_INPUTS $site] > 0 && [get_property NUM_OUTPUTS $site] > 0 } {
+                    puts $fo "        <bel>"
+                    puts $fo "          <id>"
+                    puts $fo "            <primitive_type>$type</primitive_type>"
+                    puts $fo "            <name>PAD</name>"
+                    puts $fo "          </id>"
+                    puts $fo "        </bel>"
+                }
+            }
+        }
+        
+    }
+    puts $fo "      </bels>"
+    puts $fo "    </cell>"
+}
+
 #top level function used to create a cell library file used in RapidSmith2
 proc createCellLibrary { {part xc7a100t-csg324-3} {filename ""} } {
 
@@ -334,7 +438,26 @@ proc createCellLibrary { {part xc7a100t-csg324-3} {filename ""} } {
         puts "Processing: $cname"
 
         puts $fo "    <cell>"
-        puts $fo "      <type>[get_property NAME $libcell]</type>"
+        set cname [get_property NAME $libcell]
+        puts $fo "      <type>$cname</type>"
+
+        # Mark LUT cells
+        if { [string first "LUT" $cname] == 0 } {
+            puts $fo "        <is_lut>"
+            set num [string range $cname 3 100]
+            puts $fo "          <num_inputs>$num</num_inputs>"
+            puts $fo "        </is_lut>"
+        }
+        
+        # Mark VCC and GND cells
+        if { $cname == "VCC" } {
+            puts $fo "          <vcc_source></vcc_source>"
+        }
+        if { $cname == "GND" } {
+            puts $fo "          <gnd_source></gnd_source>"
+        }
+
+        
         puts $fo "      <level>$level</level>"
         puts $fo "      <pins>"
 
@@ -384,11 +507,13 @@ proc createCellLibrary { {part xc7a100t-csg324-3} {filename ""} } {
         puts $fo ""
     }
 
+    doPorts $fo
+    
     puts $fo "  </cells>"
     puts $fo "</root>"
 
     close $fo
-    close_design
+#    close_design
 
     puts "CellLibrary \"$filename\" created successfully!"
 }
@@ -405,12 +530,12 @@ createCellLibrary xc7a100t-csg324-3
 # ------
 
 # - Currently RapidSmith2 only supports assigning a cell pin to a single bel pin...in Vivado, this is not the case
-# 	A macro cell pin can map to several different bel pins. Take a LUTRAM cell for example, the address pins can
-#	be shared across all 4 LUTs, but they all map back to one cell pin for each address pin.
-#	So, in the XML output a different tag is used to represent these (as opposed to the possible tag).
+#       A macro cell pin can map to several different bel pins. Take a LUTRAM cell for example, the address pins can
+#       be shared across all 4 LUTs, but they all map back to one cell pin for each address pin.
+#       So, in the XML output a different tag is used to represent these (as opposed to the possible tag).
 
 # - I have made a decision...CIN will now only map to CYINIT of the carry 4 in RapidSmith2
-#	This is because only either CIN or CYINIT will be used, not both. We can just include in the
-#	documentation this fact, and if you are designing in rapidSmith2, only map one to the CYINIT
+#       This is because only either CIN or CYINIT will be used, not both. We can just include in the
+#       documentation this fact, and if you are designing in rapidSmith2, only map one to the CYINIT
 
 # - an XML template of the cellLibrary has been created, that can be found in the file macro_xml_template.xml
