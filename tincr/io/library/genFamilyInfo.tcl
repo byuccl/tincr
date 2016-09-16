@@ -1,3 +1,13 @@
+package provide tincr.io.library 0.0
+package require Tcl 8.5
+package require tincr.cad.design 0.0
+package require tincr.cad.device 0.0
+package require tincr.cad.util 0.0
+
+namespace eval ::tincr:: {
+    namespace export \
+	createFamilyInfo
+}
 # Source-ing this file will create the basic familyInfo file called
 # 'familyInfo_new.xml'.
 
@@ -222,7 +232,7 @@ proc printSingleBelPrimitiveList {sites fo} {
 
  
 #main function
-proc createFamilyInfo { } {
+proc ::tincr::createFamilyInfo { } {
 	# open output file 
 	createBlankDesignByPart xc7a100t-csg324-1 
 
@@ -316,5 +326,5 @@ proc createFamilyInfo { } {
 	close_design	
 } 
 
-createFamilyInfo
+#createFamilyInfo
 

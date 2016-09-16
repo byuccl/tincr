@@ -1,4 +1,13 @@
-package require tincr 0.0
+package provide tincr.io.library 0.0
+package require Tcl 8.5
+package require tincr.cad.design 0.0
+package require tincr.cad.device 0.0
+package require tincr.cad.util 0.0
+
+namespace eval ::tincr:: {
+    namespace export \
+        createCellLibrary
+}
 
 # This script creates the cellLibrary.xml file needed for RapidSmith2.
 # All function used are encapsulated into this file
@@ -319,7 +328,7 @@ proc doPorts { fo } {
                     puts $fo "        <bel>"
                     puts $fo "          <id>"
                     puts $fo "            <primitive_type>$type</primitive_type>"
-                    puts $fo "            <name>PAD</name>"
+                    puts $fo "            <name>[suffix [get_property NAME $b] "/"]</name>"
                     puts $fo "          </id>"
                     puts $fo "        </bel>"
                 }
@@ -351,7 +360,7 @@ proc doPorts { fo } {
                     puts $fo "        <bel>"
                     puts $fo "          <id>"
                     puts $fo "            <primitive_type>$type</primitive_type>"
-                    puts $fo "            <name>PAD</name>"
+                    puts $fo "            <name>[suffix [get_property NAME $b] "/"]</name>"
                     puts $fo "          </id>"
                     puts $fo "        </bel>"
                 }
@@ -383,7 +392,7 @@ proc doPorts { fo } {
                     puts $fo "        <bel>"
                     puts $fo "          <id>"
                     puts $fo "            <primitive_type>$type</primitive_type>"
-                    puts $fo "            <name>PAD</name>"
+                    puts $fo "            <name>[suffix [get_property NAME $b] "/"]</name>"
                     puts $fo "          </id>"
                     puts $fo "        </bel>"
                 }
@@ -396,7 +405,7 @@ proc doPorts { fo } {
 }
 
 #top level function used to create a cell library file used in RapidSmith2
-proc createCellLibrary { {part xc7a100t-csg324-3} {filename ""} } {
+proc ::tincr::createCellLibrary { {part xc7a100t-csg324-3} {filename ""} } {
 
     set part_list [split $part "-"]
 
@@ -524,7 +533,7 @@ proc createCellLibrary { {part xc7a100t-csg324-3} {filename ""} } {
 #set sites [uniqueSites
 
 #function call to generate the cell library file
-createCellLibrary xc7a100t-csg324-3
+#createCellLibrary xc7a100t-csg324-3
 
 # Notes
 # ------
