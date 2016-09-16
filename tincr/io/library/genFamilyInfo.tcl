@@ -245,11 +245,11 @@ proc printSingleBelPrimitiveList {sites fo} {
 
  
 #main function
-proc ::tincr::createFamilyInfo { } {
+proc ::tincr::createFamilyInfo { {part xc7a100t-csg324} } {
 	# open output file 
-	createBlankDesignByPart xc7a100t-csg324-1 
+	createBlankDesignByPart $part 
 
-	set fo [open "familyInfo_thomas.xml" w]
+	set fo [open "familyInfo_$part.xml" w]
 
 	# print XML header 
 	puts $fo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
