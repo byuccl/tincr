@@ -181,9 +181,15 @@ proc processSite {s type compatible is_alt fo} {
 		puts $fo "          <type>$tmpname</type>"
 
 		#print routethroughs if it is a LUT
-		if { [string first "LUT" $tmpname] == 2 } {
+		set siz -1
+		if { [get_property TYPE $b] == "LUT5" } {
+		    set siz 5
+		}
+		if { [get_property TYPE $b] == "LUT6" } {
+		    set siz 6
+		}
+		if { $siz != -1 } {
 		    puts $fo "          <routethroughs>"
-		    set siz [string range $tmpname 1 1]
 		    for { set i 1}  {$i <= $siz} {incr i} {
 			puts $fo "            <routethrough>"
 			puts $fo "              <input>A$i</input>"
