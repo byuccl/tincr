@@ -300,28 +300,31 @@ proc processMacroCell {c s fo} {
     }
 }
 
-proc doPorts { fo } {
-
-    puts "Doing ports..."
-
-    set lc [get_lib_cells]
-    set dict [uniqueSites]
-
+proc printPortHeader {fo type pin_direction} {
     puts $fo "    <cell>"
-    puts $fo "      <type>IPORT</type>"
-    puts $fo "          <is_port/>"
+    puts $fo "      <type>$type</type>"
+    puts $fo "      <is_port/>"
     puts $fo "      <level>LEAF</level>"
     puts $fo "      <pins>"
     puts $fo "        <pin>"
     puts $fo "          <name>PAD</name>"
-    puts $fo "          <direction>output</direction>"
+    puts $fo "          <direction>$pin_direction</direction>"
     puts $fo "        </pin>"
     puts $fo "      </pins>"
     puts $fo "      <bels>"
+}
+
+proc writePortXML { fo lc dict } {
+
+    puts "Doing ports..."
+
+
+    printPortHeader $fo "IPORT" "output"
     
     dict for {type site} $dict {
-        set b [get_bels -of $site]
-        set ispad 0
+	if {![get_property IS_PAD $site]} {
+	    continue;
+	}
         foreach b [get_bels -of $site] {
             if { [get_property TYPE $b] == "PAD" } {
                 if { [get_property NUM_OUTPUTS $site] > 0 } {
@@ -339,21 +342,12 @@ proc doPorts { fo } {
     puts $fo "      </bels>"
     puts $fo "    </cell>"
 
-    puts $fo "    <cell>"
-    puts $fo "      <type>OPORT</type>"
-    puts $fo "          <is_port/>"
-    puts $fo "      <level>LEAF</level>"
-    puts $fo "      <pins>"
-    puts $fo "        <pin>"
-    puts $fo "          <name>PAD</name>"
-    puts $fo "          <direction>input</direction>"
-    puts $fo "        </pin>"
-    puts $fo "      </pins>"
-    puts $fo "      <bels>"
+    printPortHeader $fo "OPORT" "input"
     
     dict for {type site} $dict {
-        set b [get_bels -of $site]
-        set ispad 0
+	if {![get_property IS_PAD $site]} {
+	    continue;
+	}
         foreach b [get_bels -of $site] {
             if { [get_property TYPE $b] == "PAD" } {
                 if { [get_property NUM_INPUTS $site] > 0 } {
@@ -371,21 +365,12 @@ proc doPorts { fo } {
     puts $fo "      </bels>"
     puts $fo "    </cell>"
 
-    puts $fo "    <cell>"
-    puts $fo "      <type>IOPORT</type>"
-    puts $fo "          <is_port/>"
-    puts $fo "      <level>LEAF</level>"
-    puts $fo "      <pins>"
-    puts $fo "        <pin>"
-    puts $fo "          <name>PAD</name>"
-    puts $fo "          <direction>inout</direction>"
-    puts $fo "        </pin>"
-    puts $fo "      </pins>"
-    puts $fo "      <bels>"
+    printPortHeader $fo "IOPORT" "inout"
     
     dict for {type site} $dict {
-        set b [get_bels -of $site]
-        set ispad 0
+	if {![get_property IS_PAD $site]} {
+	    continue;
+	}
         foreach b [get_bels -of $site] {
             if { [get_property TYPE $b] == "PAD" } {
                 if { [get_property NUM_INPUTS $site] > 0 && [get_property NUM_OUTPUTS $site] > 0 } {
@@ -451,9 +436,10 @@ proc ::tincr::createCellLibrary { {part xc7a100t-csg324-3} {filename ""} } {
         puts $fo "      <type>$cname</type>"
 
         # Mark LUT cells
-        if { [string first "LUT" $cname] == 0 } {
+	if { [get_property PRIMITIVE_GROUP $libcell] == "LUT" } {
             puts $fo "        <is_lut>"
-            set num [string range $cname 3 100]
+	    set num_pins [get_property NUM_PINS $libcell] 
+	    set num [expr {$num_pins - 1}]
             puts $fo "          <num_inputs>$num</num_inputs>"
             puts $fo "        </is_lut>"
         }
@@ -516,7 +502,7 @@ proc ::tincr::createCellLibrary { {part xc7a100t-csg324-3} {filename ""} } {
         puts $fo ""
     }
 
-    doPorts $fo
+    writePortXML $fo $supported $dict
     
     puts $fo "  </cells>"
     puts $fo "</root>"
