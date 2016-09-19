@@ -6,7 +6,7 @@ package require tincr.cad.util 0.0
 
 namespace eval ::tincr:: {
     namespace export \
-	createFamilyInfo
+	create_xml_familyinfo
 }
 # Source-ing this file will create the basic familyInfo file called
 # 'familyInfo_new.xml'.
@@ -251,11 +251,11 @@ proc printSingleBelPrimitiveList {sites fo} {
 
  
 #main function
-proc ::tincr::createFamilyInfo { {part xc7a100t-csg324} } {
+proc ::tincr::create_xml_familyinfo { {part xc7a100t-csg324} } {
 	# open output file 
 	createBlankDesignByPart $part 
 
-	set fo [open "familyInfo_$part.xml" w]
+	set fo [open "familyInfo_${part}.xml" w]
 
 	# print XML header 
 	puts $fo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"

@@ -6,7 +6,7 @@ package require tincr.cad.util 0.0
 
 namespace eval ::tincr:: {
     namespace export \
-        createCellLibrary
+        create_xml_cell_library
 }
 
 # This script creates the cellLibrary.xml file needed for RapidSmith2.
@@ -316,18 +316,15 @@ proc printPortHeader {fo type pin_direction} {
 
 proc writePortXML { fo lc dict } {
 
-    puts "Doing ports..."
+    puts "Creating port definitions..."
 
 
     printPortHeader $fo "IPORT" "output"
     
     dict for {type site} $dict {
-	if {![get_property IS_PAD $site]} {
-	    continue;
-	}
-        foreach b [get_bels -of $site] {
-            if { [get_property TYPE $b] == "PAD" } {
-                if { [get_property NUM_OUTPUTS $site] > 0 } {
+	if {[get_property IS_PAD $site] && [get_property NUM_OUTPUTS $site] > 0 } {
+	    foreach b [get_bels -of $site] {
+		if { [get_property TYPE $b] == "PAD" } {
                     puts $fo "        <bel>"
                     puts $fo "          <id>"
                     puts $fo "            <primitive_type>$type</primitive_type>"
@@ -345,12 +342,9 @@ proc writePortXML { fo lc dict } {
     printPortHeader $fo "OPORT" "input"
     
     dict for {type site} $dict {
-	if {![get_property IS_PAD $site]} {
-	    continue;
-	}
+	if {[get_property IS_PAD $site] && [get_property NUM_INPUTS $site] > 0 } {
         foreach b [get_bels -of $site] {
             if { [get_property TYPE $b] == "PAD" } {
-                if { [get_property NUM_INPUTS $site] > 0 } {
                     puts $fo "        <bel>"
                     puts $fo "          <id>"
                     puts $fo "            <primitive_type>$type</primitive_type>"
@@ -368,12 +362,9 @@ proc writePortXML { fo lc dict } {
     printPortHeader $fo "IOPORT" "inout"
     
     dict for {type site} $dict {
-	if {![get_property IS_PAD $site]} {
-	    continue;
-	}
-        foreach b [get_bels -of $site] {
-            if { [get_property TYPE $b] == "PAD" } {
-                if { [get_property NUM_INPUTS $site] > 0 && [get_property NUM_OUTPUTS $site] > 0 } {
+	if {[get_property IS_PAD $site] && [get_property NUM_INPUTS $site] > 0  && [get_property NUM_OUTPUTS $site] > 0 } {
+	    foreach b [get_bels -of $site] {
+		if { [get_property TYPE $b] == "PAD" } {
                     puts $fo "        <bel>"
                     puts $fo "          <id>"
                     puts $fo "            <primitive_type>$type</primitive_type>"
@@ -390,7 +381,7 @@ proc writePortXML { fo lc dict } {
 }
 
 #top level function used to create a cell library file used in RapidSmith2
-proc ::tincr::createCellLibrary { {part xc7a100t-csg324-3} {filename ""} } {
+proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} } {
 
     set part_list [split $part "-"]
 
@@ -446,10 +437,10 @@ proc ::tincr::createCellLibrary { {part xc7a100t-csg324-3} {filename ""} } {
         
         # Mark VCC and GND cells
         if { $cname == "VCC" } {
-            puts $fo "          <vcc_source></vcc_source>"
+            puts $fo "        <vcc_source/>"
         }
         if { $cname == "GND" } {
-            puts $fo "          <gnd_source></gnd_source>"
+            puts $fo "        <gnd_source/>"
         }
 
         
