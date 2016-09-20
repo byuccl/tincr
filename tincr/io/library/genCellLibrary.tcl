@@ -382,7 +382,8 @@ proc writePortXML { fo lc dict } {
     puts $fo "    </cell>"
 }
 
-proc printConfigurationProperties {fo lc } {
+# Go through and print out all the properties associated with a library cell
+proc printLibCellProperties {fo lc } {
     puts $fo "      <libcellproperties>"
     set pl [list_property $lc]
     foreach p $pl  {
@@ -459,7 +460,7 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} }
         }
 
         
-	printConfigurationProperties $fo $libcell
+	printLibCellProperties $fo $libcell
 
         puts $fo "      <level>$level</level>"
         puts $fo "      <pins>"
