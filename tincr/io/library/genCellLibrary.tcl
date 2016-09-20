@@ -1,4 +1,13 @@
-package require tincr 0.0
+package provide tincr.io.library 0.0
+package require Tcl 8.5
+package require tincr.cad.design 0.0
+package require tincr.cad.device 0.0
+package require tincr.cad.util 0.0
+
+namespace eval ::tincr:: {
+    namespace export \
+        create_xml_cell_library
+}
 
 # This script creates the cellLibrary.xml file needed for RapidSmith2.
 # All function used are encapsulated into this file
@@ -93,7 +102,7 @@ proc uniqueSites {} {
 
     # If a site in the alternate dictionary is not already in the default dictionary, add it
     # NOTE: IOB sites cause Vivado to crash when you set alternate site types that are IOBs
-    #		so, unfortunately, we have to ignore these until the bug is fixed.
+    #   so, unfortunately, we have to ignore these until the bug is fixed.
     dict for {type site} $alternates {
         if {![dict exists $sites $type] &&  ![regexp {.*IOB*} $type]} {
             dict set sites $type $site
@@ -291,8 +300,88 @@ proc processMacroCell {c s fo} {
     }
 }
 
+proc printPortHeader {fo type pin_direction} {
+    puts $fo "    <cell>"
+    puts $fo "      <type>$type</type>"
+    puts $fo "      <is_port/>"
+    puts $fo "      <level>LEAF</level>"
+    puts $fo "      <pins>"
+    puts $fo "        <pin>"
+    puts $fo "          <name>PAD</name>"
+    puts $fo "          <direction>$pin_direction</direction>"
+    puts $fo "        </pin>"
+    puts $fo "      </pins>"
+    puts $fo "      <bels>"
+}
+
+proc writePortXML { fo lc dict } {
+
+    puts "Creating port definitions..."
+
+
+    printPortHeader $fo "IPORT" "output"
+    
+    dict for {type site} $dict {
+	if {[get_property IS_PAD $site] && [get_property NUM_OUTPUTS $site] > 0 } {
+	    foreach b [get_bels -of $site] {
+		if { [get_property TYPE $b] == "PAD" } {
+                    puts $fo "        <bel>"
+                    puts $fo "          <id>"
+                    puts $fo "            <primitive_type>$type</primitive_type>"
+                    puts $fo "            <name>[suffix [get_property NAME $b] "/"]</name>"
+                    puts $fo "          </id>"
+                    puts $fo "        </bel>"
+                }
+            }
+        }
+        
+    }
+    puts $fo "      </bels>"
+    puts $fo "    </cell>"
+
+    printPortHeader $fo "OPORT" "input"
+    
+    dict for {type site} $dict {
+	if {[get_property IS_PAD $site] && [get_property NUM_INPUTS $site] > 0 } {
+        foreach b [get_bels -of $site] {
+            if { [get_property TYPE $b] == "PAD" } {
+                    puts $fo "        <bel>"
+                    puts $fo "          <id>"
+                    puts $fo "            <primitive_type>$type</primitive_type>"
+                    puts $fo "            <name>[suffix [get_property NAME $b] "/"]</name>"
+                    puts $fo "          </id>"
+                    puts $fo "        </bel>"
+                }
+            }
+        }
+        
+    }
+    puts $fo "      </bels>"
+    puts $fo "    </cell>"
+
+    printPortHeader $fo "IOPORT" "inout"
+    
+    dict for {type site} $dict {
+	if {[get_property IS_PAD $site] && [get_property NUM_INPUTS $site] > 0  && [get_property NUM_OUTPUTS $site] > 0 } {
+	    foreach b [get_bels -of $site] {
+		if { [get_property TYPE $b] == "PAD" } {
+                    puts $fo "        <bel>"
+                    puts $fo "          <id>"
+                    puts $fo "            <primitive_type>$type</primitive_type>"
+                    puts $fo "            <name>[suffix [get_property NAME $b] "/"]</name>"
+                    puts $fo "          </id>"
+                    puts $fo "        </bel>"
+                }
+            }
+        }
+        
+    }
+    puts $fo "      </bels>"
+    puts $fo "    </cell>"
+}
+
 #top level function used to create a cell library file used in RapidSmith2
-proc createCellLibrary { {part xc7a100t-csg324-3} {filename ""} } {
+proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} } {
 
     set part_list [split $part "-"]
 
@@ -334,7 +423,27 @@ proc createCellLibrary { {part xc7a100t-csg324-3} {filename ""} } {
         puts "Processing: $cname"
 
         puts $fo "    <cell>"
-        puts $fo "      <type>[get_property NAME $libcell]</type>"
+        set cname [get_property NAME $libcell]
+        puts $fo "      <type>$cname</type>"
+
+        # Mark LUT cells
+	if { [get_property PRIMITIVE_GROUP $libcell] == "LUT" } {
+            puts $fo "        <is_lut>"
+	    set num_pins [get_property NUM_PINS $libcell] 
+	    set num [expr {$num_pins - 1}]
+            puts $fo "          <num_inputs>$num</num_inputs>"
+            puts $fo "        </is_lut>"
+        }
+        
+        # Mark VCC and GND cells
+        if { $cname == "VCC" } {
+            puts $fo "        <vcc_source/>"
+        }
+        if { $cname == "GND" } {
+            puts $fo "        <gnd_source/>"
+        }
+
+        
         puts $fo "      <level>$level</level>"
         puts $fo "      <pins>"
 
@@ -384,11 +493,13 @@ proc createCellLibrary { {part xc7a100t-csg324-3} {filename ""} } {
         puts $fo ""
     }
 
+    writePortXML $fo $supported $dict
+    
     puts $fo "  </cells>"
     puts $fo "</root>"
 
     close $fo
-    close_design
+#    close_design
 
     puts "CellLibrary \"$filename\" created successfully!"
 }
@@ -399,18 +510,18 @@ proc createCellLibrary { {part xc7a100t-csg324-3} {filename ""} } {
 #set sites [uniqueSites
 
 #function call to generate the cell library file
-createCellLibrary xc7a100t-csg324-3
+#createCellLibrary xc7a100t-csg324-3
 
 # Notes
 # ------
 
 # - Currently RapidSmith2 only supports assigning a cell pin to a single bel pin...in Vivado, this is not the case
-# 	A macro cell pin can map to several different bel pins. Take a LUTRAM cell for example, the address pins can
-#	be shared across all 4 LUTs, but they all map back to one cell pin for each address pin.
-#	So, in the XML output a different tag is used to represent these (as opposed to the possible tag).
+#       A macro cell pin can map to several different bel pins. Take a LUTRAM cell for example, the address pins can
+#       be shared across all 4 LUTs, but they all map back to one cell pin for each address pin.
+#       So, in the XML output a different tag is used to represent these (as opposed to the possible tag).
 
 # - I have made a decision...CIN will now only map to CYINIT of the carry 4 in RapidSmith2
-#	This is because only either CIN or CYINIT will be used, not both. We can just include in the
-#	documentation this fact, and if you are designing in rapidSmith2, only map one to the CYINIT
+#       This is because only either CIN or CYINIT will be used, not both. We can just include in the
+#       documentation this fact, and if you are designing in rapidSmith2, only map one to the CYINIT
 
 # - an XML template of the cellLibrary has been created, that can be found in the file macro_xml_template.xml

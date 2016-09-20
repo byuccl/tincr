@@ -1,3 +1,13 @@
+package provide tincr.io.library 0.0
+package require Tcl 8.5
+package require tincr.cad.design 0.0
+package require tincr.cad.device 0.0
+package require tincr.cad.util 0.0
+
+namespace eval ::tincr:: {
+    namespace export \
+	create_xml_familyinfo
+}
 # Source-ing this file will create the basic familyInfo file called
 # 'familyInfo_new.xml'.
 
@@ -169,6 +179,25 @@ proc processSite {s type compatible is_alt fo} {
 		puts $fo "        <bel>"
 		puts $fo "          <name>$tmpname</name>"
 		puts $fo "          <type>$tmpname</type>"
+
+		#print routethroughs if it is a LUT
+		set siz -1
+		if { [get_property TYPE $b] == "LUT5" } {
+		    set siz 5
+		}
+		if { [get_property TYPE $b] == "LUT6" } {
+		    set siz 6
+		}
+		if { $siz != -1 } {
+		    puts $fo "          <routethroughs>"
+		    for { set i 1}  {$i <= $siz} {incr i} {
+			puts $fo "            <routethrough>"
+			puts $fo "              <input>A$i</input>"
+			puts $fo "              <output>O$siz</output>"
+			puts $fo "            </routethrough>"
+		    }
+		    puts $fo "          </routethroughs>"
+		}
 		puts $fo "        </bel>"
 	}
     puts $fo "      </bels>"
@@ -222,11 +251,11 @@ proc printSingleBelPrimitiveList {sites fo} {
 
  
 #main function
-proc createFamilyInfo { } {
+proc ::tincr::create_xml_familyinfo { {part xc7a100t-csg324} } {
 	# open output file 
-	createBlankDesignByPart xc7a100t-csg324-1 
+	createBlankDesignByPart $part 
 
-	set fo [open "familyInfo_thomas.xml" w]
+	set fo [open "familyInfo_${part}.xml" w]
 
 	# print XML header 
 	puts $fo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
@@ -316,5 +345,5 @@ proc createFamilyInfo { } {
 	close_design	
 } 
 
-createFamilyInfo
+#createFamilyInfo
 
