@@ -311,7 +311,6 @@ proc printPortHeader {fo type pin_direction} {
     puts $fo "          <direction>$pin_direction</direction>"
     puts $fo "        </pin>"
     puts $fo "      </pins>"
-    puts $fo "      <bels>"
 }
 
 proc writePortXML { fo lc dict } {
@@ -320,6 +319,7 @@ proc writePortXML { fo lc dict } {
 
 
     printPortHeader $fo "IPORT" "output"
+    puts $fo "      <bels>"
     
     dict for {type site} $dict {
 	if {[get_property IS_PAD $site] && [get_property NUM_OUTPUTS $site] > 0 } {
@@ -340,6 +340,7 @@ proc writePortXML { fo lc dict } {
     puts $fo "    </cell>"
 
     printPortHeader $fo "OPORT" "input"
+    puts $fo "      <bels>"
     
     dict for {type site} $dict {
 	if {[get_property IS_PAD $site] && [get_property NUM_INPUTS $site] > 0 } {
@@ -360,6 +361,7 @@ proc writePortXML { fo lc dict } {
     puts $fo "    </cell>"
 
     printPortHeader $fo "IOPORT" "inout"
+    puts $fo "      <bels>"
     
     dict for {type site} $dict {
 	if {[get_property IS_PAD $site] && [get_property NUM_INPUTS $site] > 0  && [get_property NUM_OUTPUTS $site] > 0 } {
@@ -379,6 +381,19 @@ proc writePortXML { fo lc dict } {
     puts $fo "      </bels>"
     puts $fo "    </cell>"
 }
+
+proc printConfigurationProperties {fo lc } {
+    puts $fo "      <libcellproperties>"
+    set pl [list_property $lc]
+    foreach p $pl  {
+	puts $fo "        <libcellproperty>"
+	puts $fo "          <name>$p</name>"
+	puts $fo "          <value>[get_property $p $lc]</value>"
+	puts $fo "        </libcellproperty>"
+    }
+    puts $fo "      </libcellproperties>"
+}
+
 
 #top level function used to create a cell library file used in RapidSmith2
 proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} } {
@@ -444,6 +459,8 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} }
         }
 
         
+	printConfigurationProperties $fo $libcell
+
         puts $fo "      <level>$level</level>"
         puts $fo "      <pins>"
 
