@@ -418,9 +418,27 @@ proc ::tincr::write_routing_rs2 {args} {
 
     # create the routing file
     set filename [::tincr::add_extension ".rsc" $filename]
-    set txt [open $filename w]
+    set channel_out [open $filename w]
 
-    foreach site [get_sites -quiet -filter IS_USED] {
+    set used_sites [get_sites -quiet -filter IS_USED] 
+    
+    write_site_pips $used_sites $channel_out
+    write_static_and_routethrough_luts $used_sites $channel_out
+    
+    if {$global_logic} {
+    	set nets [get_nets -quiet -hierarchical]
+    } else {
+    	set nets [get_nets -quiet -hierarchical -filter {TYPE != POWER && TYPE != GROUND}]
+    }
+
+    write_net_routing $nets $channel_out
+   
+    close $channel_out
+}
+
+proc write_site_pips { site_list channel } {
+    
+    foreach site $site_list {
         set site_pips [get_site_pips -quiet -of_objects $site -filter IS_USED]
 
         if {$site_pips != ""} {
@@ -431,35 +449,74 @@ proc ::tincr::write_routing_rs2 {args} {
                 set sitename [get_property NAME [get_package_pins -quiet -of_object $site]]
             }
 
-            puts -nonewline $txt "SITE_PIPS $sitename "
+            puts -nonewline $channel "SITE_PIPS $sitename "
 
             foreach sp $site_pips {
-                puts -nonewline $txt "[lindex [split $sp "/"] end] "
+                puts -nonewline $channel "[lindex [split $sp "/"] end] "
             }
-            puts $txt ""
+            puts $channel {}
         }
     }
+}
 
-    # TODO: add support for partially routed nets
-    if {$global_logic} {
-    	set nets [get_nets -quiet -hierarchical]
-    } else {
-    	set nets [get_nets -quiet -hierarchical -filter {TYPE != POWER && TYPE != GROUND}]
+proc write_static_and_routethrough_luts { site_list channel } {
+    
+    set static_sources [list]
+    set routethrough_luts [list]
+    set MAX_CONFIG_SIZE 8
+    foreach bel [get_bels -quiet -of $site_list -filter {TYPE =~ LUT* && !IS_USED}] {
+        
+        set config [get_property CONFIG.EQN $bel]
+        
+        # skip long config strings...they cannot be static sources or routethroughs
+        if { [string length $config] > $MAX_CONFIG_SIZE } {
+            continue
+        }
+        
+        if { [regexp {(O[5,6])=[0,1] ?} $config -> pin] } { ; # GND/VCC source
+            lappend static_sources "[get_property NAME $bel]/$pin"
+        } elseif { [regexp {O[5,6]=\((A[1-6])\) ?} $config -> pin] } { ; # LUT routethrough
+            lappend routethrough_luts "$bel/$pin"
+        }
     }
+    
+    # print the gnd sources, vcc sources, and lut routethroughs to the routing file
+    ::tincr::print_list -header "STATIC_SOURCES" -channel $channel $static_sources
+    ::tincr::print_list -header "LUT_RTS" -channel $channel $routethrough_luts
+}
 
-    foreach net $nets {
-
+proc write_net_routing { net_list channel } {
+    
+    foreach net $net_list {
+    
         set status [get_property ROUTE_STATUS $net]
-
-        if {$status == "INTRASITE"} {
-            puts $txt "INTRASITE [get_property NAME $net]"
+        set type [get_property TYPE $net]
+       
+        if {$status == "INTRASITE" && $type != "POWER" && $type != "GROUND"} {
+            puts $channel "INTRASITE [get_property NAME $net]"
         } elseif {$status == "ROUTED"} {
-
-            puts $txt "INTERSITE [get_property NAME $net] [get_site_pins -of $net]"
-
+   
+            if {[llength [get_site_pins -quiet -of $net]] > 0} {
+                puts -nonewline $channel "INTERSITE [get_property NAME $net] "
+           
+                foreach site_pin [get_site_pins -of $net] {
+                    set toks [split $site_pin "/"]
+               
+                    set site [get_sites -of $site_pin]
+                    set sitename [lindex $toks 0]
+                    set pinname [lindex $toks 1]
+               
+                    if {[get_property IS_PAD $site]} {
+                        set sitename [get_property NAME [get_package_pins -quiet -of $site]]
+                    }
+               
+                    puts -nonewline $channel "$sitename/$pinname "                
+                }
+                puts $channel {}
+            }
+           
             set route_string [get_property ROUTE $net]
-            set type [get_property TYPE $net]
-
+            
             # Special case for VCC/GND nets with only a single source.
             # Inserts the tile of the source TIEOFF into the ROUTE string.
             # This is necessary because otherwise the ROUTE string is ambiguous
@@ -474,12 +531,10 @@ proc ::tincr::write_routing_rs2 {args} {
                     set route_string "( \{ $switchbox_tile/$route_string \} )"
                 }
             }
-
-            puts $txt "ROUTE [get_property NAME $net] $route_string"
+   
+            puts $channel "ROUTE [get_property NAME $net] $route_string"
         }
     }
-
-    close $txt
 }
 
 # packages the nets of the given pblock by internal nets,

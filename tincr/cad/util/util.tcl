@@ -16,6 +16,7 @@ namespace eval ::tincr {
         refresh_packages \
         diff_files \
         print \
+        print_list \
         parse_options \
         parse_flags_and_options \
         parse_args \
@@ -52,7 +53,7 @@ namespace eval ::tincr {
         spawn_vivado_run \
         run_in_temporary_project \
         organize_by \
-		print_quiet \
+		print_verbose \
 		time_command
 }
 
@@ -327,6 +328,55 @@ proc ::tincr::print { args } {
         {*}$cmd $channel [lindex $args end]
     }
 }
+
+proc ::tincr::print_list { args } {
+    # Summary:
+    # Prints a list to specified channel with the specified header
+
+    # Argument Usage:
+    # [-newline] : Add a new line character after printing each element. 
+    #              If this is not specified, a space will be printed between each element 
+    # -channel : The output channel to print to
+    # -header : The header to print before the list (i.e. HEADER item1 item 2)
+    # print_list : The list to print
+
+    # Return Value: none
+
+    # Categories: xilinxtclstore, byu, tincr, util
+
+    # Notes:
+    # The default channel is "stdout".
+    
+    # Usage:
+    # tincr::print_list [-channel arg] [-header arg] [-newline] print_list
+    
+    set newline 0
+    set channel ""
+    set header ""
+    ::tincr::parse_args {channel header} {newline} {} {print_list} $args
+        
+    if ($newline) {
+        set cmd puts
+    } else {
+        set cmd {puts -nonewline}
+    }
+    
+    # if no channel is specified, print to console
+    if {$channel == ""} {
+        set channel "stdout"
+    }
+    
+    if {$header != ""} {
+        {*}$cmd $channel "$header " 
+    }
+    
+    foreach element $print_list {
+        {*}$cmd $channel "$element "
+    }
+    
+    puts $channel {}
+}
+
 
 # ================== Procedures ================== #
 
