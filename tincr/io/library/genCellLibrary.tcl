@@ -393,6 +393,8 @@ proc print_libcell_properties {fo lc } {
 		lappend lst $p
 	    }
 	}
+
+	# Add the non-CONFIG properties we care about
 	if { $p == "PRIMITIVE_GROUP" } {
 	    lappend lst $p
 	}
@@ -403,13 +405,17 @@ proc print_libcell_properties {fo lc } {
 	foreach h $lst {
 	    puts $fo "        <libcellproperty>"
 	    puts $fo "          <name>$h</name>"
-	    if { $h == "PRIMITIVE_GROUP" } {
+
+	    # For non-CONFIG properties
+	    if { [string first "CONFIG" $h]  == -1 } {
 		puts $fo "          <value>[get_property $h $lc]</value>"
+		puts $fo "          <readonly/>"
 	    }
 	    
 	    foreach p $pl {
 		if { [llength [split $p "."]] == 3 && [string first $h $p] == 0 } {
 		    set tag [lindex [split $p "."] 2]
+		    set tag [string tolower $tag]
 		    puts $fo "          <$tag>[get_property $p $lc]</$tag>"
 		}
 	    }
