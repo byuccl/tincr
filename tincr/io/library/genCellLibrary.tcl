@@ -384,19 +384,40 @@ proc write_port_xml { fo lc dict } {
 
 # Go through and print out all the properties associated with a library cell
 proc print_libcell_properties {fo lc } {
-    puts $fo "      <libcellproperties>"
     set pl [list_property $lc]
+    set lst [list]
     foreach p $pl  {
-	if { [string first "CONFIG." $p] == 0 || [string first "PRIMITIVE_GROUP" $p] == 0 } {
-	    puts $fo "        <libcellproperty>"
-	    puts $fo "          <name>$p</name>"
-	    puts $fo "          <value>[get_property $p $lc]</value>"
-	    puts $fo "        </libcellproperty>"
+	if { [string first "CONFIG." $p] == 0 } {
+	    set tmp [split $p "."]
+	    if { [llength $tmp] == 2 } {
+		lappend lst $p
+	    }
+	}
+	if { $p == "PRIMITIVE_GROUP" } {
+	    lappend lst $p
 	}
     }
-    puts $fo "      </libcellproperties>"
+    
+    if { [llength $lst] > 0 } {
+	puts $fo "      <libcellproperties>"
+	foreach h $lst {
+	    puts $fo "        <libcellproperty>"
+	    puts $fo "          <name>$h</name>"
+	    if { $h == "PRIMITIVE_GROUP" } {
+		puts $fo "          <value>[get_property $h $lc]</value>"
+	    }
+	    
+	    foreach p $pl {
+		if { [llength [split $p "."]] == 3 && [string first $h $p] == 0 } {
+		    set tag [lindex [split $p "."] 2]
+		    puts $fo "          <$tag>[get_property $p $lc]</$tag>"
+		}
+	    }
+	    puts $fo "        </libcellproperty>"
+	}
+	puts $fo "      </libcellproperties>"
+    }
 }
-
 
 #top level function used to create a cell library file used in RapidSmith2
 proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} } {
