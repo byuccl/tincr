@@ -142,7 +142,7 @@ proc ::tincr::write_xdlrc { args } {
         # Newline
         puts "\rPercent complete: 100%"
         
-        set site_types [::tincr::sites get_types]
+        set site_types [::tincr::sites get_types [get_sites]]
     
         if {$primitive_defs} {
             # Primitive Definitions
