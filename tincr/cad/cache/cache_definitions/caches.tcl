@@ -117,7 +117,7 @@
             connect_net -net net -objects port
             
             set architecture [get_property ARCHITECTURE [get_parts -of_objects [current_design]]]
-            set lib_cells [lsort [::tincr::lib_cells get -architecture $architecture -of_object [get_libs UNISIM]]]
+            set lib_cells [lsort [get_lib_cells -of_objects [get_libs UNISIM]]]
             set cells [list]
             foreach lib_cell $lib_cells {
                 if {$::tincr::debug} {puts "DEBUG: Creating a cell for $lib_cell..."}

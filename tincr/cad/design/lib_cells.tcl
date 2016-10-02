@@ -74,6 +74,7 @@ proc ::tincr::lib_cells::get { args } {
     
     set lib_cells [get_lib_cells {*}$arguments]
     
+    # Deprecated: get_lib_cells used to include lib_cells that were unsupported by the target part, so we would have to filter by architecture, Now, get_lib_cells only returns lib_cells for the target part of the current design.
     if {[info exists architecture]} {
         set lib_cells [::struct::set intersect $lib_cells [get_lib_cells -regexp -filter "SUPPORTED_ARCHITECTURES=~\"ALL|\(\(^|\(.+ \)\)$architecture\(\( .+\)|\$)\)\""]]
     }
