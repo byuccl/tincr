@@ -14,7 +14,7 @@ namespace eval ::tincr:: {
 # TODO: Incorporate this into the TINCR distribution
 
 #open a new design in Vivado with the specified part
-proc createBlankDesignByPart { part } {
+proc create_blank_design_by_part { part } {
     return [tincr::designs new mydes $part]
 }
 
@@ -43,7 +43,7 @@ proc is_my_placement_legal { c b } {
 
 # create a list of all supported cells in the current design
 # TODO: find a way to merge the top and bottom funtion
-proc getSupportedLeafLibCells { } {
+proc get_supported_leaf_libcells { } {
     set lib_cells [get_lib_cells]
     set supported_cells [list]
     set i 0
@@ -64,7 +64,7 @@ proc getSupportedLeafLibCells { } {
 
 #create a list of all supported cells in the current design
 # TODO: update this
-proc getSupportedLibCells { } {
+proc get_supported_libcells { } {
     set lib_cells [get_lib_cells]
     set supported_cells [list]
 
@@ -82,7 +82,7 @@ proc getSupportedLibCells { } {
 
 # modified version of the tincr::sites::unique function to get a handle to each primitive site type
 # it chooses default site locations over alternate site locations
-proc uniqueSites {} {
+proc unique_sites {} {
     set sites [dict create]
     set alternates [dict create]
 
@@ -114,7 +114,7 @@ proc uniqueSites {} {
 
 #
 #Input parameters: list of library cells and a dictionary of sites
-proc createCellToSiteMap {lib_cells site_map} {
+proc create_cell_to_site_map {lib_cells site_map} {
     set should_reset 0
     set cell_site_map [dict create]
 
@@ -149,7 +149,7 @@ proc createCellToSiteMap {lib_cells site_map} {
 }
 
 #
-proc processLeafCell {c s fo} {
+proc process_leaf_cell {c s fo} {
     create_net tmp_net
     foreach b [get_bels -of $s] {
         if { [is_my_placement_legal $c $b] == 1 } then {
@@ -244,7 +244,7 @@ proc processLeafCell {c s fo} {
 }
 
 #
-proc writeMacroXML {c s fo} {
+proc write_macro_xml {c s fo} {
     puts $fo "        <bel>"
     puts $fo "          <id>"
     puts $fo "            <primitive_type>[tincr::sites::get_type $s]</primitive_type>"
@@ -279,7 +279,7 @@ proc writeMacroXML {c s fo} {
 }
 
 #
-proc processMacroCell {c s fo} {
+proc process_macrocell {c s fo} {
     set bel_cnt 0
 
     #first, try to place the MACRO cell onto each BEL of the site
@@ -287,7 +287,7 @@ proc processMacroCell {c s fo} {
         if { [is_my_placement_legal $c $b] == 1 } then {
             incr bel_cnt
             place_cell $c $b
-            writeMacroXML $c $s $fo
+            write_macro_xml $c $s $fo
             unplace_cell $c
         }
     }
@@ -295,12 +295,12 @@ proc processMacroCell {c s fo} {
     # If i can't place the cell onto any of the BELS, than place it on the site itself
     if { $bel_cnt == 0 } {
         place_cell $c $s
-        writeMacroXML $c $s $fo
+        write_macro_xml $c $s $fo
         unplace_cell $c
     }
 }
 
-proc printPortHeader {fo type pin_direction} {
+proc print_port_header {fo type pin_direction} {
     puts $fo "    <cell>"
     puts $fo "      <type>$type</type>"
     puts $fo "      <is_port/>"
@@ -311,15 +311,15 @@ proc printPortHeader {fo type pin_direction} {
     puts $fo "          <direction>$pin_direction</direction>"
     puts $fo "        </pin>"
     puts $fo "      </pins>"
-    puts $fo "      <bels>"
 }
 
-proc writePortXML { fo lc dict } {
+proc write_port_xml { fo lc dict } {
 
     puts "Creating port definitions..."
 
 
-    printPortHeader $fo "IPORT" "output"
+    print_port_header $fo "IPORT" "output"
+    puts $fo "      <bels>"
     
     dict for {type site} $dict {
 	if {[get_property IS_PAD $site] && [get_property NUM_OUTPUTS $site] > 0 } {
@@ -339,7 +339,8 @@ proc writePortXML { fo lc dict } {
     puts $fo "      </bels>"
     puts $fo "    </cell>"
 
-    printPortHeader $fo "OPORT" "input"
+    print_port_header $fo "OPORT" "input"
+    puts $fo "      <bels>"
     
     dict for {type site} $dict {
 	if {[get_property IS_PAD $site] && [get_property NUM_INPUTS $site] > 0 } {
@@ -359,7 +360,8 @@ proc writePortXML { fo lc dict } {
     puts $fo "      </bels>"
     puts $fo "    </cell>"
 
-    printPortHeader $fo "IOPORT" "inout"
+    print_port_header $fo "IOPORT" "inout"
+    puts $fo "      <bels>"
     
     dict for {type site} $dict {
 	if {[get_property IS_PAD $site] && [get_property NUM_INPUTS $site] > 0  && [get_property NUM_OUTPUTS $site] > 0 } {
@@ -380,6 +382,49 @@ proc writePortXML { fo lc dict } {
     puts $fo "    </cell>"
 }
 
+# Go through and print out all the properties associated with a library cell
+proc print_libcell_properties {fo lc } {
+    set pl [list_property $lc]
+    set lst [list]
+    foreach p $pl  {
+	if { [string first "CONFIG." $p] == 0 } {
+	    set tmp [split $p "."]
+	    if { [llength $tmp] == 2 } {
+		lappend lst $p
+	    }
+	}
+
+	# Add the non-CONFIG properties we care about
+	if { $p == "PRIMITIVE_GROUP" } {
+	    lappend lst $p
+	}
+    }
+    
+    if { [llength $lst] > 0 } {
+	puts $fo "      <libcellproperties>"
+	foreach h $lst {
+	    puts $fo "        <libcellproperty>"
+	    puts $fo "          <name>$h</name>"
+
+	    # For non-CONFIG properties
+	    if { [string first "CONFIG" $h]  == -1 } {
+		puts $fo "          <value>[get_property $h $lc]</value>"
+		puts $fo "          <readonly/>"
+	    }
+	    
+	    foreach p $pl {
+		if { [llength [split $p "."]] == 3 && [string first $h $p] == 0 } {
+		    set tag [lindex [split $p "."] 2]
+		    set tag [string tolower $tag]
+		    puts $fo "          <$tag>[get_property $p $lc]</$tag>"
+		}
+	    }
+	    puts $fo "        </libcellproperty>"
+	}
+	puts $fo "      </libcellproperties>"
+    }
+}
+
 #top level function used to create a cell library file used in RapidSmith2
 proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} } {
 
@@ -392,18 +437,18 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} }
     set fo [open $filename w]
 
     #open empty design to gain access to the Vivado cell library
-    createBlankDesignByPart $part
+    create_blank_design_by_part $part
 
     #find all of the supported library cells in the current part
     puts "\nFinding all of the supported cells in the current part..."
-    set supported [getSupportedLibCells]
+    set supported [get_supported_libcells]
 
     #generate a map of lib_cells -> sites that instances of this cell can be placed on
     puts "Getting a handle to each unique primitive site..."
-    set dict [uniqueSites]
+    set dict [unique_sites]
 
     puts "Finding all valid site placements for each supported cell...\n"
-    set cellsandsites [createCellToSiteMap $supported $dict]
+    set cellsandsites [create_cell_to_site_map $supported $dict]
 
     #write the cell library xml file header
     puts $fo {<?xml version="1.0" encoding="UTF-8"?>}
@@ -444,6 +489,8 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} }
         }
 
         
+	print_libcell_properties $fo $libcell
+
         puts $fo "      <level>$level</level>"
         puts $fo "      <pins>"
 
@@ -483,9 +530,9 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} }
             }
 
             if {$level == "macro"} {
-                # processMacroCell $c $s $fo
+                # process_macrocell $c $s $fo
             } else {
-                processLeafCell $c $s $fo
+                process_leaf_cell $c $s $fo
             }
         }
         puts $fo "      </bels>"
@@ -493,7 +540,7 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} }
         puts $fo ""
     }
 
-    writePortXML $fo $supported $dict
+    write_port_xml $fo $supported $dict
     
     puts $fo "  </cells>"
     puts $fo "</root>"
@@ -506,8 +553,8 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} }
 
 #test code
 
-#set libCell [getSupportedLeafLibCells]
-#set sites [uniqueSites
+#set libCell [get_supported_leaf_libcells]
+#set sites [unique_sites
 
 #function call to generate the cell library file
 #createCellLibrary xc7a100t-csg324-3
