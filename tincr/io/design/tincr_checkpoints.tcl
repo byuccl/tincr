@@ -24,51 +24,6 @@ namespace eval ::tincr:: {
 ## Writes a Tincr checkpoint to file. A Tincr checkpoint is able to store a basic design, its placement, and routing in a human-readble format. consists of five files: an EDIF netlist representation and XDC files that constrain the placement and routing of the design. Currently, designs with route-throughs are not supported, though this functionality is planned for a future release of Tincr.
 # @param filename The path and filename where the Tincr checkpoint is to be written.
 
-proc ::tincr::read_tcp_ooc_test {filename} {
-
-    set tcp_files [glob "$filename[file separator]*.tcp"]
-
-    if {$tcp_files == ""} {
-        puts "[Error] No Tcp files found in the specified directory"
-        return
-    }
-
-    set part [get_property PART [get_design]]
-
-    foreach tcp $tcp_files {
-        link_design -mode out_of_context -part $part -name $tcp
-        read_tcp -quiet $tcp
-        write_checkpoint -force "$filename[file separator]_$tcp.dcp"
-        remove_files *
-        close_design
-    }
-}
-
-proc ::tincr::write_tcp_ooc_test {filename} {
-
-    file mkdir $filename
-
-    foreach pblock [group_cells_by_clock_region] {
-        set outfile "$filename[file separator][get_property NAME $pblock].tcp"
-
-        set nets [get_internal_nets $pblock]
-        set internal_nets [lindex $nets 0]
-        set external_nets [lindex $nets 1]
-
-        write_tcp_for_pblock $outfile $pblock $internal_nets
-    }
-}
-
-proc ::tincr::write_tcp_for_pblock {filename pblock nets} {
-    set filename [::tincr::add_extension ".tcp" $filename]
-
-    file mkdir $filename
-
-    write_edif -force -pblock $pblock "${filename}"
-    write_placement_xdc -cells [get_cells -of $pblock] "${filename}/placement.xdc"
-    write_routing_xdc -sites [get_sites -of $pblock -filter IS_USED] -nets $nets -global_logic "${filename}/routing.xdc"
-}
-
 proc ::tincr::write_tcp {filename} {
     set filename [::tincr::add_extension ".tcp" $filename]
 
@@ -94,10 +49,13 @@ proc ::tincr::write_rscp {filename} {
 
     write_design_info "${filename}/design.info"
     write_edif -force "${filename}/netlist.edf"
+    puts "EDIF Done..."
     write_xdc -force "${filename}/constraints.rsc"
+    puts "XDC Done..."
     write_placement_rs2 "${filename}/placement.rsc"
+    puts "Placement Done..."
     write_routing_rs2 -global_logic "${filename}/routing.rsc"
-
+    puts "Routing Done..."
     puts "Successfully Created RapidSmith2 Checkpoint!"
 }
 
@@ -105,73 +63,54 @@ proc ::tincr::read_tcp {args} {
     set quiet 0
     set verbose 0
     ::tincr::parse_args {} {quiet verbose} {} {filename} $args
-
+    
     set q "-quiet"
     set ::tincr::verbose 1
- 
+    
     # quiet has priority over verbose if both are specified
     if {$quiet} {
-        set ::tincr::verbose 0        
+        set ::tincr::verbose 0     
     } elseif {$verbose} {
         set q "-verbose"
     }
-       
+
     set filename [::tincr::add_extension ".tcp" $filename]
 
     ::tincr::print_verbose "Parsing device information file..." 
     set part [get_design_info "$filename" part]
-
-    # NOTE: The edif must be read in before the design is linked, but the other files do not have to be
-    ::tincr::print_verbose "Reading netlist..."
+    
+    ::tincr::print_verbose "Reading netlist and constraint files..."
     set edif_runtime [report_runtime "read_edif $q ${filename}/netlist.edf" s]
-    ::tincr::print_verbose "Netlist added successfully. ($edif_runtime seconds)"
+    set import_fileset [create_fileset -constrset xdc_constraints]
+    add_files -fileset $import_fileset [glob ${filename}/*.xdc] 
+    ::tincr::print_verbose "Netlist and constraints added successfully. ($edif_runtime seconds)"
 
-    ::tincr::print_verbose "Linking design..."
-    set link_runtime [report_runtime "link_design $q -part $part" s]
+    ::tincr::print_verbose "Linking design (this may take awhile)..."
+    set link_runtime [report_runtime "link_design $q -constrset $import_fileset -part $part" s]
     ::tincr::print_verbose "Design linked successfully. ($link_runtime seconds)"
-
-    # Disabling placement checks
-    # set placer_checks [get_drc_ruledecks placer_checks]
-    # set_property IS_ENABLED 0 $placer_checks
-
-    ::tincr::print_verbose "Reading design constraints..."
-    set constraint_runtime [report_runtime "read_xdc $q -no_add ${filename}/constraints.xdc" s]
-    ::tincr::print_verbose "Design constraints added successfully. ($constraint_runtime seconds)"
-
-    ::tincr::print_verbose "Reading placement constraints..."
-    set place_runtime [report_runtime "read_xdc $q -no_add ${filename}/placement.xdc" s]
-    ::tincr::print_verbose "Placement constraints added successfully. ($place_runtime seconds)"
-
-    ::tincr::print_verbose "Reading routing constraints..."
-    set route_runtime [report_runtime "read_xdc $q -no_add ${filename}/routing.xdc" s]
-    ::tincr::print_verbose "Routing constraints added successfully. ($route_runtime seconds)"
-
-    # Compute the total runtime
-    set total_runtime [expr { $edif_runtime + $link_runtime + $constraint_runtime + $place_runtime + $route_runtime } ]
-
-    #set space "        "
-    #puts $outfile "|   read_edif   |   link_design   |   constraints   |   placement.xdc   |   routing.xdc   |   # of nets   |   # of cells   |   total run time"
-    #puts $outfile "-----------------------------------------------------------------------------------------------------------------------------------------------"
-    #puts $outfile "    $edif_runtime $space $link_runtime $space $constraint_runtime $space $place_runtime  $space $route_runtime\
-    #          	  $space[llength [get_nets -hierarchical]]  $space  [llength [get_cells -hierarchical]]  $space$total_runtime s"
-    #close $outfile
-
-    # Unlock the design ... is this necessary?
+    
+    # complete the route for differential pair nets
+    # there is a bug in Vivado where you can't specify the ROUTE string of a net
+    # if the source is a port. It will give the error "ERROR: [Designutils 20-949] No driver found on net clock_N[0]"
+    # work around is to have Vivado route these nets for us ...
+    set differential_nets [get_nets -of [get_ports] -filter {ROUTE_STATUS != INTRASITE}]
+    
+    if {[llength $differential_nets] > 0 } {
+        ::tincr::print_verbose "Routing [llength $differential_nets] differential pair nets..."
+        # format_time does not work for this route design command, so I have to do it manually here
+        set start_time [clock microseconds]
+        route_design -quiet -nets $differential_nets
+        set end_time [clock microseconds]
+        set diff_time [::tincr::format_time [expr $end_time - $start_time] s]
+        ::tincr::print_verbose "Done routing...($diff_time seconds)"
+    }
+    
     ::tincr::print_verbose "Unlocking the design..."
     lock_design $q -level placement -unlock
 
-    # this may work for importing designs...need to test using a design diff function...which TINCR has!
-    # need to test with a custom routed design that uses a different input pin for the bel route-through
-    # possible hack to complete nets that use a BEL route-through
-    # foreach net [get_nets $q -filter {ROUTE_STATUS==ANTENNAS}] {
-    #	route_design -nets -directive Quick $net -quiet
-    # }
-
+    set total_runtime [expr { $edif_runtime + $link_runtime + $diff_time} ]
     # unlock the design at the end of the import process...do we need to do this?
     ::tincr::print_verbose "Design importation complete. ($total_runtime seconds)"
-
-    remove_files -quiet *
-    return {$edif_runtime $link_runtime $constraint_runtime $place_runtime $route_runtime $total_runtime}
 }
 
 # TODO: When filtering through cells in sites should we use the PRIMITIVE_LEVEL==LEAF if our search?
@@ -244,7 +183,7 @@ proc ::tincr::write_placement_xdc {args} {
     }
 
     foreach cell [sort_cells_for_export $cells] {
-
+    
         # ASSUMPTION: I am assuming that the only macros that are un-flattenable are LUT RAMS
         # Also, through experimentation, it looks like only one LUT RAM can be placed on a site at a time
         # so we don't have to worry about ordering distributed rams
@@ -375,40 +314,66 @@ proc ::tincr::write_placement_rs2 {filename} {
         }
     }
 
-    set cells [get_cells -hierarchical -filter {PRIMITIVE_LEVEL!=INTERNAL}]
+    # TODO: if/when macros are supported, update this function
+    set cells [get_cells -hierarchical -filter {PRIMITIVE_LEVEL==LEAF && STATUS!=UNPLACED}]
 
     # TODO: update this when macros get supported...currently only supports leaf cells
-    foreach cell [sort_cells_for_export $cells] {
-        if { [get_property PRIMITIVE_LEVEL $cell] == "LEAF"} {
-            set sitename [get_property LOC $cell]
-            set site [get_sites $sitename]
-            #For Bonded PAD sites, the XDLRC uses the package pin name rather than the actual sitename
-            if {[get_property IS_PAD $site] == 1} {
-                if {[get_property IS_BONDED $site]} {
-                    set sitename [get_property NAME [get_package_pins -quiet -of_object $site]]
-                }
+    # TODO: change this to $cells...we don't need to sort the cells for RapidSmith
+    foreach cell $cells {
+        
+        set site [get_sites -of $cell]
+        set sitename [get_property LOC $cell]
+        
+        #For Bonded PAD sites, the XDLRC uses the package pin name rather than the actual sitename
+        if { [get_property IS_PAD $site] } {
+            set sitename [get_property NAME [get_package_pins -quiet -of_object $site]]
+        }
+
+        set bel_toks [split [get_property BEL $cell] "."]
+        
+        #NOTE: We have to do this, because the SITE_TYPE property of sites are not updated correctly
+        #	   when you place cells there. BUFG is an example
+        set sitetype [lindex $bel_toks 0]
+        set bel [lindex $bel_toks end]
+        set tile [get_tile -of $site]
+
+        puts $txt "LOC [get_name $cell] $sitename $sitetype $bel $tile"
+
+        set pin_map ""
+        # print the pin mappings to the TINCR checkpoint file
+        foreach pin [get_pins -of $cell] {
+            append pin_map [get_property REF_PIN_NAME $pin]
+            
+            foreach bel_pin [get_bel_pins -of $pin] {
+                set bel_pin_name [lindex [split $bel_pin "/"] end]
+                append pin_map ":$bel_pin_name"
             }
-
-            set bel [lindex [split [get_property BEL $cell] "."] end]
-
-            #NOTE: We have to do this, because the SITE_TYPE property of sites are not updated correctly
-            #	   when you place cells there. BUFG is an example
-            set sitetype [lindex [split [get_property BEL $cell] "."] 0]
-
-            set tile [get_tile -of $site]
-
-            puts $txt "LOC [get_name $cell] $sitename $sitetype $bel $tile"
-
-            #print the pin mappings for LUT cells
-            set pins_to_lock [get_pins_to_lock $cell]
-            if {[llength $pins_to_lock] != 0 } {
-                puts $txt "LOCK_PINS $pins_to_lock [get_cells [get_name $cell]]"
-            }
+            append pin_map " "
+        }
+        
+        puts $txt "PINMAP [get_name $cell] $pin_map"
+        
+        if {0} {
+        #print the pin mappings for LUT cells
+        set pins_to_lock [get_pins_to_lock $cell]
+        if {[llength $pins_to_lock] != 0 } {
+            puts $txt "LOCK_PINS $pins_to_lock $cell]"
+        }
         }
     }
 
     close $txt
 }
+
+proc get_rapidSmith_sitename { site } {
+    set sitename [get_property SITENAME $site]
+    
+    if {[get_property IS_PAD $site] == 1} {
+        set sitename [get_property NAME [get_package_pins -quiet -of_object $site]]
+    }
+
+    return $sitename
+} 
 
 #TODO: Update this once we have a better idea of what we will need for RS2 in terms of routing.
 #TODO: Add a suffix function to the TCL util package
@@ -486,55 +451,146 @@ proc write_static_and_routethrough_luts { site_list channel } {
 }
 
 proc write_net_routing { net_list channel } {
+
+    set vcc_sinks [list]
+    set gnd_sinks [list]
+    set vcc_route_string ""
+    set gnd_route_string ""
     
     foreach net $net_list {
     
         set status [get_property ROUTE_STATUS $net]
         set type [get_property TYPE $net]
        
-        if {$status == "INTRASITE" && $type != "POWER" && $type != "GROUND"} {
-            puts $channel "INTRASITE [get_property NAME $net]"
-        } elseif {$status == "ROUTED"} {
-   
-            if {[llength [get_site_pins -quiet -of $net]] > 0} {
-                puts -nonewline $channel "INTERSITE [get_property NAME $net] "
-           
-                foreach site_pin [get_site_pins -of $net] {
-                    set toks [split $site_pin "/"]
-               
-                    set site [get_sites -of $site_pin]
-                    set sitename [lindex $toks 0]
-                    set pinname [lindex $toks 1]
-               
-                    if {[get_property IS_PAD $site]} {
-                        set sitename [get_property NAME [get_package_pins -quiet -of $site]]
-                    }
-               
-                    puts -nonewline $channel "$sitename/$pinname "                
-                }
-                puts $channel {}
-            }
-           
-            set route_string [get_property ROUTE $net]
+        if {$type == "POWER"} {
+            set site_sinks [get_site_pins -quiet -of $net]
             
-            # Special case for VCC/GND nets with only a single source.
-            # Inserts the tile of the source TIEOFF into the ROUTE string.
-            # This is necessary because otherwise the ROUTE string is ambiguous
-            # Example :  { VCC_WIRE IMUX_L15 IOI_OLOGIC0_T1 LIOI_OLOGIC0_TQ LIOI_T0 } 
-            # becomes -> { INT_L_X0Y54/VCC_WIRE IMUX_L15 IOI_OLOGIC0_T1 LIOI_OLOGIC0_TQ LIOI_T0 }
-            if { $type == "POWER" || $type == "GROUND" } {
-                set tiles [get_tiles -of $net]
-                if {[llength $tiles] == 2} {
-                    # assuming that the second tile in the tile list is the interconnect tile
-                    set switchbox_tile [lindex $tiles 1]
-                    set route_string [string range [get_property ROUTE $net] 3 end-3]
-                    set route_string "( \{ $switchbox_tile/$route_string \} )"
-                }
+            if {[llength $site_sinks] > 0 } {
+                lappend vcc_sinks $site_sinks
             }
-   
-            puts $channel "ROUTE [get_property NAME $net] $route_string"
+            
+            if {$vcc_route_string == ""} {
+                set vcc_route_string [get_static_net_route_string $net]
+            }     
+        } elseif {$type == "GROUND"} {
+            set site_sinks [get_site_pins -quiet -of $net]
+            
+            if {[llength $site_sinks] > 0 } {
+                lappend gnd_sinks $site_sinks
+            }
+            
+            if {$gnd_route_string == ""} {
+                set gnd_route_string [get_static_net_route_string $net]
+            }        
+        } elseif {$status == "INTRASITE"} {
+            puts $channel "INTRASITE [get_property NAME $net]"
+        } else { ; # regular nets
+            
+            set site_pins [get_site_pins -quiet -of $net]
+            set net_name [get_property NAME $net]
+            
+            if {[llength $site_pins] > 0} {            
+                write_intersite_pins $net_name $site_pins $channel
+            }
+            
+            puts $channel "ROUTE $net_name [get_property ROUTE $net]"
         }
     }
+    
+    # add VCC and GND information to the file last (only print if there is a route string
+    if {$vcc_route_string != "{}"} {
+        puts $channel "INTERSITE VCC [join $vcc_sinks]"
+        puts $channel "ROUTE VCC $vcc_route_string"
+    }
+    
+    if {$gnd_route_string != "{}"} {
+        puts $channel "INTERSITE GND [join $gnd_sinks]"
+        puts $channel "ROUTE GND $gnd_route_string"
+    }
+}
+
+proc get_static_net_route_string { net } {
+    
+    set vcc_route_string [get_property ROUTE $net]
+    set tiles [get_tiles -quiet -of $net]
+    
+    if {[llength $tiles] == 2} {
+        # assuming that the second tile in the tile list is the interconnect tile
+        set switchbox_tile [lindex $tiles 1]
+        set vcc_route_string [string range $vcc_route_string 3 end-3]
+        set vcc_route_string "( \{ $switchbox_tile/$route_string \} )"
+    }
+    
+    return $vcc_route_string
+}
+
+proc write_intersite_pins { net_name site_pin_list channel } {
+    
+    puts -nonewline $channel "INTERSITE $net_name "
+    
+    foreach site_pin $site_pin_list {
+        set toks [split $site_pin "/"]
+        set site [get_sites -of $site_pin]
+        
+        set sitename [lindex $toks 0]
+        set pinname [lindex $toks 1]
+        
+        if {[get_property IS_PAD $site]} {
+            set sitename [get_property NAME [get_package_pins -quiet -of $site]]
+        }
+        puts -nonewline $channel "$sitename/$pinname "                
+    }
+    puts $channel {}
+}
+
+# --------------------------------------
+# Code for pblocks and parallel import
+# Still in the stages of testing
+# --------------------------------------
+
+proc ::tincr::read_tcp_ooc_test {filename} {
+
+    set tcp_files [glob "$filename[file separator]*.tcp"]
+
+    if {$tcp_files == ""} {
+        puts "[Error] No Tcp files found in the specified directory"
+        return
+    }
+
+    set part [get_property PART [get_design]]
+
+    foreach tcp $tcp_files {
+        link_design -mode out_of_context -part $part -name $tcp
+        read_tcp -quiet $tcp
+        write_checkpoint -force "$filename[file separator]_$tcp.dcp"
+        remove_files *
+        close_design
+    }
+}
+
+proc ::tincr::write_tcp_ooc_test {filename} {
+
+    file mkdir $filename
+
+    foreach pblock [group_cells_by_clock_region] {
+        set outfile "$filename[file separator][get_property NAME $pblock].tcp"
+
+        set nets [get_internal_nets $pblock]
+        set internal_nets [lindex $nets 0]
+        set external_nets [lindex $nets 1]
+
+        write_tcp_for_pblock $outfile $pblock $internal_nets
+    }
+}
+
+proc ::tincr::write_tcp_for_pblock {filename pblock nets} {
+    set filename [::tincr::add_extension ".tcp" $filename]
+
+    file mkdir $filename
+
+    write_edif -force -pblock $pblock "${filename}"
+    write_placement_xdc -cells [get_cells -of $pblock] "${filename}/placement.xdc"
+    write_routing_xdc -sites [get_sites -of $pblock -filter IS_USED] -nets $nets -global_logic "${filename}/routing.xdc"
 }
 
 # packages the nets of the given pblock by internal nets,

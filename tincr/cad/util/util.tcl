@@ -53,8 +53,8 @@ namespace eval ::tincr {
         spawn_vivado_run \
         run_in_temporary_project \
         organize_by \
-		print_verbose \
-		time_command
+        print_verbose \
+        assert \
 }
 
 # ================== Files and Other I/O ================== #
@@ -329,27 +329,12 @@ proc ::tincr::print { args } {
     }
 }
 
+## Prints a list to specified channel with the specified header
+#  @param print_list The list to print
+#  @param header Optional header to print before the list
+#  @param channel Channel to print the list to. The default channel is stdout
+#  @param newline Specifies whether to print a new line between list elements. Default is no.
 proc ::tincr::print_list { args } {
-    # Summary:
-    # Prints a list to specified channel with the specified header
-
-    # Argument Usage:
-    # [-newline] : Add a new line character after printing each element. 
-    #              If this is not specified, a space will be printed between each element 
-    # -channel : The output channel to print to
-    # -header : The header to print before the list (i.e. HEADER item1 item 2)
-    # print_list : The list to print
-
-    # Return Value: none
-
-    # Categories: xilinxtclstore, byu, tincr, util
-
-    # Notes:
-    # The default channel is "stdout".
-    
-    # Usage:
-    # tincr::print_list [-channel arg] [-header arg] [-newline] print_list
-    
     set newline 0
     set channel ""
     set header ""
@@ -818,6 +803,20 @@ proc ::tincr::generate_namespace_export_list { args } {
         set result [string range $result 0 end-[string length $endline]]
     }
     return $result
+}
+
+#
+
+## Asserts that the specified condition is true if assertions are enabled. 
+#  Example Usage: assert {$temperature < 100} "Temperature is too high" 
+#  @param condition The condition to check
+#  @param message Optional message to print if the assertion fails
+proc ::tincr::assert {condition {message "Assertion failed"}} {
+    if {$::tincr::enable_assertions} {
+        if {![uplevel 1 expr $condition]} {
+            return -code error "$message: $condition"
+        }
+    }
 }
 
 # ================== Lists and Dictionaries ================== #
