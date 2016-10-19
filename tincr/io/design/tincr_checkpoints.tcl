@@ -331,7 +331,7 @@ proc ::tincr::write_placement_rs2 {filename} {
 
         set bel_toks [split [get_property BEL $cell] "."]
         
-        #NOTE: We have to do this, because the SITE_TYPE property of sites are not updated correctly
+        # NOTE: We have to do this, because the SITE_TYPE property of sites are not updated correctly
         #	   when you place cells there. BUFG is an example
         set sitetype [lindex $bel_toks 0]
         set bel [lindex $bel_toks end]
@@ -345,21 +345,22 @@ proc ::tincr::write_placement_rs2 {filename} {
             append pin_map [get_property REF_PIN_NAME $pin]
             
             foreach bel_pin [get_bel_pins -of $pin] {
-                set bel_pin_name [lindex [split $bel_pin "/"] end]
-                append pin_map ":$bel_pin_name"
+                
+                # bel_pins follow the naming format: site/bel/pin_name
+                set bel_name_toks [split $bel_pin "/"]
+                
+                set bel_name [lindex $bel_name_toks 1]
+                set bel_pin_name [lindex $bel_name_toks end]
+                
+                # only add a pin mapping if its to the same bel
+                if {$bel_name == $bel} {
+                    append pin_map ":$bel_pin_name"
+                }
             }
             append pin_map " "
         }
         
         puts $txt "PINMAP [get_name $cell] $pin_map"
-        
-        if {0} {
-        #print the pin mappings for LUT cells
-        set pins_to_lock [get_pins_to_lock $cell]
-        if {[llength $pins_to_lock] != 0 } {
-            puts $txt "LOCK_PINS $pins_to_lock $cell]"
-        }
-        }
     }
 
     close $txt
