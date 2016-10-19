@@ -16,6 +16,7 @@ namespace eval ::tincr {
         refresh_packages \
         diff_files \
         print \
+        print_list \
         parse_options \
         parse_flags_and_options \
         parse_args \
@@ -52,8 +53,8 @@ namespace eval ::tincr {
         spawn_vivado_run \
         run_in_temporary_project \
         organize_by \
-		print_quiet \
-		time_command
+        print_verbose \
+        assert \
 }
 
 # ================== Files and Other I/O ================== #
@@ -327,6 +328,40 @@ proc ::tincr::print { args } {
         {*}$cmd $channel [lindex $args end]
     }
 }
+
+## Prints a list to specified channel with the specified header
+#  @param print_list The list to print
+#  @param header Optional header to print before the list
+#  @param channel Channel to print the list to. The default channel is stdout
+#  @param newline Specifies whether to print a new line between list elements. Default is no.
+proc ::tincr::print_list { args } {
+    set newline 0
+    set channel ""
+    set header ""
+    ::tincr::parse_args {channel header} {newline} {} {print_list} $args
+        
+    if ($newline) {
+        set cmd puts
+    } else {
+        set cmd {puts -nonewline}
+    }
+    
+    # if no channel is specified, print to console
+    if {$channel == ""} {
+        set channel "stdout"
+    }
+    
+    if {$header != ""} {
+        {*}$cmd $channel "$header " 
+    }
+    
+    foreach element $print_list {
+        {*}$cmd $channel "$element "
+    }
+    
+    puts $channel {}
+}
+
 
 # ================== Procedures ================== #
 
@@ -768,6 +803,20 @@ proc ::tincr::generate_namespace_export_list { args } {
         set result [string range $result 0 end-[string length $endline]]
     }
     return $result
+}
+
+#
+
+## Asserts that the specified condition is true if assertions are enabled. 
+#  Example Usage: assert {$temperature < 100} "Temperature is too high" 
+#  @param condition The condition to check
+#  @param message Optional message to print if the assertion fails
+proc ::tincr::assert {condition {message "Assertion failed"}} {
+    if {$::tincr::enable_assertions} {
+        if {![uplevel 1 expr $condition]} {
+            return -code error "$message: $condition"
+        }
+    }
 }
 
 # ================== Lists and Dictionaries ================== #
