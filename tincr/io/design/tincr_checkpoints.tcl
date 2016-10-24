@@ -441,8 +441,8 @@ proc write_static_and_routethrough_luts { site_list channel } {
         
         if { [regexp {(O[5,6])=[0,1] ?} $config -> pin] } { ; # GND/VCC source
             lappend static_sources "[get_property NAME $bel]/$pin"
-        } elseif { [regexp {O[5,6]=\((A[1-6])\) ?} $config -> pin] } { ; # LUT routethrough
-            lappend routethrough_luts "$bel/$pin"
+        } elseif { [regexp {(O[5,6])=\((A[1-6])\) ?} $config -> outpin inpin] } { ; # LUT routethrough
+            lappend routethrough_luts "$bel/$inpin/$outpin"
         }
     }
     
@@ -494,18 +494,29 @@ proc write_net_routing { net_list channel } {
                 write_intersite_pins $net_name $site_pins $channel
             }
             
-            puts $channel "ROUTE $net_name [get_property ROUTE $net]"
+            set route_string [get_property ROUTE $net]
+            
+            # only print non-empty route strings.
+            if {$route_string != "{}"} {
+                puts $channel "ROUTE $net_name [get_property ROUTE $net]"
+            }
         }
     }
     
-    # add VCC and GND information to the file last (only print if there is a route string
-    if {$vcc_route_string != "{}"} {
+    # add VCC and GND information to the file last (only print if there is a route string)
+    if {[llength $vcc_sinks] > 0} {
         puts $channel "INTERSITE VCC [join $vcc_sinks]"
+    }
+    
+    if {$vcc_route_string != ""} {
         puts $channel "ROUTE VCC $vcc_route_string"
     }
     
-    if {$gnd_route_string != "{}"} {
+    if {[llength $gnd_sinks] > 0} {
         puts $channel "INTERSITE GND [join $gnd_sinks]"
+    }
+    
+    if {$gnd_route_string != ""} {
         puts $channel "ROUTE GND $gnd_route_string"
     }
 }
