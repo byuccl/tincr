@@ -258,7 +258,14 @@ proc ::tincr::bels::is_lut {args} {
 # @param bel The <CODE>bel</CODE> object.
 # @return True (1) if this BEL is being used as a route through, false (0) otherwise.
 proc ::tincr::bels::is_route_through {bel} {
-    # TODO This is a planned feature
+    
+    # If a BEL is used, it can't be a routethrough
+    if { [get_property IS_USED $bel] } {
+        return false;
+    }
+    
+    # If its not used, test the CONFIG.EQN string of the bel
+    return [regexp {O[5,6]=\(A[1-6]\) ?} [get_property CONFIG.EQN $bel] match]
 }
 
 ## Remove the route-through (i.e. replace it with a BUF cell)
