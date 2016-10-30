@@ -344,7 +344,7 @@ proc ::tincr::write_placement_rs2 {filename} {
         foreach pin [get_pins -of $cell] {
             append pin_map [get_property REF_PIN_NAME $pin]
             
-            foreach bel_pin [get_bel_pins -of $pin] {
+            foreach bel_pin [get_bel_pins -of $pin -quiet] {
                 
                 # bel_pins follow the naming format: site/bel/pin_name
                 set bel_name_toks [split $bel_pin "/"]
@@ -530,7 +530,7 @@ proc get_static_net_route_string { net } {
         # assuming that the second tile in the tile list is the interconnect tile
         set switchbox_tile [lindex $tiles 1]
         set vcc_route_string [string range $vcc_route_string 3 end-3]
-        set vcc_route_string "( \{ $switchbox_tile/$route_string \} )"
+        set vcc_route_string "( \{ $switchbox_tile/$vcc_route_string \} )"
     }
     
     return $vcc_route_string
