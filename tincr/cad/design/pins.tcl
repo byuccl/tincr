@@ -23,7 +23,8 @@ namespace eval ::tincr::pins {
         info \
         remove \
         connect_net \
-        disconnect_net
+        disconnect_net \
+        get_pin_type
     namespace ensemble create
 }
 
@@ -114,4 +115,35 @@ proc ::tincr::pins::connect_net { pin net } {
 # @param net The <CODE>net</CODE> object.
 proc ::tincr::pins::disconnect_net { pin net } {
     disconnect_net -quiet -net $net $pin
+}
+
+## Gets the type of the pin according to Vivado. DATA is the
+#   default pin type where no other pin type is specified. Other valid pin types
+#   include CLEAR, CLOCK, ENABLE, PRESET, RESET, SET, SETRESET, AND WRITE_ENABLE
+#   TODO: on each new release of Vivado, verify this function is still correct.
+#           This has to be manually verified.
+#
+# @param pin Cell pin
+# @return The type of cell pin
+proc ::tincr::pins::get_pin_type { pin } {
+
+    if { [get_property IS_CLEAR $pin] } {
+        return "CLEAR"
+    } elseif { [get_property IS_CLOCK $pin] } {
+        return "CLOCK"
+    } elseif { [get_property IS_ENABLE $pin] } {
+        return "ENABLE"
+    } elseif { [get_property IS_PRESET $pin] } {
+        return "PRESET"
+    } elseif { [get_property IS_RESET $pin] } {
+        return "RESET"
+    } elseif { [get_property IS_SET $pin] } {
+        return "SET"
+    } elseif { [get_property IS_SETRESET $pin] } {
+        return "SETRESET"
+    } elseif { [get_property IS_WRITE_ENABLE $pin] } {
+        return "WRITE_ENABLE"
+    } else {
+        return "DATA"
+    }
 }

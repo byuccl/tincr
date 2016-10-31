@@ -39,7 +39,9 @@ namespace eval ::tincr::cells {
         insert \
         tie_unused_pins \
         get_lut_eqn \
-        set_lut_eqn
+        set_lut_eqn \
+        get_default_value \
+        reset_configuration
     namespace ensemble create
 }
 
@@ -189,17 +191,26 @@ proc ::tincr::cells::is_placed { cell } {
     return 0
 }
 
-## Is the proposed placement legal? Currently, this function actually places the cell on the given BEL using Vivado's <CODE>place_cell</CODE> command. If no errors are thrown, the placement is considered valid.
+## Is the proposed placement legal? Currently, this function actually places the cell on the given BEL using Vivado's <CODE>place_cell</CODE> command. If no errors are thrown 
+#   after placement, then the name of the BEL that the cell is actually placed on is compared with the expected BEL placement. If the names are identical the placement is considered valid.
+#   Otherwise, the placement is considered invalid. <code>cell</code> should not be already placed onto a BEL when calling this function. 
 # @param cell The cell to be placed.
 # @param bel The location the cell is to be placed on.
 # @return True (1) if the placement is valid, false (0) otherwise.
 proc ::tincr::cells::is_placement_legal { cell bel } {
-    if {[catch {place_cell [get_name $cell] [::tincr::get_name $bel]} fid] == 0} {
-        unplace_cell [get_name $cell]
-        return 1
-    }
     
-    return 0
+    unplace_cell $cell
+    
+     set success 0 
+     if {[catch {place_cell $cell $bel} fid] == 0} {
+         if { [tincr::suffix $bel "/"] == [tincr::suffix [get_property BEL $cell] "."] } {            
+             set success 1
+         }
+     }
+     
+     unplace_cell $cell
+     
+     return $success
 }
 
 ## Is this cell a LUT?
@@ -433,4 +444,27 @@ proc ::tincr::cells::set_lut_eqn { cell equation } {
     
     # Format $result as a hexadecimal number that Vivado will accept.
     set_property INIT "$num_combinations'h[format %[expr $num_combinations >> 2]X $result]" $cell
+}
+
+## Gets the default value of a configuration for a given cell. For example, calling
+#   <code> tincr::cells::get_default_value $cell IS_C_INVERTED </code> on a Flip Flop cell will 
+#   return the <code>CONFIG.IS_C_INVERTED.DEFAULT</code> property of the backing library cell. 
+#
+# @param cell Cell instance
+# @param config Configuration to get the default value of
+# @return The default value of the specified config
+proc ::tincr::get_default_value {cell config} {
+    return [get_property "CONFIG.$config.DEFAULT" [get_lib_cells -of $cell]]
+}
+
+## Resets the specified configuration of the cell to their default. 
+#
+# @param cell Cell instance 
+# @param config_list List of configurations to reset 
+proc ::tincr::reset_configuration {cell config_list} {
+    
+    foreach config $config_list {
+        set default [get_property "CONFIG.$config.DEFAULT" [get_lib_cells -of $cell]]
+        set_property $config $default $cell  
+    }
 }
