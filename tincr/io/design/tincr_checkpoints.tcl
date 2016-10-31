@@ -307,18 +307,9 @@ proc ::tincr::write_placement_rs2 {filename} {
     set filename [::tincr::add_extension ".rsc" $filename]
     set txt [open $filename w]
 
-    #right now RS2 doesn't support top-level ports, but we may need this in the future
-    foreach port [get_ports] {
-        if {[get_property PACKAGE_PIN $port] != ""} {
-            puts $txt "PACKAGE_PIN [get_property PACKAGE_PIN $port] [get_ports [get_name $port]]"
-        }
-    }
-
     # TODO: if/when macros are supported, update this function
     set cells [get_cells -hierarchical -filter {PRIMITIVE_LEVEL==LEAF && STATUS!=UNPLACED}]
 
-    # TODO: update this when macros get supported...currently only supports leaf cells
-    # TODO: change this to $cells...we don't need to sort the cells for RapidSmith
     foreach cell $cells {
         
         set site [get_sites -of $cell]
@@ -361,6 +352,13 @@ proc ::tincr::write_placement_rs2 {filename} {
         }
         
         puts $txt "PINMAP [get_name $cell] $pin_map"
+    }
+    
+    # write the port information to the checkpoint file
+    foreach port [get_ports] {
+        if {[get_property PACKAGE_PIN $port] != ""} {
+            puts $txt "PACKAGE_PIN [get_property PACKAGE_PIN $port] [get_ports [get_name $port]]"
+        }
     }
 
     close $txt
