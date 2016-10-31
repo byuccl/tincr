@@ -11,142 +11,6 @@ namespace eval ::tincr:: {
 }
 
 # This script creates the cellLibrary.xml file needed for RapidSmith2.
-# All function used are encapsulated into this file
-
-## Get the name of a BEL.
-# @param bel The <CODE>bel</CODE> object.
-# @return The name of the BEL as a string.
-
-## Splits the <code>string</code> by <code>token</code>, and returns the last element in the list.
-#  Helper function used to get the relative name of Vivado elements. For example, the call
-#  <code>suffix "I/am/a/test" "/"</code> will return the string "test."
-#  TODO: add to tincr.util
-#
-# @param string The string to split 
-# @param token The token to split the string on
-proc suffix { string token } {
-    return [lindex [split $string $token] end]
-}
-
-## Tests if a cell can be placed on a particular BEL. 
-#
-# TODO: Add to tincr::cell
-# @param cell The <code>cell<code> instance to be placed
-# @param bel The <code>bel</code> to try placing <code>cell<code> on.
-proc is_my_placement_legal { cell bel } {
-    unplace_cell $cell
-   
-    set success 0 
-    if {[catch {place_cell $cell $bel} fid] == 0} {
-        if { [suffix $bel "/"] == [suffix [get_property BEL $cell] "."] } then {            
-            set success 1
-        }
-    }
-    
-    unplace_cell $cell
-    
-    return $success
-}
-
-## Creates a list of all supported leaf cells in the current device. Leaf cells are marked
-#   as supported if, when instantiated, the reference name of the cell instance matches the name
-#   of the library cell. Macro cells are excluded 
-#   TODO: find a way to merge this and get_supported_lib_cells 
-#
-# @return A list of supported leaf cells.
-proc get_supported_leaf_libcells { } {
-    set lib_cells [get_lib_cells]
-    set supported_cells [list]
-    set i 0
-
-    foreach lbc $lib_cells {
-        set c [create_cell -reference $lbc "cell_$i" -quiet]
-
-        if {[get_property REF_NAME $c] == $lbc && [get_property PRIMITIVE_LEVEL $c] == "LEAF"} {
-            lappend supported_cells $lbc
-        } else {
-            remove_cell [get_cells cell_$i]
-        }
-        incr i
-    }
-
-    return $supported_cells
-}
-
-## Creates a list of all supported cells in the current device. Cells are marked
-#   as supported if, when instantiated, the reference name of the cell instance matches the name
-#   of the library cell. Macro cells are included. 
-#   TODO: update this 
-#
-# @return A list of supported cells.
-proc get_supported_libcells { } {
-    set lib_cells [get_lib_cells]
-    set supported_cells [list]
-
-    foreach lbc $lib_cells {
-        set c [create_cell -reference $lbc tmp -quiet]
-
-        if {[get_property REF_NAME $c] == $lbc} {
-            lappend supported_cells $lbc
-        }
-        remove_cell $c
-    }
-
-    return $supported_cells
-}
-
-## Modified version of the <code>tincr::sites::unique</code> function to get a handle
-#   to each primitive site type in the current device. This function chooses 
-#   default site locations over alternate site locations, and chooses a different
-#   site location for alternate types if possible. 
-#   TODO: update the tincr::sites::unique function
-#
-# @returns A list with two elements. <br>
-#           (1) The first element is the map from a site type to a site location <br>
-#           (2) A set of site types that are only alternate site types <br>
-proc create_unique_site_maps { } {
-    set default_sites [dict create]
-    set alternates [dict create]
-    set global_site_map [dict create]
-        
-    foreach site [get_sites] {
-        
-        set default_site_type [get_property SITE_TYPE $site]
-        
-        dict lappend global_site_map $default_site_type $site
-        
-        # add to the map of default site types if we haven't encountered this site type before
-        if {![dict exists $default_sites $default_site_type]} {
-            dict set default_sites $default_site_type $site
-        }
-
-        # add all alternate site types to the alternate site map
-        foreach alternate_type [get_property ALTERNATE_SITE_TYPES $site] {
-            if {![dict exists $alternates $alternate_type]} {
-                dict set alternates $alternate_type $default_site_type
-            }
-        }
-    }
-    
-    set alternate_only_site_set [list]
-    # If a site in the alternate dictionary is not already in the default dictionary, add it with a unique site
-    # NOTE: IOB sites cause Vivado to crash when you set alternate site types that are IOBs
-    #   so, unfortunately, we have to ignore these until the bug is fixed. This is generally not an 
-    #   issue because all IOB sites show up as non-default types. 
-    dict for {alternate_type site} $alternates {
-        if { ![dict exists $default_sites $alternate_type] && ![string match {*IOB*} $alternate_type] } {
-            
-            set site_list [dict get $global_site_map $site]
-            ::tincr::assert { [llength $site_list] > 0 } "Bad assumption. Alternate site only can be placed in one location. Re-evaluate script. $alternate_type -> $site_list"
-            
-            # grab a unique site for the alternate site so we don't mess up the placement on default site types
-            dict set default_sites $alternate_type [lindex $site_list 1]
-            ::struct::set add alternate_only_site_set $alternate_type
-        }
-    }
-    
-    return [list $default_sites $alternate_only_site_set]
-}
 
 ## Creates a dictionary that maps a cell object, to all site locations where it
 #   can be validly placed.
@@ -224,11 +88,11 @@ proc process_leaf_cell {cell site xml_out} {
     }
     
     foreach bel [get_bels -of $site] {
-        if { [is_my_placement_legal $cell $bel] == 1 } then {
+        if { [tincr::cells::is_placement_legal $cell $bel] == 1 } then {
             puts $xml_out "        <bel>"
             puts $xml_out "          <id>"
             puts $xml_out "            <primitive_type>[tincr::sites::get_type $site]</primitive_type>"
-            puts $xml_out "            <name>[suffix $bel "/"]</name>"
+            puts $xml_out "            <name>[tincr::suffix $bel "/"]</name>"
             puts $xml_out "          </id>"
 
             #if the placement is legal, place the cell onto the bel to get pin mapping info
@@ -243,6 +107,8 @@ proc process_leaf_cell {cell site xml_out} {
                 get_static_leaf_cell_pin_mappings $cell $bel $xml_out
             }
             
+            # The commented out sections below if for when configurable cell mappings are added to RapidSmith
+            # for now they are commented out because they are not used, but will be used sometime in the near future.
             if {0} { ; # START COMMENT
             else {
                                 
@@ -345,7 +211,7 @@ proc get_dynamic_leaf_cell_pin_mappings { cell bel config_list config_value_map 
     
     set config_count [llength $config_list]
    
-    reset_configuration $cell $config_list
+    tincr::cells::reset_configuration $cell $config_list
     # attach_nets $cell
             
     set pin_map_list [list]
@@ -368,7 +234,7 @@ proc get_dynamic_leaf_cell_pin_mappings { cell bel config_list config_value_map 
                 lappend pin_map_list $pin_map
                 lappend configuration_settings "$config:$value"
             }
-            set_property $config [get_default_value $cell $config] $cell
+            set_property $config [tincr::cells::get_default_value $cell $config] $cell
         }
     }
     
@@ -390,11 +256,11 @@ proc get_dynamic_leaf_cell_pin_mappings { cell bel config_list config_value_map 
                         lappend pin_map_list $pin_map
                         lappend configuration_settings "$config:$value $other_config:$other_value"
                     }
-                    set_property $other_config [get_default_value $cell $other_config] $cell
+                    set_property $other_config [tincr::cells::get_default_value $cell $other_config] $cell
                 }
             }
             
-            set_property $config [get_default_value $cell $config] $cell
+            set_property $config [tincr::cells::get_default_value $cell $config] $cell
         }
         
         linsert $config_list 0 $config ; # add the processes element to the start of the list
@@ -405,29 +271,6 @@ proc get_dynamic_leaf_cell_pin_mappings { cell bel config_list config_value_map 
     
     # remove all of the temporarily created nets
     # remove_net *
-}
-
-## Gets the default value of a configuration for a given cell
-#   TODO: add this to tincr::cell?
-#
-# @param cell Library cell instance
-# @param config Configuration to get the default value of
-# @return The default value of the specified config
-proc get_default_value {cell config} {
-    return [get_property "CONFIG.$config.DEFAULT" [get_lib_cells -of $cell]]
-}
-
-## Resets the cell to its default configuration. 
-#   TODO: add this to tincr::cell?
-#
-# @param cell Library cell instance 
-# @param config_list List of configurations to reset 
-proc reset_configuration {cell config_list} {
-    
-    foreach config $config_list {
-        set default [get_property "CONFIG.$config.DEFAULT" [get_lib_cells -of $cell]]
-        set_property $config $default $cell  
-    }
 }
 
 ## Gets all configurations on the specified cell that could possible affect cell pin to 
@@ -670,13 +513,13 @@ proc write_macro_xml {c s fo} {
     puts $fo "        <bel>"
     puts $fo "          <id>"
     puts $fo "            <primitive_type>[tincr::sites::get_type $s]</primitive_type>"
-    puts $fo "            <name>[suffix [get_property BEL $c] "."]</name>"
+    puts $fo "            <name>[tincr::suffix [get_property BEL $c] "."]</name>"
     puts $fo "          </id>"
 
     puts $fo "          <bel_mappings>"
 
     foreach bel [get_bels -of $s -filter {IS_USED==1}] {
-        puts $fo "            <name>[suffix $bel "/"]</name>"
+        puts $fo "            <name>[tincr::suffix $bel "/"]</name>"
     }
 
     puts $fo "          </bel_mappings>"
@@ -685,12 +528,12 @@ proc write_macro_xml {c s fo} {
     #get the cell pin to bel pin mappings
     foreach net [get_nets "$c/*"] {
         puts $fo "            <pin>"
-        puts $fo "              <name>[suffix $net "/"]</name>"
+        puts $fo "              <name>[tincr::suffix $net "/"]</name>"
 
         foreach bp [get_bel_pins -of $net -quiet] {
             puts $fo "              <mapping>"
             puts $fo "                <bel_name>[lindex [split $bp "/"] 1]</bel_name>"
-            puts $fo "                <bel_pin>[suffix $bp "/"]</bel_pin>"
+            puts $fo "                <bel_pin>[tincr::suffix $bp "/"]</bel_pin>"
             puts $fo "              </mapping>"
         }
         puts $fo "            </pin>"
@@ -711,7 +554,7 @@ proc process_macrocell {c s fo} {
 
     #first, try to place the MACRO cell onto each BEL of the site
     foreach b [get_bels -of $s] {
-        if { [is_my_placement_legal $c $b] == 1 } then {
+        if { [tincr::cells::is_placement_legal $c $b] == 1 } then {
             incr bel_cnt
             place_cell $c $b
             write_macro_xml $c $s $fo
@@ -787,7 +630,7 @@ proc create_port_xml { site_map xml_out } {
             set is_inout_pad [expr {$num_inputs > 0 && $num_outputs > 0} ]
             
             foreach bel [get_bels -of $site -filter {TYPE=="PAD"}] {
-                set bel_name [suffix [get_property NAME $bel] "/"]
+                set bel_name [tincr::suffix [get_property NAME $bel] "/"]
                 if {$is_input_pad} {
                     dict lappend iport_map $type $bel_name
                 }
@@ -898,7 +741,7 @@ proc write_tag_xml { cell_instance xml_out } {
 }
 
 ## Writes the cell pin information to the specified XML file. 
-#   The name, direction, and type (see {@link get_pin_type}) is
+#   The name, direction, and type (see {@link ::tincr::pins::get_pin_type}) is
 #   printed for each pin.
 #
 # @param cell_instance Library cell instance
@@ -920,40 +763,11 @@ proc write_pin_xml { cell_instance xml_out } {
         } else {
             puts $xml_out "          <direction>inout</direction>"
         }
-        puts $xml_out "          <type>[get_pin_type $cell_pin]</type>"
+        puts $xml_out "          <type>[tincr::pins::get_pin_type $cell_pin]</type>"
 
         puts $xml_out "        </pin>"
     }
     puts $xml_out "      </pins>"
-}
-
-## Gets the type of the specified pin according to Vivado. DATA is the
-#   default pin type where no other pin type is specified.
-#   TODO: on each new release of Vivado, verify this function is still correct.
-#
-# @param pin Cell pin
-# @return The type of cell pin
-proc get_pin_type { pin } {
-
-    if { [get_property IS_CLEAR $pin] } {
-        return "CLEAR"
-    } elseif { [get_property IS_CLOCK $pin] } {
-        return "CLOCK"
-    } elseif { [get_property IS_ENABLE $pin] } {
-        return "ENABLE"
-    } elseif { [get_property IS_PRESET $pin] } {
-        return "PRESET"
-    } elseif { [get_property IS_RESET $pin] } {
-        return "RESET"
-    } elseif { [get_property IS_SET $pin] } {
-        return "SET"
-    } elseif { [get_property IS_SETRESET $pin] } {
-        return "SETRESET"
-    } elseif { [get_property IS_WRITE_ENABLE $pin] } {
-        return "WRITE_ENABLE"
-    } else {
-        return "DATA"
-    }
 }
 
 ## Generates the cell library XML for the specified cell when it is placed
@@ -1022,23 +836,20 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} {
     # Open empty design to gain access to the Vivado cell library
     tincr::designs new mydes [get_parts $part]
 
-    puts "Printing Cells..."
     
     # Find all of the supported library cells in the current part
     puts "\nFinding all of the supported cells in the current part..."
-    set supported_lib_cells [get_supported_libcells]
+    set supported_lib_cells [::tincr::get_supported_libcells]
 
     # Generate a map of lib_cells -> sites that instances of this cell can be placed on
     puts "Getting a handle to each unique primitive site..."
-    set unique_sites [create_unique_site_maps]
+    set unique_sites [tincr::sites::unique 1]
     set site_map [lindex $unique_sites 0]
     set alternate_only_sites [lindex $unique_sites 1]
 
     puts "Finding all valid site placements for each supported cell...\n"
     set cell_to_sitetype_map [create_cell_to_site_map $supported_lib_cells $site_map $alternate_only_sites]
-
-    puts "NETS [get_nets]"
-    
+ 
     # Write the cell library xml file header
     puts $xml_out {<?xml version="1.0" encoding="UTF-8"?>}
     puts $xml_out "<root>"
@@ -1090,5 +901,5 @@ proc ::tincr::test_cell_library { {part xc7a100t-csg324-3} } {
     set ::tincr::debug 0
 }
 
-# global_variables
+# global_variables...default config threshold
 set config_threshold 100

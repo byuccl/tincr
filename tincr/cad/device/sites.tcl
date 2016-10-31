@@ -177,32 +177,65 @@ proc ::tincr::sites::iterate { args } {
     }
 }
 
-## Get a dictionary that contains one site of each site type.
-# @return A Tcl dict that maps each site type to one <CODE>site</CODE> object.
-proc ::tincr::sites::unique {} {
-    set sites {}
-    
-#    foreach site [get_sites] {
-#        dict set sites [get_property SITE_TYPE $site] $site
-#    }
-    
-    # TODO Change this so that sites with the type as a default are chosen over sites with type as alter
-    
-    # TODO This will not return all unique sites if a site has more alternate types than instances
+## Creates a dictionary that maps a site type to a physical site location 
+#   on the current device. This function chooses default site locations 
+#   over alternate site locations, and chooses a different site location for alternate 
+#   types if possible. If <code>include_alternate_only_sites</code> is specified
+#   then the site types that are only alternate types are also returned. 
+#
+# @returns If <code>include_alternate_only_sites</code> == 0: <br>
+#           A dictionary that maps a site type to a site location <br>
+# <br>
+#          If <code>include_alternate_only_sites</code> == 1: <br>
+#           A list with two elements: <br>
+#           (1) The first element is a dictionary that maps a site type to a site location <br>
+#           (2) A set of site types that are only alternate site types <br>
+proc ::tincr::sites::unique { {include_alternate_only_sites 0} } {
+    set default_sites [dict create]
+    set alternates [dict create]
+    set global_site_map [dict create]
+        
     foreach site [get_sites] {
-        if {![dict exists $sites [get_property SITE_TYPE $site]]} {
-            dict set sites [get_property SITE_TYPE $site] $site
-            continue
+        
+        set default_site_type [get_property SITE_TYPE $site]
+        
+        dict lappend global_site_map $default_site_type $site
+        
+        # add to the map of default site types if we haven't encountered this site type before
+        if {![dict exists $default_sites $default_site_type]} {
+            dict set default_sites $default_site_type $site
         }
-        foreach type [get_types $site] {
-            if {![dict exists $sites $type]} {
-                dict set sites $type $site
-                break
+
+        # add all alternate site types to the alternate site map
+        foreach alternate_type [get_property ALTERNATE_SITE_TYPES $site] {
+            if {![dict exists $alternates $alternate_type]} {
+                dict set alternates $alternate_type $default_site_type
             }
         }
     }
     
-    return $sites
+    set alternate_only_site_set [list]
+    # If a site in the alternate dictionary is not already in the default dictionary, add it with a unique site
+    # NOTE: IOB sites cause Vivado to crash when you set alternate site types that are IOBs
+    #   so, unfortunately, we have to ignore these until the bug is fixed. This is generally not an 
+    #   issue because all IOB sites show up as non-default types. 
+    dict for {alternate_type site} $alternates {
+        if { ![dict exists $default_sites $alternate_type] && ![string match {*IOB*} $alternate_type] } {
+            
+            set site_list [dict get $global_site_map $site]
+            
+            # grab a unique site for the alternate site so we don't mess up the placement on default site types
+            dict set default_sites $alternate_type [lindex $site_list 1]
+            ::struct::set add alternate_only_site_set $alternate_type
+        }
+    }
+    
+    if {$include_alternate_only_sites} {
+        return [list $default_sites $alternate_only_site_set]
+    } else {
+        return $default_sites
+        
+    }
 }
 
 ## Determine whether the site type of a site is an alternate site type.
