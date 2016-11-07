@@ -385,8 +385,11 @@ proc ::tincr::write_routing_rs2 {args} {
     set channel_out [open $filename w]
 
     set used_sites [get_sites -quiet -filter IS_USED] 
-    
     write_site_pips $used_sites $channel_out
+    
+    set single_port_sites [get_sites -quiet -of [get_ports] -filter {!IS_USED}]
+    write_site_pips $single_port_sites $channel_out
+    
     write_static_and_routethrough_luts $used_sites $channel_out
     
     if {$global_logic} {
