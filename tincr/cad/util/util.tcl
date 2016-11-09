@@ -55,7 +55,9 @@ namespace eval ::tincr {
         organize_by \
         print_verbose \
         assert \
-        suffix 
+        suffix \
+        set_tcl_display_limit \
+        reset_tcl_display_limit
 }
 
 # ================== Files and Other I/O ================== #
@@ -363,6 +365,18 @@ proc ::tincr::print_list { args } {
     puts $channel {}
 }
 
+## Sets the tcl standard out display limit.
+#
+# @param limit tcl display limit. default is 500
+proc ::tincr::set_tcl_display_limit { limit } {
+    set_param tcl.collectionResultDisplayLimit $limit
+}
+
+## Resets the tcl display limit to the default of 500
+#
+proc ::tincr::reset_tcl_display_limit {} {
+    set_param tcl.collectionResultDisplayLimit 500
+}
 
 # ================== Procedures ================== #
 

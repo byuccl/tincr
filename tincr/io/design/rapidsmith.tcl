@@ -63,7 +63,7 @@ proc ::tincr::test_static_sources { bel } {
 #   This function is used to verify cell properties in RapidSmith
 # @param cell Name of a cell
 # @param property_list list of property names
-proc ::tincr::get_property_values {cell property_list} {
+proc ::tincr::report_property_values {cell property_list} {
     
     set cell [get_cells $cell]
     
@@ -84,7 +84,7 @@ proc ::tincr::get_property_values {cell property_list} {
 #   This function is used to verify that a cell has been imported into RapidSmith correctly.Used for testing that cell of a design have been imported correctly
 #
 # @param cell Name of the cell to  
-proc ::tincr::get_cell_placement_info {cell} {
+proc ::tincr::report_cell_placement_info {cell} {
    
     set cell [get_cells $cell]
     
@@ -117,8 +117,7 @@ proc ::tincr::get_cell_placement_info {cell} {
 #
 #   This function is used to verify that a net has been imported correctly into RapidSmith
 #
-proc ::tincr::get_physical_net_info {net} {
-    set_param tcl.collectionResultDisplayLimit 100000
+proc ::tincr::report_physical_net_info {net} {
     
     set net [get_nets $net]
     
@@ -151,9 +150,7 @@ proc create_bel_pin_string {net} {
 
 ## Prints the wires, cell pins, and bel pins of ALL VCC nets in the currently opened design
 #   The output format is the same as {@link ::tincr::get_physical_net_info}
-proc ::tincr::get_vcc_routing_info {} {
-    
-    set_param tcl.collectionResultDisplayLimit 100000
+proc ::tincr::report_vcc_routing_info {} {
     
     set vcc_nets [get_nets -filter {TYPE==POWER}]
     
@@ -167,12 +164,10 @@ proc ::tincr::get_vcc_routing_info {} {
 
 ## Prints the wires, cell pins, and bel pins of ALL GND nets in the currently opened design
 #   The output format is the same as {@link ::tincr::get_physical_net_info}
-proc ::tincr::get_gnd_routing_info {} {
-    
-    set_param tcl.collectionResultDisplayLimit 100000
+proc ::tincr::report_gnd_routing_info {} {
     
     set num_gnd_cells [llength [get_cells -filter {REF_NAME==GND}]]
-    set gnd_nets [get_nets -filter {TYPE==GROUND}]
+    set gnd_nets [get_nets -filter {TYPE==GROUND} -quiet]
     set gnd_wires [get_wires -of $gnd_nets -quiet]
     set gnd_cell_pins [get_pins -of $gnd_nets -quiet]
     set gnd_bel_pins [get_bel_pins -of $gnd_nets -quiet]
@@ -182,7 +177,7 @@ proc ::tincr::get_gnd_routing_info {} {
 
 ## Returns the number of used sites in the currently opened design
 #
-proc ::tincr::get_used_site_count {} {
+proc ::tincr::report_used_site_count {} {
     puts [llength [get_sites -filter IS_USED -quiet]]
 }
 
@@ -191,7 +186,7 @@ proc ::tincr::get_used_site_count {} {
 #
 # @param site Name of a site
 #
-proc ::tincr::get_used_site_pips { site } {
+proc ::tincr::report_used_site_pips { site } {
     
     set site [get_sites $site -quiet]
     
@@ -222,7 +217,11 @@ proc ::tincr::test_default_cell {cell} {
     puts 1
 }
 
-## Tests
+## Tests that the placement of the port with the given name matches 
+#   the expected port placement
+#
+# @param port Name of the port to test
+# @param expected_port_loc expected site location of the port
 #
 proc ::tincr::test_port_placement {port expected_port_loc} {
     set test_passed 1
@@ -234,5 +233,5 @@ proc ::tincr::test_port_placement {port expected_port_loc} {
         set test_passed "0\n$expected_port_loc\n$actual_port_loc\n"
     }
     
-    return $test_passed
+    puts $test_passed
 }
