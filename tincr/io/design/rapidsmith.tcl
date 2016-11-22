@@ -29,7 +29,7 @@ proc ::tincr::test_routethrough { bel expected_inpin expected_outpin } {
     
     set config [get_property CONFIG.EQN [get_bels $bel]]
     
-    if {![regexp {(O[5,6])=\((A[1-6])\) ?} $config -> actual_outpin actual_inpin]} {
+    if {![regexp {(O[5,6])=(?:\(A6\+~A6\)\*)?\(+(A[1-6])\)+ ?} $config -> actual_outpin actual_inpin]} {
        puts 0
     }    
     
@@ -48,7 +48,7 @@ proc ::tincr::test_static_sources { bel } {
     
     set config [get_property CONFIG.EQN [get_bels $bel]]
     
-    if {[regexp {(O[5,6])=[0,1] ?} $config -> pin] } {
+    if {[regexp {(O[5,6])=(?:\(A6\+~A6\)\*)?\(?[0,1]\)? ?} $config -> pin] } {
         puts 1
     }
     puts 0
@@ -69,7 +69,7 @@ proc ::tincr::report_property_values {cell property_list} {
     
     set return_string ""
     foreach property $property_list {
-        set return_string "$return_string$property [get_property $property $cell]\n"
+        set return_string "$return_string$property![get_property $property $cell]\n"
     }
     
     puts -nonewline $return_string
@@ -89,7 +89,7 @@ proc ::tincr::report_cell_placement_info {cell} {
     set cell [get_cells $cell]
     
     # Get what bel the cell is placed on
-    if {[get_property STATUS $cell] != "PLACED"} {
+    if {[get_property STATUS $cell] == "UNPLACED"} {
         set returnString "\n"
     } else {
         set site [get_sites -of $cell]

@@ -365,7 +365,8 @@ proc ::tincr::print_list { args } {
     puts $channel {}
 }
 
-## Sets the tcl standard out display limit.
+## Sets the tcl standard out display limit. Passing in 0 will disable the tcl
+#   display limit completely.
 #
 # @param limit tcl display limit. default is 500
 proc ::tincr::set_tcl_display_limit { limit } {
