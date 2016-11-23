@@ -500,10 +500,6 @@ proc write_net_routing { net_list channel } {
     
     set vcc_sinks [list]
     set gnd_sinks [list]
-    # set vcc_wires [list]
-    # set gnd_wires [list]
-    # set vcc_route_string ""
-    # set gnd_route_string ""
     
     set vcc_net ""
     set gnd_net ""
