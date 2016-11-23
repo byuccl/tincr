@@ -500,10 +500,13 @@ proc write_net_routing { net_list channel } {
     
     set vcc_sinks [list]
     set gnd_sinks [list]
-    set vcc_wires [list]
-    set gnd_wires [list]
-    set vcc_route_string ""
-    set gnd_route_string ""
+    # set vcc_wires [list]
+    # set gnd_wires [list]
+    # set vcc_route_string ""
+    # set gnd_route_string ""
+    
+    set vcc_net ""
+    set gnd_net ""
     
     foreach net $net_list {
     
@@ -512,34 +515,30 @@ proc write_net_routing { net_list channel } {
        
         if {$type == "POWER"} { ; # VCC net
             
-            set site_sinks [get_site_pins_of_net $net]
+            set site_sinks [tincr::nets::get_site_pins_of_net $net]
             if {[llength $site_sinks] > 0 } {
                 lappend vcc_sinks $site_sinks
             }
             
-            if {[llength $vcc_wires] == 0} {
-                set vcc_wires [get_wires -of $net -quiet]
-                set vcc_route_string [get_property ROUTE $net]
-            }
-                       
+            if {$vcc_net == ""} {
+                set vcc_net $net
+            }           
         } elseif {$type == "GROUND"} { ; # GND net
             
-            set site_sinks [get_site_pins_of_net $net]
+            set site_sinks [tincr::nets::get_site_pins_of_net $net]
             if {[llength $site_sinks] > 0 } {
                 lappend gnd_sinks $site_sinks
             }
             
-            if {[llength $gnd_wires] == 0} {
-                set gnd_wires [get_wires -of $net -quiet]
-                set gnd_route_string [get_property ROUTE $net]
-            }
-               
+            if {$gnd_net == ""} {
+                set gnd_net $net
+            } 
         } elseif {$status == "INTRASITE"} {
             # mark nets as intrasite in the output routing file
             puts $channel "INTRASITE [get_property NAME $net]"
         } else { ; # regular nets
             
-            set site_pins [get_site_pins_of_net $net]
+            set site_pins [tincr::nets::get_site_pins_of_net $net]
             set net_name [get_property NAME $net]
             
             # add the site pins the routing export file if any exist
@@ -566,78 +565,20 @@ proc write_net_routing { net_list channel } {
         puts $channel "INTERSITE GND [join $gnd_sinks]"
     }
     
+    set vcc_wires [get_wires -of $vcc_net -quiet]
     if {[llength $vcc_wires] > 0} {
-        puts "Printing VCC"
         puts $channel "VCC $vcc_wires"
-        puts $channel "START_WIRES [get_static_source_wires $vcc_route_string $vcc_wires]"
+        puts $channel "START_WIRES [tincr::nets::get_static_source_wires $vcc_net]"
     }
     
+    set gnd_wires [get_wires -of $gnd_net -quiet] 
     if {[llength $gnd_wires] > 0} {
-        puts "Printing GND"
         puts $channel "GND $gnd_wires"
-        puts $channel "START_WIRES [get_static_source_wires $gnd_route_string $gnd_wires]"
+        puts $channel "START_WIRES [tincr::nets::get_static_source_wires $gnd_net]"
     }
     
     # re-enable the TCL display limit
     tincr::reset_tcl_display_limit 
-}
-
-## Returns the source wires of VCC and GND nets (i.e. the wires that are connected to tieoff bels).
-#   This is done by parsing the ROUTE string of these nets, and grabbing the first wire within each
-#   independent section (which are separated by parenthesis "()")
-#
-# @param route_string The ROUTE string of the static net
-# @param net_wires The wires within the static net
-# @return A list of all source wires in the net
-proc get_static_source_wires {route_string net_wires} {
-    
-    set toks [regexp -all -inline {\S+} $route_string] 
-    set start_list [list]
- 
-
-    if { [lindex $toks 0] == "\{" } { ; 
-        # special case for a single tieoff...use the net wires here
-        lappend start_list [lindex $net_wires 0]
-    } else { ; 
-        # multiple tieoffs, the ROUTE strings look like ({wireA0 wireA1... } ) ( {wireB0 wireB1 ...} ) ... 
-        for {set i 0} {$i < [llength $toks]} { incr i } {
-            set tok [lindex $toks $i]
-            
-            if {$tok=="("} {
-                incr i 2
-                lappend start_list [lindex $toks $i]
-            }
-        }
-    }
-    
-    return $start_list
-}
-
-## Gets the site pins connected to the specified net. The TCL call {@code get_site_pins -of $net}
-#   cannot be used because there is a bug in Vivado with alternate site type site pins. When a site is switched
-#   to an alternate type, the site pins are not updated in the TCL interface, but they may have changed.
-#   This function identifies these pins, and returns the correct site pins in this scenario.
-#
-# @param net TCL net object
-# @return a list of corrected site pins connected to the net
-proc get_site_pins_of_net {net} {
-    
-    set pin_set [list]
-    
-    foreach bel_pin [get_bel_pins -of $net] {
-        if {[llength [get_bels -of [get_sites -of $bel_pin]]] == 1} {
-            # if there is only one bel in the site, the bel pin name will match its corresponding site pin.
-            set belPinToks [split $bel_pin "/"]
-            ::struct::set add pin_set "[lindex $belPinToks 0]/[lindex $belPinToks 2]"
-        } else {
-            
-            foreach site_pin [get_site_pins -of [get_pins -of $bel_pin -quiet] -quiet] {
-                ::struct::set add pin_set $site_pin
-            }
-        }
-    }
-    
-    return $pin_set
 }
 
 ## Writes the site pins connected to the specified net, to the specified output channel in the form:
