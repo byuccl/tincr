@@ -286,6 +286,10 @@ proc ::tincr::get_design_info {args} {
     return ""
 }
 
+## For a LUT cell, this function returns the pin mappings of the LUTs input pins
+#
+# @param cell Cell in the currently opened design
+# @return A list of pin mappings in the form "cellPin:belPin"
 proc ::tincr::get_pins_to_lock {cell} {
     set group [get_property PRIMITIVE_GROUP $cell]
     set pins_to_lock [list]
@@ -302,7 +306,10 @@ proc ::tincr::get_pins_to_lock {cell} {
     return $pins_to_lock
 }
 
-proc ::tincr::write_placement_rs2 {filename} {
+## Creates the "placement.rsc" file within a TINCR checkpoint targeting RapidSmith
+#
+# @param filename The name of the placement checkpoint file, "placement.rsc" is the default.
+proc ::tincr::write_placement_rs2 { {filename placement.rsc} }  {
 
     set filename [::tincr::add_extension ".rsc" $filename]
     set txt [open $filename w]
@@ -310,6 +317,7 @@ proc ::tincr::write_placement_rs2 {filename} {
     # TODO: if/when macros are supported, update this function
     set cells [get_cells -hierarchical -filter {PRIMITIVE_LEVEL==LEAF && STATUS!=UNPLACED}]
 
+    # print the placement location and pin-mappings foreach cell in the design 
     foreach cell $cells {
         
         set site [get_sites -of $cell]
@@ -354,7 +362,7 @@ proc ::tincr::write_placement_rs2 {filename} {
         puts $txt "PINMAP [get_name $cell] $pin_map"
     }
     
-    # write the port information to the checkpoint file
+    # write the port information to the checkpoint file AFTER the cell information
     foreach port [get_ports] {
         if {[get_property PACKAGE_PIN $port] != ""} {
             puts $txt "PACKAGE_PIN [get_property PACKAGE_PIN $port] [get_ports [get_name $port]]"
@@ -364,6 +372,11 @@ proc ::tincr::write_placement_rs2 {filename} {
     close $txt
 }
 
+## Gets the name of a site that RapidSmith expects. The only time this is different than the
+#   name from {@code [get_property NAME $site] is if the site is an input or output PAD. In this
+#   case, the RapidSmith site name is the package pin name .
+#
+# @param site Site object
 proc get_rapidSmith_sitename { site } {
     set sitename [get_property SITENAME $site]
     
@@ -374,8 +387,12 @@ proc get_rapidSmith_sitename { site } {
     return $sitename
 } 
 
-#TODO: Update this once we have a better idea of what we will need for RS2 in terms of routing.
-#TODO: Add a suffix function to the TCL util package
+## Creates the RapidSmith routing checkpoint file. This file includes the site pips for each site,
+#   the wires in each net, the site pins attached to each net, the BELs that are being used
+#   as a static source, and the BELs that are being used as routethroughs 
+#
+# @param args A string of arguments into the function. Usage is as follows: <br>
+#           "tincr::write_routing_rs2 [-global_logic] filename"
 proc ::tincr::write_routing_rs2 {args} {
     set global_logic 0
     ::tincr::parse_args {} {global_logic} {} {filename} $args
@@ -384,25 +401,36 @@ proc ::tincr::write_routing_rs2 {args} {
     set filename [::tincr::add_extension ".rsc" $filename]
     set channel_out [open $filename w]
 
+    # write the used sites pips to the file
     set used_sites [get_sites -quiet -filter IS_USED] 
     write_site_pips $used_sites $channel_out
     
     set single_port_sites [get_sites -quiet -of [get_ports] -filter {!IS_USED}]
     write_site_pips $single_port_sites $channel_out
     
+    # write the static and routethrough lut information to the file
     write_static_and_routethrough_luts $used_sites $channel_out
     
+    # select which nets to export
     if {$global_logic} {
     	set nets [get_nets -quiet -hierarchical]
     } else {
     	set nets [get_nets -quiet -hierarchical -filter {TYPE != POWER && TYPE != GROUND}]
     }
 
+    # write the physical routing information of each net
     write_net_routing $nets $channel_out
    
     close $channel_out
 }
 
+## Writes the Site PIP information for each of the sites in site_list to the
+#   specified output channel/file. For each site, the site pips are written in the
+#   following format: <br>
+#   {@code "SITE_PIPS siteName pip0:pin0 pip1:pin1 ... pipN:"}
+#
+# @param site_list List of <b>used</b> sites in the design
+# @param channel Output file handle 
 proc write_site_pips { site_list channel } {
     
     foreach site $site_list {
@@ -426,11 +454,17 @@ proc write_site_pips { site_list channel } {
     }
 }
 
+## Searches through the used sites of the design, identifies LUT BELs that are being
+#   used as either a routethrough or static source (always outputs 1 or 0), and writes
+#   identifies these BELs in the routing export file.
+#
+# @param site_list List of <b>used</b> sites in the design
+# @param channel Output file handle
 proc write_static_and_routethrough_luts { site_list channel } {
     
     set static_sources [list]
     set routethrough_luts [list]
-    set MAX_CONFIG_SIZE 8
+    set MAX_CONFIG_SIZE 20
     foreach bel [get_bels -quiet -of $site_list -filter {TYPE =~ LUT* && !IS_USED}] {
         
         set config [get_property CONFIG.EQN $bel]
@@ -440,9 +474,9 @@ proc write_static_and_routethrough_luts { site_list channel } {
             continue
         }
         
-        if { [regexp {(O[5,6])=[0,1] ?} $config -> pin] } { ; # GND/VCC source
+        if { [regexp {(O[5,6])=(?:\(A6\+~A6\)\*)?\(?[0,1]\)? ?} $config -> pin] } { ; # GND/VCC source
             lappend static_sources "[get_property NAME $bel]/$pin"
-        } elseif { [regexp {(O[5,6])=\((A[1-6])\) ?} $config -> outpin inpin] } { ; # LUT routethrough
+        } elseif { [regexp {(O[5,6])=(?:\(A6\+~A6\)\*)?\(+(A[1-6])\)+ ?} $config -> outpin inpin] } { ; # LUT routethrough
             lappend routethrough_luts "$bel/$inpin/$outpin"
         }
     }
@@ -452,54 +486,68 @@ proc write_static_and_routethrough_luts { site_list channel } {
     ::tincr::print_list -header "LUT_RTS" -channel $channel $routethrough_luts
 }
 
+## Writes the physical elements used in each net of the design. This includes the
+#   wires and site pins of the net. VCC and GND nets are treated specially. The physical 
+#   components of these nets are collapsed into one, and all exported together. This means,
+#   VCC and GND are both only represented once in the routing export file.
+#
+# @param net_list A list of nets in the design to export
+# @param channel Output file handle
 proc write_net_routing { net_list channel } {
 
+    # disable the TCL display limit to fully print a list of wires
+    tincr::set_tcl_display_limit 0
+    
     set vcc_sinks [list]
     set gnd_sinks [list]
-    set vcc_route_string ""
-    set gnd_route_string ""
+    
+    set vcc_net ""
+    set gnd_net ""
     
     foreach net $net_list {
     
         set status [get_property ROUTE_STATUS $net]
         set type [get_property TYPE $net]
        
-        if {$type == "POWER"} {
-            set site_sinks [get_site_pins -quiet -of $net]
+        if {$type == "POWER"} { ; # VCC net
             
+            set site_sinks [tincr::nets::get_site_pins_of_net $net]
             if {[llength $site_sinks] > 0 } {
                 lappend vcc_sinks $site_sinks
             }
             
-            if {$vcc_route_string == ""} {
-                set vcc_route_string [get_static_net_route_string $net]
-            }     
-        } elseif {$type == "GROUND"} {
-            set site_sinks [get_site_pins -quiet -of $net]
+            if {$vcc_net == ""} {
+                set vcc_net $net
+            }           
+        } elseif {$type == "GROUND"} { ; # GND net
             
+            set site_sinks [tincr::nets::get_site_pins_of_net $net]
             if {[llength $site_sinks] > 0 } {
                 lappend gnd_sinks $site_sinks
             }
             
-            if {$gnd_route_string == ""} {
-                set gnd_route_string [get_static_net_route_string $net]
-            }        
+            if {$gnd_net == ""} {
+                set gnd_net $net
+            } 
         } elseif {$status == "INTRASITE"} {
+            # mark nets as intrasite in the output routing file
             puts $channel "INTRASITE [get_property NAME $net]"
         } else { ; # regular nets
             
-            set site_pins [get_site_pins -quiet -of $net]
+            set site_pins [tincr::nets::get_site_pins_of_net $net]
             set net_name [get_property NAME $net]
             
+            # add the site pins the routing export file if any exist
             if {[llength $site_pins] > 0} {            
                 write_intersite_pins $net_name $site_pins $channel
             }
             
+            # add the wires of the net to the routing export file if any exist
             set route_string [get_property ROUTE $net]
             
             # only print non-empty route strings.
             if {$route_string != "{}"} {
-                puts $channel "ROUTE $net_name [get_property ROUTE $net]"
+                puts $channel "ROUTE $net_name [get_wires -of $net]"
             }
         }
     }
@@ -509,44 +557,42 @@ proc write_net_routing { net_list channel } {
         puts $channel "INTERSITE VCC [join $vcc_sinks]"
     }
     
-    if {$vcc_route_string != ""} {
-        puts $channel "ROUTE VCC $vcc_route_string"
-    }
-    
     if {[llength $gnd_sinks] > 0} {
         puts $channel "INTERSITE GND [join $gnd_sinks]"
     }
     
-    if {$gnd_route_string != ""} {
-        puts $channel "ROUTE GND $gnd_route_string"
-    }
-}
-
-proc get_static_net_route_string { net } {
-    
-    set vcc_route_string [get_property ROUTE $net]
-    set tiles [get_tiles -quiet -of $net]
-    
-    if {[llength $tiles] == 2} {
-        # assuming that the second tile in the tile list is the interconnect tile
-        set switchbox_tile [lindex $tiles 1]
-        set vcc_route_string [string range $vcc_route_string 3 end-3]
-        set vcc_route_string "( \{ $switchbox_tile/$vcc_route_string \} )"
+    set vcc_wires [get_wires -of $vcc_net -quiet]
+    if {[llength $vcc_wires] > 0} {
+        puts $channel "VCC $vcc_wires"
+        puts $channel "START_WIRES [tincr::nets::get_static_source_wires $vcc_net]"
     }
     
-    return $vcc_route_string
+    set gnd_wires [get_wires -of $gnd_net -quiet] 
+    if {[llength $gnd_wires] > 0} {
+        puts $channel "GND $gnd_wires"
+        puts $channel "START_WIRES [tincr::nets::get_static_source_wires $gnd_net]"
+    }
+    
+    # re-enable the TCL display limit
+    tincr::reset_tcl_display_limit 
 }
 
+## Writes the site pins connected to the specified net, to the specified output channel in the form:
+#   {@code INTERSITE netName site0/pin0 site1/pin1 ... siteN/pinN}
+#
+# @param net_name Name of a net in the design
+# @param site_pin_list A list of site pins connected to that net
+# @param channel Output file handle
 proc write_intersite_pins { net_name site_pin_list channel } {
     
     puts -nonewline $channel "INTERSITE $net_name "
     
     foreach site_pin $site_pin_list {
         set toks [split $site_pin "/"]
-        set site [get_sites -of $site_pin]
         
         set sitename [lindex $toks 0]
         set pinname [lindex $toks 1]
+        set site [get_sites $sitename]
         
         if {[get_property IS_PAD $site]} {
             set sitename [get_property NAME [get_package_pins -quiet -of $site]]

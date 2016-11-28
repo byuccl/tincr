@@ -265,7 +265,7 @@ proc ::tincr::bels::is_route_through {bel} {
     }
     
     # If its not used, test the CONFIG.EQN string of the bel
-    return [regexp {O[5,6]=\(A[1-6]\) ?} [get_property CONFIG.EQN $bel] match]
+    return [regexp {O[5,6]=(\(A6\+~A6\)\*)?\(+(A[1-6])\)+ ?} [get_property CONFIG.EQN $bel] match]
 }
 
 ## Remove the route-through (i.e. replace it with a BUF cell)

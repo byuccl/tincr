@@ -54,7 +54,9 @@ namespace eval ::tincr::nets {
         get_route_throughs \
         route \
         unroute \
-        split_route
+        split_route \
+        get_site_pins_of_net \
+        get_static_source_wires
     namespace ensemble create
 }
 
@@ -727,4 +729,59 @@ proc ::tincr::nets::recurse_split_route { target var_name path } {
             }
         }
     }
+}
+
+## Gets the site pins connected to the specified net. The TCL call {@code get_site_pins -of $net}
+#   cannot be used because there is a bug in Vivado with alternate site type site pins. When a site is switched
+#   to an alternate type, the site pins are not updated in the TCL interface, but they may have changed.
+#   This function identifies these pins, and returns the correct site pins in this scenario.
+#
+# @param net TCL net object
+# @return a list of corrected site pins connected to the net
+proc ::tincr::nets::get_site_pins_of_net { net } {
+    
+    set pin_set [list]
+    
+    foreach bel_pin [get_bel_pins -of $net -quiet] {
+        if {[llength [get_bels -of [get_sites -of $bel_pin]]] == 1} {
+            # if there is only one bel in the site, the bel pin name will match its corresponding site pin.
+            set belPinToks [split $bel_pin "/"]
+            ::struct::set add pin_set "[lindex $belPinToks 0]/[lindex $belPinToks 2]"
+        } else {            
+            foreach site_pin [get_site_pins -of [get_pins -of $bel_pin -quiet] -quiet] {
+                ::struct::set add pin_set $site_pin
+            }
+        }
+    }
+    
+    return $pin_set
+}
+
+## Returns the source wires of VCC and GND nets (i.e. the wires that are connected to tieoff bels).
+#   This is done by parsing the ROUTE string of these nets, and grabbing the first wire within each
+#   independent section (sections are separated by parentheses "()")
+#
+# @param net A VCC or GND net that <b>has been routed</b>
+# @return A list of all source wires in the static net
+proc ::tincr::nets::get_static_source_wires { net } {
+    
+    set toks [regexp -all -inline {\S+} [get_property ROUTE $net]] 
+    set start_list [list]
+ 
+    if { [lindex $toks 0] == "\{" } {  
+        # special case for a single tieoff...use the net wires in this case
+        lappend start_list [lindex [get_wires -of $net -quiet] 0]
+    } else { 
+        # multiple tieoffs, the ROUTE strings look like ( { wireA0 wireA1... } ) ( { wireB0 wireB1 ... } ) ... 
+        for {set i 0} {$i < [llength $toks]} { incr i } {
+            set tok [lindex $toks $i]
+            
+            if {$tok=="("} {
+                incr i 2
+                lappend start_list [lindex $toks $i]
+            }
+        }
+    }
+    
+    return $start_list
 }
