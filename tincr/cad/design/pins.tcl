@@ -2,6 +2,7 @@
 #  @brief Query and modify <CODE>pin</CODE> objects in Vivado.
 #
 #  The <CODE>pins</CODE> ensemble provides procs that query or modify a design's pins.
+#
 
 package provide tincr.cad.design 0.0
 
