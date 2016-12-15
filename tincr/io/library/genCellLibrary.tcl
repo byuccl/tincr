@@ -854,8 +854,8 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} {
     puts $xml_out {<?xml version="1.0" encoding="UTF-8"?>}
     puts $xml_out "<root>"
     
-    puts $xml_out "  <family>[get_property family [get_device]]</family>"
-    # TODO: add the family tag here 
+    # Add the family tag to the xml file  
+    puts $xml_out "  <family>[string toupper [get_property FAMILY [get_parts -of [get_design]]]]</family>"
     
     puts $xml_out "  <cells>"
 
