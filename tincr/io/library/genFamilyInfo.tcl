@@ -6,7 +6,7 @@ package require tincr.cad.util 0.0
 
 namespace eval ::tincr:: {
     namespace export \
-	create_xml_familyinfo
+	create_xml_familyinfo 
 }
 # Source-ing this file will create the basic familyInfo file called
 # 'familyInfo_new.xml'.
@@ -91,7 +91,7 @@ proc uniqueSiteLists {primary_name alternate_name compatible_name} {
 	# Create a dictionary of sites that are only alternates
 	set alternates [dict create]
 	dict for {type site} $alternate_tmp {
-		if {![dict exists $primary $type] &&  ![regexp {.*IOB*} $type]} {
+        if {![dict exists $primary $type] &&  ![regexp {.*IOB*} $type]} {
 			dict set alternates $type $site
 		}
 	}
@@ -130,7 +130,7 @@ proc putis {nam fo} {
 
 proc processSite {s type compatible is_alt fo} {
 
-    puts $fo "    <primitive_type>"
+    puts $fo "    <site_type>"
     puts $fo "      <name>$type</name>"
     putis $type $fo
 
@@ -230,14 +230,14 @@ proc processSite {s type compatible is_alt fo} {
 	}
 	
     puts $fo "      </corrections>"
-    puts $fo "    </primitive_type>"
+    puts $fo "    </site_type>"
     puts $fo ""
 }
 
 proc printSingleBelPrimitiveList {sites fo} {
 
 	foreach site $sites {
-		puts $fo "    <primitive_type> "
+		puts $fo "    <site_type> "
 		puts $fo "      <name>$site</name>"
 		puts $fo "      <bels>"
 		puts $fo "        <bel>"
@@ -245,7 +245,7 @@ proc printSingleBelPrimitiveList {sites fo} {
 		puts $fo "          <type>$site</type>"
 		puts $fo "        </bel>"
 		puts $fo "      </bels>"
-		puts $fo "    </primitive_type>"
+		puts $fo "    </site_type>"
 	}
 }
 
@@ -265,7 +265,7 @@ proc ::tincr::create_xml_familyinfo { {part xc7a100t-csg324} } {
 	puts $fo "    <type>INT_L</type>"
 	puts $fo "    <type>INT_R</type>"
 	puts $fo "  </switch_matrix_types>"
-	puts $fo "  <primitive_types>"
+	puts $fo "  <site_types>"
 
 	# create the database of sites that we need
 	set primary_sites [dict create]
@@ -322,7 +322,7 @@ proc ::tincr::create_xml_familyinfo { {part xc7a100t-csg324} } {
 	set other [list DCI ]
 	printSingleBelPrimitiveList $other $fo
 
-	puts $fo "\n  </primitive_types>"
+	puts $fo "\n  </site_types>"
 	
 	#print the clock pads to the files
 	
@@ -343,7 +343,4 @@ proc ::tincr::create_xml_familyinfo { {part xc7a100t-csg324} } {
 	
 	puts "Successfully created familyInfo.xml!" 
 	close_design	
-} 
-
-#createFamilyInfo
-
+}

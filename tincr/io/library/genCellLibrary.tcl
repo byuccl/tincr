@@ -91,7 +91,7 @@ proc process_leaf_cell {cell site xml_out} {
         if { [tincr::cells::is_placement_legal $cell $bel] == 1 } then {
             puts $xml_out "        <bel>"
             puts $xml_out "          <id>"
-            puts $xml_out "            <primitive_type>[tincr::sites::get_type $site]</primitive_type>"
+            puts $xml_out "            <site_type>[tincr::sites::get_type $site]</site_type>"
             puts $xml_out "            <name>[tincr::suffix $bel "/"]</name>"
             puts $xml_out "          </id>"
 
@@ -512,7 +512,7 @@ proc create_leaf_cell_pin_mapping_permutable {cell bel xml_out} {
 proc write_macro_xml {c s fo} {
     puts $fo "        <bel>"
     puts $fo "          <id>"
-    puts $fo "            <primitive_type>[tincr::sites::get_type $s]</primitive_type>"
+    puts $fo "            <site_type>[tincr::sites::get_type $s]</site_type>"
     puts $fo "            <name>[tincr::suffix [get_property BEL $c] "."]</name>"
     puts $fo "          </id>"
 
@@ -594,7 +594,7 @@ proc write_port_xml { port_type pin_direction port_map xml_out } {
     dict for {site_type bel_type} $port_map {
         puts $xml_out "        <bel>"
         puts $xml_out "          <id>"
-        puts $xml_out "            <primitive_type>$site_type</primitive_type>"
+        puts $xml_out "            <site_type>$site_type</site_type>"
         puts $xml_out "            <name>$bel_type</name>"
         puts $xml_out "          </id>"
         puts $xml_out "        </bel>"        
@@ -853,6 +853,10 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} {
     # Write the cell library xml file header
     puts $xml_out {<?xml version="1.0" encoding="UTF-8"?>}
     puts $xml_out "<root>"
+    
+    # Add the family tag to the xml file  
+    puts $xml_out "  <family>[string toupper [get_property FAMILY [get_parts -of [get_design]]]]</family>"
+    
     puts $xml_out "  <cells>"
 
     # Create the xml for each valid library cell
