@@ -91,7 +91,6 @@ proc uniqueSiteLists {primary_name alternate_name compatible_name} {
 	# Create a dictionary of sites that are only alternates
 	set alternates [dict create]
 	dict for {type site} $alternate_tmp {
-		
         if {![dict exists $primary $type] &&  ![regexp {.*IOB*} $type]} {
 			dict set alternates $type $site
 		}
