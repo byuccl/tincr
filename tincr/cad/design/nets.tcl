@@ -749,6 +749,15 @@ proc ::tincr::nets::get_site_pins_of_net { net } {
             ::struct::set add pin_set "[lindex $belPinToks 0]/[lindex $belPinToks 2]"
         } else {            
             foreach site_pin [get_site_pins -of [get_pins -of $bel_pin -quiet] -quiet] {
+                
+                set site [get_sites -of $site_pin]
+                
+                if {[get_property IS_PAD $site]} {
+                    set pin_name [lindex [split $site_pin "/"] 1]
+                    set iob_name [get_package_pins -of $site]
+                    set site_pin "$iob_name/$pin_name"
+                }
+                
                 ::struct::set add pin_set $site_pin
             }
         }
