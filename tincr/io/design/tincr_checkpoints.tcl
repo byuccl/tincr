@@ -48,14 +48,22 @@ proc ::tincr::write_rscp {filename} {
     puts "Writing RapidSmith2 checkpoint to $filename..."
 
     write_design_info "${filename}/design.info"
+    
     write_edif -force "${filename}/netlist.edf"
     puts "EDIF Done..."
+    
+    set internal_net_map [write_macros "${filename}/macros.xml"]   
+    puts "Macros Done..."
+    
     write_xdc -force "${filename}/constraints.rsc"
     puts "XDC Done..."
+    
     write_placement_rs2 "${filename}/placement.rsc"
     puts "Placement Done..."
-    write_routing_rs2 -global_logic "${filename}/routing.rsc"
+    
+    write_routing_rs2 -global_logic "${filename}/routing.rsc" $internal_net_map
     puts "Routing Done..."
+    
     puts "Successfully Created RapidSmith2 Checkpoint!"
 }
 
@@ -93,8 +101,9 @@ proc ::tincr::read_tcp {args} {
     # there is a bug in Vivado where you can't specify the ROUTE string of a net
     # if the source is a port. It will give the error "ERROR: [Designutils 20-949] No driver found on net clock_N[0]"
     # work around is to have Vivado route these nets for us ...
-    set differential_nets [get_nets -of [get_ports] -filter {ROUTE_STATUS != INTRASITE}]
+    set differential_nets [get_nets -of [get_ports] -filter {ROUTE_STATUS != INTRASITE} -quiet]
     
+    set diff_time 0
     if {[llength $differential_nets] > 0 } {
         ::tincr::print_verbose "Routing [llength $differential_nets] differential pair nets..."
         # format_time does not work for this route design command, so I have to do it manually here
@@ -306,6 +315,66 @@ proc ::tincr::get_pins_to_lock {cell} {
     return $pins_to_lock
 }
 
+## Looks for macro cells in the design that aren't in the list of cells returned from
+# the function call "get_lib_cells", and writes the cell library XML for these cells.
+# TODO: add caching to this
+# @return A dictionary that maps macro cell type, to the internal nets of the macro
+#        These nets need to be included in the routing.rsc checkpoints
+proc ::tincr::write_macros { {filename macros.xml } } {
+    set filename [::tincr::add_extension ".xml" $filename]
+    set xml [open $filename w]
+    
+    # create list of cells in the cell library
+    # TODO: cache this...
+    set lib_cell_set ""
+    set macro_set ""
+    foreach lib_cell [get_lib_cells] {
+        ::struct::set add lib_cell_set $lib_cell
+    }
+        
+    puts $xml {<?xml version="1.0" encoding="UTF-8"?>}
+    puts $xml "<root>"
+    puts $xml "  <macros>"
+    
+    set macro_cells [get_cells -filter {PRIMITIVE_LEVEL==MACRO} -quiet]
+    set macros_to_write [list]
+    set macros_in_design [list]
+    
+    # look for macros that aren't contained in the default call to "[get_lib_cells]"
+    # TODO: need to add existing macros
+    foreach macro $macro_cells {
+        set ref_name [get_property REF_NAME $macro]
+        # find macros whose XML need to be included in the checkpoint
+        if {[::struct::set contains $lib_cell_set $ref_name] == 0}  {
+            ::struct::set add lib_cell_set $ref_name
+            lappend macros_to_write $macro
+        }
+        
+        # find all macros types in the current design.
+        if {[::struct::set contains $macro_set $ref_name] == 0}  {
+            ::struct::set add macro_set $ref_name
+            lappend macros_in_design $macro
+        }
+    }
+    
+    # write the XML for new macros
+    foreach macro $macros_to_write {
+        tincr::write_macro_xml $macro $xml
+    }
+    
+    # Create the map of type -> internal netnames for all macros
+    set internal_net_map [dict create]
+    foreach macro $macros_in_design {
+        dict set internal_net_map [get_property REF_NAME $macro] [get_internal_macro_nets $macro]
+    }
+    
+    puts $xml "  </macros>"
+    puts $xml "</root>"
+    
+    close $xml
+    return $internal_net_map
+}
+
 ## Creates the "placement.rsc" file within a TINCR checkpoint targeting RapidSmith
 #
 # @param filename The name of the placement checkpoint file, "placement.rsc" is the default.
@@ -314,8 +383,9 @@ proc ::tincr::write_placement_rs2 { {filename placement.rsc} }  {
     set filename [::tincr::add_extension ".rsc" $filename]
     set txt [open $filename w]
 
-    # TODO: if/when macros are supported, update this function
-    set cells [get_cells -hierarchical -filter {PRIMITIVE_LEVEL==LEAF && STATUS!=UNPLACED}]
+    # write placement information for leaf and internal cells
+    # set cells [get_cells -hierarchical -filter {PRIMITIVE_LEVEL!=MACRO && STATUS!=UNPLACED && BEL!="")}]
+    set cells [get_cells -hierarchical -filter {PRIMITIVE_LEVEL!=MACRO && BEL!=""}]
 
     # print the placement location and pin-mappings foreach cell in the design 
     foreach cell $cells {
@@ -387,6 +457,25 @@ proc get_rapidSmith_sitename { site } {
     return $sitename
 } 
 
+proc ::tincr::get_internal_macro_nets {macro} {
+    
+    set boundary_nets ""
+    foreach pin [get_pins -of $macro] {
+        set internal_net [get_nets -boundary_type lower -of $pin]
+        ::struct::set add boundary_nets $internal_net
+    }   
+    
+    set internal_nets [list]
+    foreach net [get_nets $macro/*] {
+        # skip nets that connect to the macro boundary        
+        if {![::struct::set contains $boundary_nets $net]} {
+            set netname [lindex [split $net "/"] 1] 
+            lappend internal_nets $netname
+        }
+    }
+    return $internal_nets
+}
+
 ## Creates the RapidSmith routing checkpoint file. This file includes the site pips for each site,
 #   the wires in each net, the site pins attached to each net, the BELs that are being used
 #   as a static source, and the BELs that are being used as routethroughs 
@@ -395,7 +484,7 @@ proc get_rapidSmith_sitename { site } {
 #           "tincr::write_routing_rs2 [-global_logic] filename"
 proc ::tincr::write_routing_rs2 {args} {
     set global_logic 0
-    ::tincr::parse_args {} {global_logic} {} {filename} $args
+    ::tincr::parse_args {} {global_logic} {} {filename internal_net_map} $args
 
     # create the routing file
     set filename [::tincr::add_extension ".rsc" $filename]
@@ -413,12 +502,17 @@ proc ::tincr::write_routing_rs2 {args} {
     
     # select which nets to export
     if {$global_logic} {
-    	set nets [get_nets -quiet -hierarchical]
+    	set nets [get_nets -quiet]
     } else {
-    	set nets [get_nets -quiet -hierarchical -filter {TYPE != POWER && TYPE != GROUND}]
+    	set nets [get_nets -quiet -filter {TYPE != POWER && TYPE != GROUND}]
     }
-
+    
     # write the physical routing information of each net
+    foreach macro [get_cells -filter {PRIMITIVE_LEVEL==MACRO}] {
+        foreach netname [dict get $internal_net_map [get_property REF_NAME $macro]] {
+           lappend nets [get_nets $macro/$netname]    
+        }
+    }
     write_net_routing $nets $channel_out
    
     close $channel_out

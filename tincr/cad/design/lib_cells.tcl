@@ -22,7 +22,8 @@ namespace eval ::tincr::lib_cells {
         compatible_with \
         is_lut \
         get_supported_libcells \
-        get_supported_leaf_libcells
+        get_supported_leaf_libcells \
+        get_supported_macro_cells
     namespace ensemble create
 }
 
@@ -154,7 +155,7 @@ proc ::tincr::get_supported_libcells { } {
 #   as supported if, when instantiated, the reference name of the cell instance matches the name
 #   of the library cell. Macro cells are excluded.  
 #
-# @return A list of supported leaf cells according to criteria above.
+# @return A list of supported leaf cells according to the criteria above.
 proc ::tincr::get_supported_leaf_libcells { } {
     set lib_cells [get_lib_cells]
     set supported_cells [list]
@@ -165,9 +166,35 @@ proc ::tincr::get_supported_leaf_libcells { } {
 
         if {[get_property REF_NAME $c] == $lbc && [get_property PRIMITIVE_LEVEL $c] == "LEAF"} {
             lappend supported_cells $lbc
-        } else {
-            remove_cell [get_cells cell_$i]
-        }
+        } 
+        
+        remove_cell $c
+        
+        incr i
+    }
+
+    return $supported_cells
+}
+
+## Creates a list of all supported MACRO primitive cells in the current device. Macro cells are marked
+#   as supported if, when instantiated, the reference name of the cell instance matches the name
+#   of the library cell.  
+#
+# @return A list of supported macro cells according to the criteria above.
+proc ::tincr::get_supported_macro_cells { } {
+    set lib_cells [get_lib_cells]
+    set supported_cells [list]
+    set i 0
+
+    foreach lbc $lib_cells {
+        set c [create_cell -reference $lbc "cell_$i" -quiet]
+
+        if {[get_property REF_NAME $c] == $lbc && [get_property PRIMITIVE_LEVEL $c] == "MACRO"} {
+            lappend supported_cells $lbc
+        } 
+        
+        remove_cell $c
+        
         incr i
     }
 
