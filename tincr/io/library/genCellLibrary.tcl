@@ -938,9 +938,6 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} {
     }
     
     set xml_out [open $filename w]
-
-    # print the RapidSmith 2.0 license to the file
-    print_rapidSmith_license $xml_out
     
     # Open empty design to gain access to the Vivado cell library
     tincr::designs new mydes [get_parts $part]
@@ -960,6 +957,7 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} {
  
     # Write the cell library xml file header
     puts $xml_out {<?xml version="1.0" encoding="UTF-8"?>}
+    print_rapidSmith_license $xml_out
     puts $xml_out "<root>"
     
     # Add the family tag to the xml file  
