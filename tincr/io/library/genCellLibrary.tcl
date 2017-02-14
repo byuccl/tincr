@@ -918,7 +918,8 @@ proc ::tincr::print_rapidSmith_license {outfile} {
     puts $outfile " ~ -->"
 }
 
-## Creates a cell library XML file that can be used by RapidSmith version 2.0.
+## Creates a cell library XML file that can be used by RapidSmith version 2.0. This function
+#   should not be called if a project is currently opened.
 #
 # @param filename Optional parameter to specify the generated cell library name. The default name is
 #           "cellLibrary_part.xml"
@@ -926,6 +927,13 @@ proc ::tincr::print_rapidSmith_license {outfile} {
 # @param threshold Threshold of configurable pin mappings to compute before quitting. (currently not used
 #           but will be used in the future)
 proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} {threshold 100}} {
+    
+    # check to see if there are any open projects 
+    if { [llength [get_projects -quiet]] > 0 } {
+        puts "Error: Could not generate CellLibrary because other open projects exist!"
+        puts "       Close the open projects and then rerun this command."
+        return
+    }
     
     global config_threshold
     set config_threshold $threshold
@@ -1010,6 +1018,7 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} {
     close_design -quiet
 
     puts "CellLibrary \"$filename\" created successfully!"
+    close_project * -quiet
 }
 
 ## Function to test the <code>create_xml_cell_library</code> function with assertions
