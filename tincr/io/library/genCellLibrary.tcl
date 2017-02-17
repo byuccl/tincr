@@ -7,7 +7,8 @@ package require tincr.cad.util 0.0
 namespace eval ::tincr:: {
     namespace export \
         create_xml_cell_library \
-        test_cell_library
+        test_cell_library \
+        write_macro_xml
 }
 
 # This script creates the cellLibrary.xml file needed for RapidSmith2.
@@ -509,7 +510,7 @@ proc create_leaf_cell_pin_mapping_permutable {cell bel xml_out} {
 #   currently not being used, but may be used in the future when/if macro cells
 #   are supported in RapidSmith
 #   TODO: revisit this if macro cells are supported in RapidSmith.
-proc write_macro_xml {c s fo} {
+proc write_macro_xml_original {c s fo} {
     puts $fo "        <bel>"
     puts $fo "          <id>"
     puts $fo "            <site_type>[tincr::sites::get_type $s]</site_type>"
@@ -557,7 +558,7 @@ proc process_macrocell {c s fo} {
         if { [tincr::cells::is_placement_legal $c $b] == 1 } then {
             incr bel_cnt
             place_cell $c $b
-            write_macro_xml $c $s $fo
+            write_macro_xml_original $c $s $fo
             unplace_cell $c
         }
     }
@@ -565,7 +566,7 @@ proc process_macrocell {c s fo} {
     # If i can't place the cell onto any of the BELS, than place it on the site itself
     if { $bel_cnt == 0 } {
         place_cell $c $s
-        write_macro_xml $c $s $fo
+        write_macro_xml_original $c $s $fo
         unplace_cell $c
     }
 }
@@ -724,7 +725,7 @@ proc write_tag_xml { cell_instance xml_out } {
         puts $xml_out "        <is_lut>"
         set num_pins [get_property NUM_PINS $lib_cell] 
         set num [expr {$num_pins - 1}]
-        puts $xml_out "          <num_inputs>$num_pins</num_inputs>"
+        puts $xml_out "          <num_inputs>$num</num_inputs>"
         puts $xml_out "        </is_lut>"
     }
     
@@ -797,11 +798,8 @@ proc write_bel_placement_xml { cell_instance site_type_list site_map alternate_o
             set_property MANUAL_ROUTING $site_type $site
         }
         
-        if {[get_property PRIMITIVE_LEVEL $cell_instance] == "MACRO"} {
-            # process_macrocell $cell_instance $s $xml_out
-        } else {
-            process_leaf_cell $cell_instance $site $xml_out
-        }
+        # this will always be a leaf cell at this point
+        process_leaf_cell $cell_instance $site $xml_out
         
         if { $is_alternate } {
             reset_property MANUAL_ROUTING $site
@@ -811,8 +809,117 @@ proc write_bel_placement_xml { cell_instance site_type_list site_map alternate_o
     puts $xml_out "      </bels>"
 }
 
+##
+#
+#
+proc ::tincr::write_macro_xml {macro outfile} {
 
-## Creates a cell library XML file that can be used by RapidSmith version 2.0.
+    set boundary_nets ""
+
+    puts $outfile "    <macro>"
+    puts $outfile "        <type>[get_property REF_NAME $macro]</type>"
+    # print the macro internal cell information
+    puts $outfile "        <cells>"
+    foreach internal [get_cells $macro/*] {
+        puts $outfile "            <internal>"
+        puts $outfile "                <name>[lindex [split [get_property NAME $internal] "/"] 1]</name>"
+        puts $outfile "                <type>[get_property REF_NAME $internal]</type>"
+        puts $outfile "            </internal>"
+    }
+    puts $outfile "        </cells>"  
+ 
+    # print the macro pin information
+    puts $outfile "        <pins>"
+    foreach pin [get_pins -of $macro] {
+        puts $outfile "            <pin>"
+        puts $outfile "                <name>[get_property REF_PIN_NAME $pin]</name>"
+    
+        # wrap this in a function call?
+        set dir [get_property DIRECTION $pin]
+        if {$dir == "IN"} {
+            set dir "input"
+        } elseif {$dir == "OUT"} {
+            set dir "output"
+        } else {
+            set dir "inout"
+        }
+        puts $outfile "                <direction>$dir</direction>"
+        puts $outfile "                <type>MACRO</type>"
+        puts $outfile "                <internalConnections>"
+    
+        # Add the boundary net to the set of boundary nets. this should only return one object... add an assertion here?
+        set internal_net [get_nets -boundary_type lower -of $pin]
+        ::struct::set add boundary_nets $internal_net
+    
+        foreach internal [get_pins -of $internal_net -filter IS_LEAF] {
+            set first [expr {[string first "/" $internal] + 1}]
+            puts $outfile "                    <pinname>[string range $internal $first end]</pinname>"
+        }
+        puts $outfile "                </internalConnections>"
+        puts $outfile "            </pin>"
+    }
+  
+    puts $outfile "        </pins>"   
+    
+    # print the macro internal net structure  
+    set macro_nets [get_nets $macro/*]
+    set internal_nets [list]
+    
+    # check to see if some internal nets exist
+    if {[::struct::set size $boundary_nets] != [llength $macro_nets]} {  
+        puts $outfile "        <internalNets>"
+        foreach net $macro_nets {
+    
+            # skip nets that connect to the macro boundary
+            if {[::struct::set contains $boundary_nets $net]} {
+                continue
+            }
+            
+            set netname [lindex [split $net "/"] 1]
+            lappend internal_nets $net
+            puts $outfile "            <internalNet>"
+            puts $outfile "                <name>$netname</name>"
+            puts $outfile "                <pins>"
+            foreach pin [get_pins -of $net] {
+                set first [expr {[string first "/" $pin] + 1}]
+                puts $outfile "                    <pinname>[string range $pin $first end]</pinname>"
+            }   
+    
+            puts $outfile "                </pins>"
+            puts $outfile "            </internalNet>"
+        }
+        puts $outfile "        </internalNets>"
+    }
+    
+    puts $outfile "    </macro>"
+    return $internal_nets
+}
+
+
+proc ::tincr::print_rapidSmith_license {outfile} {
+    puts $outfile "<!--"
+    puts $outfile " ~ Copyright (c) 2016 Brigham Young University"
+    puts $outfile " ~ "
+    puts $outfile " ~ This file is part of the BYU RapidSmith Tools."
+    puts $outfile ""
+    puts $outfile " ~ BYU RapidSmith Tools is free software: you may redistribute it"
+    puts $outfile " ~ and/or modify it under the terms of the GNU General Public License "  
+    puts $outfile " ~ as published by the Free Software Foundation, either version 3 of" 
+    puts $outfile " ~ the License, or (at your option) any later version."
+    puts $outfile " ~ "
+    puts $outfile " ~ BYU RapidSmith Tools is distributed in the hope that it will be " 
+    puts $outfile " ~ useful, but WITHOUT ANY WARRANTY; without even the implied warranty"
+    puts $outfile " ~ of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the"
+    puts $outfile " ~ GNU General Public License for more details." 
+    puts $outfile " ~ "
+    puts $outfile " ~ A copy of the GNU General Public License is included with the BYU RapidSmith"
+    puts $outfile " ~ Tools. It can be found at doc/LICENSE.GPL3.TXT. You may" 
+    puts $outfile " ~ also get a copy of the license at <http://www.gnu.org/licenses/>."
+    puts $outfile " ~ -->"
+}
+
+## Creates a cell library XML file that can be used by RapidSmith version 2.0. This function
+#   should not be called if a project is currently opened.
 #
 # @param filename Optional parameter to specify the generated cell library name. The default name is
 #           "cellLibrary_part.xml"
@@ -820,6 +927,13 @@ proc write_bel_placement_xml { cell_instance site_type_list site_map alternate_o
 # @param threshold Threshold of configurable pin mappings to compute before quitting. (currently not used
 #           but will be used in the future)
 proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} {threshold 100}} {
+    
+    # check to see if there are any open projects 
+    if { [llength [get_projects -quiet]] > 0 } {
+        puts "Error: Could not generate CellLibrary because other open projects exist!"
+        puts "       Close the open projects and then rerun this command."
+        return
+    }
     
     global config_threshold
     set config_threshold $threshold
@@ -832,14 +946,13 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} {
     }
     
     set xml_out [open $filename w]
-
+    
     # Open empty design to gain access to the Vivado cell library
     tincr::designs new mydes [get_parts $part]
 
-    
     # Find all of the supported library cells in the current part
     puts "\nFinding all of the supported cells in the current part..."
-    set supported_lib_cells [::tincr::get_supported_libcells]
+    set supported_lib_cells [::tincr::get_supported_leaf_libcells]
 
     # Generate a map of lib_cells -> sites that instances of this cell can be placed on
     puts "Getting a handle to each unique primitive site..."
@@ -852,6 +965,7 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} {
  
     # Write the cell library xml file header
     puts $xml_out {<?xml version="1.0" encoding="UTF-8"?>}
+    print_rapidSmith_license $xml_out
     puts $xml_out "<root>"
     
     # Add the family tag to the xml file  
@@ -879,16 +993,32 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} {
         puts $xml_out "    </cell>"
         remove_cell $cell_instance -quiet
     }
-
+    
     create_port_xml $site_map $xml_out
     
     puts $xml_out "  </cells>"
+    
+    # Create the xml for each macro cell supported in the device
+    puts "Creating macro definitions..."
+    set supported_macros [tincr::get_supported_macro_cells]
+    
+    if {[llength $supported_macros] > 0} {
+        puts $xml_out "  <macros>"
+        foreach macro_lib_cell $supported_macros {
+            set macro_cell [create_cell -reference $macro_lib_cell "tmp" -quiet]
+            tincr::write_macro_xml $macro_cell $xml_out
+            remove_cell $macro_cell -quiet
+        }
+
+        puts $xml_out "  </macros>"
+    }
     puts $xml_out "</root>"
 
     close $xml_out
     close_design -quiet
 
     puts "CellLibrary \"$filename\" created successfully!"
+    close_project * -quiet
 }
 
 ## Function to test the <code>create_xml_cell_library</code> function with assertions
