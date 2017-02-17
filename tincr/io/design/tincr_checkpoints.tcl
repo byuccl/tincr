@@ -508,7 +508,7 @@ proc ::tincr::write_routing_rs2 {args} {
     }
     
     # write the physical routing information of each net
-    foreach macro [get_cells -filter {PRIMITIVE_LEVEL==MACRO}] {
+    foreach macro [get_cells -filter {PRIMITIVE_LEVEL==MACRO} -quiet] {
         foreach netname [dict get $internal_net_map [get_property REF_NAME $macro]] {
            lappend nets [get_nets $macro/$netname]    
         }
