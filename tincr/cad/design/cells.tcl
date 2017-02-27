@@ -476,7 +476,7 @@ proc ::tincr::reset_configuration {cell config_list} {
 # @param cell Vivado cell instance
 # @return A set of reconfigurable properties on that cell  
 #
-proc tincr::get_configurable_properties {cell} {
+proc tincr::cells::get_configurable_properties {cell} {
 
     set config_properties [list]
     

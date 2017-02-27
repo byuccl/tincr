@@ -385,7 +385,7 @@ proc ::tincr::write_placement_rs2 { {filename placement.rsc} }  {
 
     # first, write all internal cell properties that were not included in the EDIF netlist
     foreach cell [get_cells -hierarchical -filter {PRIMITIVE_LEVEL==INTERNAL}] {
-        foreach property [tincr::get_configurable_properties $cell] {
+        foreach property [tincr::cells::get_configurable_properties $cell] {
            
             set value [get_property $property $cell]
             # only print the configurations to the file a value exists, and its not the default value
