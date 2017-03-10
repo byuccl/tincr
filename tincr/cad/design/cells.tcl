@@ -41,7 +41,8 @@ namespace eval ::tincr::cells {
         get_lut_eqn \
         set_lut_eqn \
         get_default_value \
-        reset_configuration
+        reset_configuration \
+        get_configurable_properties
     namespace ensemble create
 }
 
@@ -467,4 +468,23 @@ proc ::tincr::reset_configuration {cell config_list} {
         set default [get_property "CONFIG.$config.DEFAULT" [get_lib_cells -of $cell]]
         set_property $config $default $cell  
     }
+}
+
+## Creates and returns a list of properties on the specified cell object that are configurable.
+#   TODO: cache this information
+#
+# @param cell Vivado cell instance
+# @return A set of reconfigurable properties on that cell  
+#
+proc tincr::cells::get_configurable_properties {cell} {
+
+    set config_properties [list]
+    
+    foreach property [list_property [get_lib_cell -of $cell]] {
+        if { [regexp {CONFIG\.([^\.]+)\.DEFAULT$} $property -> match] } {
+            lappend config_properties $match
+        }
+    }
+    
+    return $config_properties
 }
