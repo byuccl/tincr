@@ -41,30 +41,40 @@ proc ::tincr::write_tcp {filename} {
 
 # Creates a RapidSmith2 checkpoint directory to load designs into RapidSmith
 # Should I modify the extension to ".rscp" instead?
-proc ::tincr::write_rscp {filename} {
+proc ::tincr::write_rscp {args} {
+    set quiet 0
+    ::tincr::parse_args {} {quiet} {} {filename} $args
     set filename [::tincr::add_extension ".tcp" $filename]
     file mkdir $filename
 
-    puts "Writing RapidSmith2 checkpoint to $filename..."
+    set old_verbose $::tincr::verbose 
+    if {$quiet} {
+        set ::tincr::verbose 0
+    } else {
+        set ::tincr::verbose 1
+    }
+    
+    ::tincr::print_verbose "Writing RapidSmith2 checkpoint to $filename..."
 
     write_design_info "${filename}/design.info"
     
     write_edif -force "${filename}/netlist.edf"
-    puts "EDIF Done..."
+    ::tincr::print_verbose "EDIF Done..."
     
     set internal_net_map [write_macros "${filename}/macros.xml"]   
-    puts "Macros Done..."
+    ::tincr::print_verbose "Macros Done..."
     
     write_xdc -force "${filename}/constraints.rsc"
-    puts "XDC Done..."
+    ::tincr::print_verbose "XDC Done..."
     
     write_placement_rs2 "${filename}/placement.rsc"
-    puts "Placement Done..."
+    ::tincr::print_verbose "Placement Done..."
     
     write_routing_rs2 -global_logic "${filename}/routing.rsc" $internal_net_map
-    puts "Routing Done..."
+    ::tincr::print_verbose "Routing Done..."
     
-    puts "Successfully Created RapidSmith2 Checkpoint!"
+    ::tincr::print_verbose "Successfully Created RapidSmith2 Checkpoint!"
+    set ::tincr::verbose $old_verbose
 }
 
 proc ::tincr::read_tcp {args} {
@@ -101,6 +111,7 @@ proc ::tincr::read_tcp {args} {
     # there is a bug in Vivado where you can't specify the ROUTE string of a net
     # if the source is a port. It will give the error "ERROR: [Designutils 20-949] No driver found on net clock_N[0]"
     # work around is to have Vivado route these nets for us ...
+    # TODO: add another part to the filter that says the nets are not routed
     set differential_nets [get_nets -of [get_ports] -filter {ROUTE_STATUS != INTRASITE} -quiet]
     
     set diff_time 0
@@ -384,7 +395,7 @@ proc ::tincr::write_placement_rs2 { {filename placement.rsc} }  {
     set txt [open $filename w]
 
     # first, write all internal cell properties that were not included in the EDIF netlist
-    foreach cell [get_cells -hierarchical -filter {PRIMITIVE_LEVEL==INTERNAL}] {
+    foreach cell [get_cells -hierarchical -filter {PRIMITIVE_LEVEL==INTERNAL} -quiet] {
         foreach property [tincr::cells::get_configurable_properties $cell] {
            
             set value [get_property $property $cell]
@@ -482,7 +493,8 @@ proc ::tincr::get_internal_macro_nets {macro} {
     foreach net [get_nets $macro/*] {
         # skip nets that connect to the macro boundary        
         if {![::struct::set contains $boundary_nets $net]} {
-            set netname [lindex [split $net "/"] 1] 
+            set first [expr {[string first "/" $net] + 1}]
+            set netname [string range $net $first end] 
             lappend internal_nets $netname
         }
     }
