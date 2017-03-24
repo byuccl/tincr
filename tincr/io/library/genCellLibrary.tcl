@@ -877,7 +877,8 @@ proc ::tincr::write_macro_xml {macro outfile} {
                 continue
             }
             
-            set netname [lindex [split $net "/"] 1]
+            set first [expr {[string first "/" $net] + 1}]
+            set netname [string range $net $first end]
             lappend internal_nets $net
             puts $outfile "            <internalNet>"
             puts $outfile "                <name>$netname</name>"
