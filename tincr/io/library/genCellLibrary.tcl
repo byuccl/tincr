@@ -822,7 +822,9 @@ proc ::tincr::write_macro_xml {macro outfile} {
     puts $outfile "        <cells>"
     foreach internal [get_cells $macro/*] {
         puts $outfile "            <internal>"
-        puts $outfile "                <name>[lindex [split [get_property NAME $internal] "/"] 1]</name>"
+        set cell_name [get_property NAME $internal]
+        set first [expr {[string first "/" $cell_name] + 1}]
+        puts $outfile "                <name>[string range $cell_name $first end]</name>"
         puts $outfile "                <type>[get_property REF_NAME $internal]</type>"
         puts $outfile "            </internal>"
     }
