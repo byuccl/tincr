@@ -19,44 +19,44 @@ namespace eval ::tincr {
 ## @brief The <CODE>nets</CODE> ensemble encapsulates the <CODE>net</CODE> class from Vivado's Tcl data structure.
 namespace eval ::tincr::nets {
     namespace export \
-        test \
-        new \
-        delete \
-        rename \
+        absolute_routing_string \
+        add_node \
+        add_pip \
         connect_pin \
         connect_port \
+        copy \
+        delete \
         disconnect_pin \
         disconnect_port \
+        fix_all \
+        float \
+        format_routing_string \
         get \
+        get_branched_routes \
+        get_neighbor_nodes \
+        get_next_node \
+        get_next_node2 \
+        get_root \
+        get_route_throughs \
+        get_site_pins_of_net \
         get_source \
         get_source_node \
-        get_sinks \
-        copy \
-        float \
-        get_root \
-        replace_source \
-        manhattan_distance \
         get_source_tile \
-        absolute_routing_string \
-        get_branched_routes \
-        fix_all \
-        add_pip \
-        add_node \
-        get_neighbor_nodes \
-        get_next_node2 \
-        get_next_node \
-        recurse_route \
-        format_routing_string \
+        get_sinks \
+        get_static_source_wires \
         list_nodes \
-        recurse_pips \
         list_pips \
+        manhattan_distance \
+        new \
         of_bus \
-        get_route_throughs \
+        recurse_pips \
+        recurse_route \
+        rename \
+        replace_source \
         route \
-        unroute \
         split_route \
-        get_site_pins_of_net \
-        get_static_source_wires
+        test \
+        unroute
     namespace ensemble create
 }
 
@@ -619,8 +619,7 @@ proc ::tincr::nets::recurse_pips { node1 nodes } {
         if { [llength $node2] == 1 } {
             if { $node1 != "" } {
                 set node2 [get_nodes $node2]
-                # puts [get_pip_between_nodes $node1 $node2]
-                lappend pips [get_pip_between_nodes $node1 $node2]
+                lappend pips [tincr::pips::between_nodes $node1 $node2]
             }
         
             set node1 $node2
@@ -634,7 +633,7 @@ proc ::tincr::nets::recurse_pips { node1 nodes } {
 # @param net The <CODE>net</CODE> object.
 # @return A list of the <CODE>pip</CODE> objects in the net's route.
 proc ::tincr::nets::list_pips { net } {
-    set nodes [get_nodes_of_net $net]
+    set nodes [list_nodes $net]
     set pips [list]
     
     recurse_pips "" [lindex $nodes 0]
