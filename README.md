@@ -13,21 +13,21 @@ TincrIO provides a set of commands for pulling design and device data out of Viv
 ## Installation
 Installing Tincr can be done in three simple steps:
 
-1. **[Download](https://github.com/byuccl/tincr/archive/master.zip) or [clone](https://github.com/byuccl/tincr/wiki/Clone-Tincr) Tincr**: Download the Tincr distribution to a directory on your machine.
+1. **[Clone](https://github.com/byuccl/tincr/wiki/Clone-Tincr) or [download](https://github.com/byuccl/tincr/archive/master.zip) Tincr**: Download the Tincr distribution to a directory on your machine.
 2. **Set the `TINCR_PATH` environment variable**: Create an environment variable called `TINCR_PATH` and assign it the path to the root directory of the Tincr distribution you downloaded (i.e. the directory containing this `README.md` file).
 3. **Copy `pkgIndex.tcl` to your Vivado install**: Copy the file `<TINCR_PATH>/install/pkgIndex.tcl` to `<Vivado path>/tps/tcl/tcl8.5` on your machine.
 
 ## Getting Started
 
-### Loading Tincr
-As with any package in Tcl, Tincr must be "required" before any of its commands become available to the Vivado Tcl interface. To do this, open Vivado and enter the following command into the Tcl prompt:
+### Loading the Tincr Package
+As with any package in Tcl, Tincr must be loaded before any of its commands become available to the Vivado Tcl interface. To do this, open Vivado and enter the following command into the Tcl prompt:
 ```
 package require tincr
 ```
 Vivado will load the Tincr packages and a message will be printed to the Tcl prompt indicating what version of Tincr was loaded (e.g. `0.0`). Ensure that this matches the version you downloaded. If you would like to test that Tincr is working, try executing the `::tincr::refresh_packages` command.
 
 ### Tincr Namespace
-All commands in Tincr belong to the `::tincr::` namespace. This means calls to commands from Tincr must be prefixed with `::tincr::` (e.g. `::tincr::cells get`). It is possible to import all of Tincr's commands into the global namespace with the following command:
+All commands in Tincr belong to the `::tincr::` namespace. This means that all Tincr commands must be prefixed with `::tincr::` (e.g. `::tincr::cells get`). It is possible to import all Tincr commands into the global namespace using the following command:
 ```
 namespace import ::tincr::*
 ```
