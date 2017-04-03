@@ -176,9 +176,10 @@ proc processSite {s type compatible is_alt fo} {
 		
 		#print the bel information 
 		set tmpname [suffix $b "/"]
+		set tmptype [tincr::bels get_type $b]
 		puts $fo "        <bel>"
 		puts $fo "          <name>$tmpname</name>"
-		puts $fo "          <type>$tmpname</type>"
+		puts $fo "          <type>$tmptype</type>"
 
 		#print routethroughs if it is a LUT
 		set siz -1
