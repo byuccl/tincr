@@ -822,7 +822,9 @@ proc ::tincr::write_macro_xml {macro outfile} {
     puts $outfile "        <cells>"
     foreach internal [get_cells $macro/*] {
         puts $outfile "            <internal>"
-        puts $outfile "                <name>[lindex [split [get_property NAME $internal] "/"] 1]</name>"
+        set cell_name [get_property NAME $internal]
+        set first [expr {[string first "/" $cell_name] + 1}]
+        puts $outfile "                <name>[string range $cell_name $first end]</name>"
         puts $outfile "                <type>[get_property REF_NAME $internal]</type>"
         puts $outfile "            </internal>"
     }
@@ -858,6 +860,11 @@ proc ::tincr::write_macro_xml {macro outfile} {
         puts $outfile "                </internalConnections>"
         puts $outfile "            </pin>"
     }
+    
+    #foreach net $boundary_nets {
+    #    puts -nonewline "$net "
+    #}
+    #puts ""
   
     puts $outfile "        </pins>"   
     
@@ -872,12 +879,27 @@ proc ::tincr::write_macro_xml {macro outfile} {
     
             # skip nets that connect to the macro boundary
             if {[::struct::set contains $boundary_nets $net]} {
+                puts $net
                 continue
             }
             
-            set netname [lindex [split $net "/"] 1]
+            set first [expr {[string first "/" $net] + 1}]
+            set netname [string range $net $first end]
             lappend internal_nets $net
             puts $outfile "            <internalNet>"
+            
+            # Replace angle brackets with <const0> and <const1>)
+            set netname [string map {< &lt; > &gt;} $netname]
+            puts $outfile "                <name>$netname</name>"
+
+            # add the type for GND and VCC nets
+            set nettype [get_property TYPE $net]
+            if {$nettype == {GROUND}} {
+                puts $outfile "                <type>GND</type>"
+            } elseif {$nettype == {POWER}} {
+                puts $outfile "                <type>VCC</type>"
+            }
+            
             puts $outfile "                <name>$netname</name>"
             puts $outfile "                <pins>"
             foreach pin [get_pins -of $net] {
