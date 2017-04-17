@@ -194,7 +194,8 @@ proc ::tincr::sites::unique { {include_alternate_only_sites 0} } {
     set default_sites [dict create]
     set alternates [dict create]
     set global_site_map [dict create]
-        
+    set alternate_index [dict create]
+    
     foreach site [get_sites] {
         
         set default_site_type [get_property SITE_TYPE $site]
@@ -210,6 +211,7 @@ proc ::tincr::sites::unique { {include_alternate_only_sites 0} } {
         foreach alternate_type [get_property ALTERNATE_SITE_TYPES $site] {
             if {![dict exists $alternates $alternate_type]} {
                 dict set alternates $alternate_type $default_site_type
+                dict set alternate_index $default_site_type 1 
             }
         }
     }
@@ -222,11 +224,14 @@ proc ::tincr::sites::unique { {include_alternate_only_sites 0} } {
     dict for {alternate_type site} $alternates {
         if { ![dict exists $default_sites $alternate_type] && ![string match {*IOB*} $alternate_type] } {
             
+            set index [dict get $alternate_index $site]
             set site_list [dict get $global_site_map $site]
             
             # grab a unique site for the alternate site so we don't mess up the placement on default site types
-            dict set default_sites $alternate_type [lindex $site_list 1]
+            dict set default_sites $alternate_type [lindex $site_list $index]
             ::struct::set add alternate_only_site_set $alternate_type
+            
+            dict incr alternate_index $site
         }
     }
     
