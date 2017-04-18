@@ -415,7 +415,7 @@ proc ::tincr::write_partial_primitive_def { site filename {includeConfigs 0} } {
     set bels [get_bels -of $site -quiet]
     set site_pin_names [list]
     set num_elements [ expr { [llength $site_pins] + [llength $bels] } ]
-    
+        
     # Look for "Single Bel Sites" and try to generate as many connections as possible automatically
     set is_single_bel_site 0
     set pin_maps [list]
@@ -561,7 +561,12 @@ proc ::tincr::write_partial_primitive_def { site filename {includeConfigs 0} } {
         regexp {.+/(.+)/.+} [get_property NAME $bel_pin] -> bel_name
         dict lappend bel_pin_map $bel_name $bel_pin
     }
-     
+    # Some BELs have no pins, so add those to the map with an empty list of pins  
+    foreach bel_no_pins [get_bels -of $site -filter NUM_PINS==0 -quiet] {
+        set rel_name [lindex [split $bel_no_pins "/"] end]
+        dict set bel_pin_map $rel_name [list] 
+    }
+
     dict for {bel_name bel_pins} $bel_pin_map {
         
         puts -nonewline $outfile "\t\t(element $bel_name [llength $bel_pins] # BEL"
@@ -576,6 +581,7 @@ proc ::tincr::write_partial_primitive_def { site filename {includeConfigs 0} } {
         
         # Print the bel pin information
         set connection_list [list]
+        
         foreach pin $bel_pins {
             
             set name [get_property NAME $pin ]
