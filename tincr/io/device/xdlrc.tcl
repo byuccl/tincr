@@ -435,13 +435,6 @@ proc ::tincr::write_partial_primitive_def { site filename {includeConfigs 0} } {
                 break
             }
         }
-        if {0} {
-        set bels_ignore_pads [get_bels -of $site -quiet -filter {TYPE !~ *PAD*}]
-        if {[llength $bels_ignore_pads] == 1} {
-            set is_single_bel_site 1
-            set pin_maps [get_single_bel_pin_maps $site [lindex $bels_ignore_pads 0]]
-        }
-        }
     }
     # maps holding bel_pin -> site_pin connections and vice versa
     set bel_pin_to_site_pin_map [lindex $pin_maps 0]
@@ -801,7 +794,7 @@ proc ::tincr::write_all_partial_primitive_defs { {includeConfigs 0} } {
     }
 }
 
-## Produce a partial .def file for each primitive site of each part in the xilinx family. 
+## Produces a partial .def file for each primitive site of each part in the xilinx family. 
 #   This function should be called only when a new xilinx series is released.
 #
 # @param cfg Add this option if you want to include cfg strings in your primitive def files.
@@ -852,7 +845,6 @@ proc ::tincr::extract_all_partial_primitive_defs {path {arch ""} {includeConfigs
         set alternate_type_set [lindex $site_types 1]
         
         # Process the site types
-        
         dict for {type site} $site_type_map {
             # Check to see if the current site is an alternate only type
             if { [::struct::set contains $alternate_type_set $type] } {
@@ -866,7 +858,6 @@ proc ::tincr::extract_all_partial_primitive_defs {path {arch ""} {includeConfigs
                     write_partial_primitive_def $site [file join $path $arch ${type}${alternate}.def] $includeConfigs
                 }
             } else {
-                # Add this for debugging: "&& $type != "PCIE_3_1""
                 if { ![dict exists $archTypes $arch $type] } {
                     dict set archTypes $arch $type 1 
                     puts "\t$arch-$type -> $site..."
@@ -965,5 +956,5 @@ proc get_single_bel_pin_maps {site bel} {
         return [list $bel_pin_map $site_pin_map]
     }
    
-    puts "WARNING: Cannot infer single bel connections for site!"
+    puts "\t\tWARNING: Cannot infer single bel connections for site!"
 }
