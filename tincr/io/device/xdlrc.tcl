@@ -950,9 +950,12 @@ proc get_single_bel_pin_maps {site bel {outfile ""} } {
         # configure Block Ram cells to their max width before inferring connections
         set lib_cell [get_lib_cells -of $cell_instance]
         if { [get_property PRIMITIVE_GROUP $lib_cell] == "BMEM" } {
+            unplace_cell $cell_instance -quiet
             config_bmem_to_max_width $cell_instance $lib_cell
+            place_cell $cell_instance $bel -quiet            
         }
         
+        # attach a net to each cell pin so that we can extract the connections
         attach_nets $cell_instance
         
         set lut_cell [create_cell -reference LUT6 lut6]
@@ -962,6 +965,7 @@ proc get_single_bel_pin_maps {site bel {outfile ""} } {
         set bel_pin_map [dict create]
         set site_pin_map [dict create]
         
+        # find the connections for each temporary net and add them to the maps
         foreach net [get_nets -of $cell_instance] {
             connect_net -net $net -objects [get_pins $lut_cell/O]
             
