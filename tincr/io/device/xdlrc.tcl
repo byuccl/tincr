@@ -401,7 +401,10 @@ proc ::tincr::write_primitive_defs { args } {
     }
 }
 
-## Produce a partial (everything but connections) .def file for the given primitive site. All config strings will be put inside of bel elements.
+## Produce a partial .def file for the given primitive site. All config strings will be put inside of bel elements.
+#   For Single Bel Sites (Sites where one BEL has over 80% of all bel pins in the site), some connections will be
+#   automatically inferred and generated.
+#
 # @param site The <CODE>site</CODE> object you want to create a .def file for. Sites instanced by alternate types are acceptable.
 # @param filename The output file.
 # @param includeConfigs A boolean telling the proc whether or not to include configuration elements in the resulting .def file.
@@ -421,7 +424,7 @@ proc ::tincr::write_partial_primitive_def { site filename {includeConfigs 0} } {
     set pin_maps [list]
     if {[llength $bels] == 1} {
         set is_single_bel_site 1
-        set pin_maps [get_single_bel_pin_maps $site [lindex $bels 0]]
+        set pin_maps [get_single_bel_pin_maps $site [lindex $bels 0] $outfile]
     } else {
         set num_bel_pins_site [llength [get_bel_pins -of $site -quiet]]
         
@@ -431,7 +434,7 @@ proc ::tincr::write_partial_primitive_def { site filename {includeConfigs 0} } {
             # if a single bel in a site contains 80% of all bel pins in the site, mark it as a single bel site
             if {[expr {double($num_bel_pins_bel) / double($num_bel_pins_site)}] > .800} {
                 set is_single_bel_site 1
-                set pin_maps [get_single_bel_pin_maps $site $bel]
+                set pin_maps [get_single_bel_pin_maps $site $bel $outfile]
                 break
             }
         }
@@ -801,7 +804,11 @@ proc ::tincr::write_all_partial_primitive_defs { {includeConfigs 0} } {
 }
 
 ## Produces a partial .def file for each primitive site of each part in the xilinx family. 
-#   This function should be called only when a new xilinx series is released.
+#   This function should be called only when a new xilinx series is released. The files
+#   produced from this script are intended to be used by the VSRT tool of the RapidSmith2
+#   repository.
+#
+#   NOTE: When the script is running, some warnings will be printed to the screen, but they can be ignored. 
 #
 # @param cfg Add this option if you want to include cfg strings in your primitive def files.
 # @param path The path you want the family directories and files to be written to.
@@ -918,7 +925,7 @@ proc ::tincr::get_parts_unique {{arch ""}} {
     return $part_list
 }
 
-proc get_single_bel_pin_maps {site bel} {
+proc get_single_bel_pin_maps {site bel {outfile ""} } {
 
     foreach lib_cell [get_lib_cells] {
 
@@ -962,5 +969,9 @@ proc get_single_bel_pin_maps {site bel} {
         return [list $bel_pin_map $site_pin_map]
     }
    
+    if {$outfile != ""} {
+        puts $outfile "\t\tWARNING: Cannot infer single bel connections for site!"
+    }
+    
     puts "\t\tWARNING: Cannot infer single bel connections for site!"
 }
