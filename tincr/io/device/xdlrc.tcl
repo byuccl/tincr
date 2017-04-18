@@ -925,6 +925,16 @@ proc ::tincr::get_parts_unique {{arch ""}} {
     return $part_list
 }
 
+## Creates a map of BEL Pin -> Site Pin (and vice versa) for sites that
+#   are dominated by a single, large BEL
+#
+# @param site Site object
+# @param bel Bel object within the {@link site}
+# @param outfile Optional file handle for printing warnings to an output file
+#
+# @return A list of 2 maps:
+#       Item 0: Map of Site Pin -> Bel Pin for the specified {@link site} and {@link bel}
+#       Item 1: Map of Bel Pin -> Site Pin for the specified {@link site} and {@link bel}
 proc get_single_bel_pin_maps {site bel {outfile ""} } {
 
     foreach lib_cell [get_lib_cells] {
@@ -935,6 +945,12 @@ proc get_single_bel_pin_maps {site bel {outfile ""} } {
         if {[catch {[place_cell $cell_instance $bel]} err] == 1} {
             remove_cell $cell_instance
             continue
+        }
+
+        # configure Block Ram cells to their max width before inferring connections
+        set lib_cell [get_lib_cells -of $cell_instance]
+        if { [get_property PRIMITIVE_GROUP $lib_cell] == "BMEM" } {
+            config_bmem_to_max_width $cell_instance $lib_cell
         }
         
         attach_nets $cell_instance
@@ -974,4 +990,23 @@ proc get_single_bel_pin_maps {site bel {outfile ""} } {
     }
     
     puts "\t\tWARNING: Cannot infer single bel connections for site!"
+}
+
+## Configures the width of the specified Block Ram cell to its maximum (i.e the read and write width
+#   of a RAMB36E2 will be set to 72 bits). This forces all cell pins to be mapped to BEL 
+#   pins when the cell is placed and allows more primitive def connections to be automatically inferred.
+#
+# @param cell Cell instance
+# @param lib_cell Library Cell that {@link cell} was created from
+proc config_bmem_to_max_width { cell lib_cell } {
+    # look at all of the cell's properties
+    foreach property [list_property $lib_cell] {
+        if { [regexp {CONFIG\.([^\.]+)\.DEFAULT$} $property -> prop_name] } {
+            # Look for width parameters and set them to their max value
+            if { [string first "WIDTH" $prop_name] != -1 } {
+                set max [get_property CONFIG.${prop_name}.MAX $lib_cell]
+                set_property $prop_name $max $cell 
+            }
+        }
+    }
 }
