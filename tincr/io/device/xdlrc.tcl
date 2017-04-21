@@ -401,31 +401,58 @@ proc ::tincr::write_primitive_defs { args } {
     }
 }
 
-## Produce a partial (everything but connections) .def file for the given primitive site. All config strings will be put inside of bel elements.
+## Produce a partial .def file for the given primitive site. All config strings will be put inside of bel elements.
+#   For Single Bel Sites (Sites where one BEL has over 80% of all bel pins in the site), some connections will be
+#   automatically inferred and generated.
+#
 # @param site The <CODE>site</CODE> object you want to create a .def file for. Sites instanced by alternate types are acceptable.
 # @param filename The output file.
 # @param includeConfigs A boolean telling the proc whether or not to include configuration elements in the resulting .def file.
 proc ::tincr::write_partial_primitive_def { site filename {includeConfigs 0} } {
     set site [get_sites $site]
     set site_name [get_property NAME $site]
-    puts $filename
     set outfile   [open $filename w]
     set alternate 0
+    
+    set site_pins [get_site_pins -of $site -quiet]
+    set bels [get_bels -of $site -quiet]
+    set site_pin_names [list]
+    set num_elements [ expr { [llength $site_pins] + [llength $bels] } ]
+        
+    # Look for "Single Bel Sites" and try to generate as many connections as possible automatically
+    set is_single_bel_site 0
+    set pin_maps [list]
+    if {[llength $bels] == 1} {
+        set is_single_bel_site 1
+        set pin_maps [get_single_bel_pin_maps $site [lindex $bels 0] $outfile]
+    } else {
+        set num_bel_pins_site [llength [get_bel_pins -of $site -quiet]]
+        
+        foreach bel $bels {
+            set num_bel_pins_bel [llength [get_bel_pins -of $bel -quiet]]
+            
+            # if a single bel in a site contains 80% of all bel pins in the site, mark it as a single bel site
+            if {[expr {double($num_bel_pins_bel) / double($num_bel_pins_site)}] > .800} {
+                set is_single_bel_site 1
+                set pin_maps [get_single_bel_pin_maps $site $bel $outfile]
+                break
+            }
+        }
+    }
+    # maps holding bel_pin -> site_pin connections and vice versa
+    set bel_pin_to_site_pin_map [lindex $pin_maps 0]
+    set site_pin_map [lindex $pin_maps 1]
+    
+    #Header NOTES:
+    # 1.) For now, the number of elements found at the top of a primitive definition is temporarily 0 (overridden once all of the elements have been counted)  
+    # 2.) DO NOT delete the white spaces after the 0.  They are necessary when overwriting this line)  
+    puts $outfile "\t(primitive_def [get_property SITE_TYPE $site] [llength $site_pins] 0             " ; #Elements"
     
     # **************************************************************************
     # *                                                                        *
     # * Pin Resources:                                                         *
     # *                                                                        *
     # **************************************************************************
-    set site_pins [get_site_pins -of $site -quiet]
-    set bels [get_bels -of $site -quiet]
-    set site_pin_names [list]
-    set num_elements [ expr { [llength $site_pins] + [llength $bels] } ]
-    
-    #NOTES:
-    # 1.) For now, the number of elements found at the top of a primitive definition is temporarily 0 (overridden once all of the elements have been counted)  
-    # 2.) DO NOT delete the white spaces after the 0.  They are necessary when overwriting this line)  
-    puts $outfile "\t(primitive_def [get_property SITE_TYPE $site] [llength $site_pins] 0             " ; #Elements"
     
     foreach pin $site_pins {
     
@@ -452,15 +479,29 @@ proc ::tincr::write_partial_primitive_def { site filename {includeConfigs 0} } {
         set rel_name [string range $name [string wordend $name [string first "/" $name]] end] 
         
         if { [get_property IS_INPUT $pin] == 1 } { 
+            set dir_string "==>"
             set internal_dir "output"
         } elseif { [get_property IS_OUTPUT $pin] == 1 } {    
-            set internal_dir "input" 
+            set internal_dir "input"
+            set dir_string "<=="
         } else {
             set internal_dir "inout"
+            set dir_string "==>"
         }
         
         puts $outfile "\t\t(element $rel_name 1"
-        puts $outfile "\t\t\t(pin $rel_name $internal_dir)\n\t\t)"
+        puts $outfile "\t\t\t(pin $rel_name $internal_dir)"
+        
+        # (conn CE_INT0 CE_INT0 ==> CEINV0 CE_PREINV)
+        if { $is_single_bel_site == 1 && [dict exists $site_pin_map $pin] } {
+            set ref_pin_name [lindex [split $pin "/"] 1]
+            set bel_pin [split [dict get $site_pin_map $pin] "/"]
+            set bel_name [lindex $bel_pin 1]
+            set bel_pin_name [lindex $bel_pin 2]
+            puts $outfile "\t\t\t(conn $ref_pin_name $ref_pin_name $dir_string $bel_name $bel_pin_name)"
+        }
+        puts $outfile "\t\t)"
+        
     }
     # *******************************************************************************
     # *                                                                             *
@@ -514,31 +555,72 @@ proc ::tincr::write_partial_primitive_def { site filename {includeConfigs 0} } {
     # *            (cfg ....)                                         *
     # *                                                                        *
     # **************************************************************************
-    foreach bel $bels {
+    
+    # Some BELs that are shown in the Vivado Design Browser are not returned
+    # from the function call [get_bels -of $site] because they are "TEST" BELs.
+    # Instead, we create a belname -> bel pins map to find all BELs in the site. 
+    set bel_pin_map [dict create]
+    foreach bel_pin [get_bel_pins -of $site] {
+        regexp {.+/(.+)/.+} [get_property NAME $bel_pin] -> bel_name
+        dict lappend bel_pin_map $bel_name $bel_pin
+    }
+    # Some BELs have no pins, so add those to the map with an empty list of pins  
+    foreach bel_no_pins [get_bels -of $site -filter NUM_PINS==0 -quiet] {
+        set rel_name [lindex [split $bel_no_pins "/"] end]
+        dict set bel_pin_map $rel_name [list] 
+    }
+
+    dict for {bel_name bel_pins} $bel_pin_map {
         
-        set bel_name [get_property NAME $bel]
-        set bel_pins [get_bel_pins -of $bel -quiet]
+        puts -nonewline $outfile "\t\t(element $bel_name [llength $bel_pins] # BEL"
         
-        puts $outfile "\t\t(element [string range $bel_name [string wordend $bel_name [string first "/" $bel_name]] end]\
-                [llength $bel_pins] # BEL"
+        # Mark Test BELs with the "TEST" label
+        if {[llength [get_bels -of $site "$site/$bel_name" -quiet]] == 0} {
+            puts $outfile " TEST"
+            incr num_elements 
+        } else {
+            puts $outfile ""
+        }         
+        
+        # Print the bel pin information
+        set connection_list [list]
         
         foreach pin $bel_pins {
             
             set name [get_property NAME $pin ]
             
-            set rel_name [string range $name [string wordend $name [string last "/" $name]] end] 
+            set rel_name [string range $name [string last "/" $name]+1 end] 
             
             if { [get_property IS_OUTPUT $pin] == 1 } { 
                 set dir "output"
+                set dir_string "==>"
             } elseif { [get_property IS_INPUT $pin] == 1 } {    
-                set dir "input" 
+                set dir "input"
+                set dir_string "<=="
                 
             } else {    
-                set dir "inout"    
+                set dir "inout"
+                set dir_string "<=="
             }
             
-            puts $outfile "\t\t\t(pin $rel_name $dir)"        
+            puts $outfile "\t\t\t(pin $rel_name $dir)"    
+            
+            # (conn CE_INT0 CE_INT0 ==> CEINV0 CE_PREINV)
+            if { $is_single_bel_site == 1 && [dict exists $bel_pin_to_site_pin_map $pin] } {
+                set ref_pin_name [lindex [split [dict get $bel_pin_to_site_pin_map $pin] "/"] 1]
+                
+                set bel_pin [split $pin "/"]
+                set bel_name [lindex $bel_pin 1]
+                set bel_pin_name [lindex $bel_pin 2]
+                lappend connection_list "\t\t\t(conn $bel_name $bel_pin_name $dir_string $ref_pin_name $ref_pin_name)"
+            }   
         }
+        
+        # Print the single bel connections if any exist
+        foreach single_bel_connection $connection_list {
+            puts $outfile $single_bel_connection
+        }
+        
         set cfgs  [list]
         set attrs [list]
         
@@ -624,8 +706,15 @@ proc ::tincr::write_partial_primitive_def { site filename {includeConfigs 0} } {
 
     #rewriting the first line in the file to include the number of elements that I could get from vivado
     #(need this info for the primitive def parser to work properly)
+    
+    if {$is_single_bel_site == 1} {
+        set mode "#SBS"
+    } else {
+        set mode ""
+    }
+    
     seek $outfile 0 start
-    puts -nonewline $outfile "\t(primitive_def [get_property SITE_TYPE $site] [llength $site_pins] $num_elements" ; #Elements"
+    puts -nonewline $outfile "\t(primitive_def [get_property SITE_TYPE $site] [llength $site_pins] $num_elements $mode" ; #Elements"
     close $outfile
 }
 
@@ -714,13 +803,31 @@ proc ::tincr::write_all_partial_primitive_defs { {includeConfigs 0} } {
     }
 }
 
-## Produce a partial .def file for each primitive site of each part in the xilinx family. This function should be called only when a new xilinx series is released.
+## Produces a partial .def file for each primitive site of each part in the xilinx family. 
+#   This function should be called only when a new xilinx series is released. The files
+#   produced from this script are intended to be used by the VSRT tool of the RapidSmith2
+#   repository.
+#
+#   NOTE: When the script is running, some warnings will be printed to the screen, but they can be ignored. 
+#
 # @param cfg Add this option if you want to include cfg strings in your primitive def files.
 # @param path The path you want the family directories and files to be written to.
-proc ::tincr::extract_all_partial_primitive_defs {path {includeConfigs 0}} {
+# @param arch Architecture to generate primitive defs for currently, possible options include
+#  <p><ul>
+#  <li> artix7 
+#  <li> kintex7 
+#  <li> virtex7 
+#  <li> zynq 
+#  <li> kintexu 
+#  <li> kintexuplus
+#  <li> virtexu 
+#  <li> virtexuplus
+#  <li> zynquplus
+# </ul><p>
+proc ::tincr::extract_all_partial_primitive_defs {path {arch ""} {includeConfigs 0}} {
     catch { close_project }
     
-    set parts [list [get_parts xc7k70tfbg484]]
+    set parts [tincr::get_parts_unique $arch]
     
     set archTypes [dict create]
     set altArchTypes [dict create]
@@ -731,8 +838,8 @@ proc ::tincr::extract_all_partial_primitive_defs {path {includeConfigs 0}} {
     #make the specified directory if it doesn't exist
     file mkdir $path
     
-    set end "log.txt"
     #open logfile for writing
+    set end "log.txt"
     set fileID [open [file join $path $end] "w"]
     
     #getting a list of unique family names, and a single part of that family type
@@ -746,48 +853,38 @@ proc ::tincr::extract_all_partial_primitive_defs {path {includeConfigs 0}} {
         puts $fileID "Extracting Primitive Sites from part [get_property NAME $prt] ($i out of $partCount)..."
         link_design -part [get_property NAME $prt] -quiet ; #can take a long time
         
-        set site_types [::tincr::sites unique]
-        puts [dict size $site_types]
-        dict for {type site} $site_types {
-
-            if { ![dict exists $archTypes $arch $type] } {
-                dict set archTypes $arch $type 1 
-                puts "\t$arch-$type..."
-                puts $fileID "\t$arch-$type..."
-                write_partial_primitive_def $site [file join $path $arch $type.def] $includeConfigs
-            }
-            
-            foreach alternate_site_type [get_property ALTERNATE_SITE_TYPES $site] {
-            
-                # TODO Keep the following list updated as new versions of Vivado are released
-                # List of primitive sites that crash when executing "get_site_pips" on alternate site types.
-                # However, this doesn't seem to be a problem because the alternate site types either 
-                # appear later in the script as a default type, or as an alternate type of a site that doesn't
-                # crash the script.  Check if this still applies  
-                #---------------------------------------------------------------------------------------------
-                # 1.) IOB33 
-                # 2.) IOB18 
-                # 3.) ILOGICE2 
-                if { ![dict exists $archTypes $arch $alternate_site_type] && ![dict exists $altArchTypes $arch $alternate_site_type] \
-                        && $type != "IOB33" && $type != "IOB18" && $type != "ILOGICE2" } {
-                            
-                    dict set altArchTypes $arch $alternate_site_type 1
-                    puts "\tALTERNATE: $arch-$alternate_site_type..."
-                    puts $fileID "\tALTERNATE: $arch-$alternate_site_type..."
+        set site_types [::tincr::sites unique 1]
+        set site_type_map [lindex $site_types 0]
+        set alternate_type_set [lindex $site_types 1]
+        
+        # Process the site types
+        dict for {type site} $site_type_map {
+            # Check to see if the current site is an alternate only type
+            if { [::struct::set contains $alternate_type_set $type] } {
+                if { ![dict exists $archTypes $arch $type] && ![dict exists $altArchTypes $arch $type] } {
+                    dict set altArchTypes $arch $type 1
+                    puts "\tALTERNATE: $arch-$type -> $site..."
+                    puts $fileID "\tALTERNATE: $arch-$type -> $site..."
+ 
                     reset_property MANUAL_ROUTING $site
-                    set_property MANUAL_ROUTING $alternate_site_type $site
-                    
-                    write_partial_primitive_def $site [file join $path $arch ${alternate_site_type}${alternate}.def] $includeConfigs      
+                    set_property MANUAL_ROUTING $type $site
+                    write_partial_primitive_def $site [file join $path $arch ${type}${alternate}.def] $includeConfigs
+                }
+            } else {
+                if { ![dict exists $archTypes $arch $type] } {
+                    dict set archTypes $arch $type 1 
+                    puts "\t$arch-$type -> $site..."
+                    puts $fileID "\t$arch-$type -> $site..."
+                    write_partial_primitive_def $site [file join $path $arch $type.def] $includeConfigs
                 }
             }
-            
         }
-        
+         
         close_project -quiet
         incr i 
     }
     
-    #delete all alternate types that were found as a default type
+    #delete all alternate types that were found as a default types in another part
     dict for {arch alternates} $altArchTypes {
         dict for {altSiteType tmp} $alternates {
             if { [dict exists $archTypes $arch $altSiteType] } {
@@ -798,4 +895,122 @@ proc ::tincr::extract_all_partial_primitive_defs {path {includeConfigs 0}} {
     }
     puts "Successfully created all .def files in directory $path"
     close $fileID
+}
+
+## Returns a list of unique parts, ignoring speed grade
+#
+# @param arch Optional architecture parameter. Only parts 
+#   that match the specified architecture will be returned. 
+#
+proc ::tincr::get_parts_unique {{arch ""}} {
+    set unique_part_set ""
+    set part_list [list]
+    
+    if {$arch==""} {
+        set parts [get_parts]
+    } else {
+        set parts [get_parts -filter ARCHITECTURE==$arch]
+    }
+    
+    foreach part $parts {
+        #remove speed grade from the part name
+        regexp {^(x[a-z0-9]+(?:-[a-z0-9]+)?)-.+} $part -> partname
+        
+        if { ![::struct::set contains $unique_part_set $partname] } {
+            ::struct::set add unique_part_set $partname
+            lappend part_list $part
+        }
+    }
+    
+    return $part_list
+}
+
+## Creates a map of BEL Pin -> Site Pin (and vice versa) for sites that
+#   are dominated by a single, large BEL
+#
+# @param site Site object
+# @param bel Bel object within the {@link site}
+# @param outfile Optional file handle for printing warnings to an output file
+#
+# @return A list of 2 maps:
+#       Item 0: Map of Site Pin -> Bel Pin for the specified {@link site} and {@link bel}
+#       Item 1: Map of Bel Pin -> Site Pin for the specified {@link site} and {@link bel}
+proc get_single_bel_pin_maps {site bel {outfile ""} } {
+
+    foreach lib_cell [get_lib_cells] {
+
+        set cell_instance [create_cell -reference $lib_cell cell -quiet]
+        
+        # look for the first cell we can place on the bel
+        if {[catch {[place_cell $cell_instance $bel]} err] == 1} {
+            remove_cell $cell_instance
+            continue
+        }
+
+        # configure Block Ram cells to their max width before inferring connections
+        set lib_cell [get_lib_cells -of $cell_instance]
+        if { [get_property PRIMITIVE_GROUP $lib_cell] == "BMEM" } {
+            unplace_cell $cell_instance -quiet
+            config_bmem_to_max_width $cell_instance $lib_cell
+            place_cell $cell_instance $bel -quiet            
+        }
+        
+        # attach a net to each cell pin so that we can extract the connections
+        attach_nets $cell_instance
+        
+        set lut_cell [create_cell -reference LUT6 lut6]
+        set lut_site [lindex [get_sites -filter SITE_TYPE==SLICEL] 0]   
+        place_cell $lut_cell $lut_site -quiet
+    
+        set bel_pin_map [dict create]
+        set site_pin_map [dict create]
+        
+        # find the connections for each temporary net and add them to the maps
+        foreach net [get_nets -of $cell_instance] {
+            connect_net -net $net -objects [get_pins $lut_cell/O]
+            
+            set bel_pin [lindex [get_bel_pins -of $net] 0]
+            set site_pin [lindex [get_site_pins -of $net] 0]
+        
+            if {[ string last "SLICE" $site_pin 5] == 0} {
+                disconnect_net -net $net -objects [get_pins $lut_cell/O]
+                continue
+            }
+            
+            dict set bel_pin_map $bel_pin $site_pin
+            dict set site_pin_map $site_pin $bel_pin
+            disconnect_net -net $net -objects [get_pins $lut_cell/O]
+        }
+        
+        remove_cell $lut_cell -quiet
+        remove_net [get_nets -of $cell_instance -quiet] -quiet
+        remove_cell $cell_instance -quiet
+        
+        return [list $bel_pin_map $site_pin_map]
+    }
+   
+    if {$outfile != ""} {
+        puts $outfile "\t\tWARNING: Cannot infer single bel connections for site!"
+    }
+    
+    puts "\t\tWARNING: Cannot infer single bel connections for site!"
+}
+
+## Configures the width of the specified Block Ram cell to its maximum (i.e the read and write width
+#   of a RAMB36E2 will be set to 72 bits). This forces all cell pins to be mapped to BEL 
+#   pins when the cell is placed and allows more primitive def connections to be automatically inferred.
+#
+# @param cell Cell instance
+# @param lib_cell Library Cell that {@link cell} was created from
+proc config_bmem_to_max_width { cell lib_cell } {
+    # look at all of the cell's properties
+    foreach property [list_property $lib_cell] {
+        if { [regexp {CONFIG\.([^\.]+)\.DEFAULT$} $property -> prop_name] } {
+            # Look for width parameters and set them to their max value
+            if { [string first "WIDTH" $prop_name] != -1 } {
+                set max [get_property CONFIG.${prop_name}.MAX $lib_cell]
+                set_property $prop_name $max $cell 
+            }
+        }
+    }
 }
