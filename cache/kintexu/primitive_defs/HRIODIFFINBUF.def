@@ -1,0 +1,32 @@
+	(primitive_def HRIODIFFINBUF 4 5
+		(pin LVDS_IN_N LVDS_IN_N input)
+		(pin LVDS_IN_P LVDS_IN_P input)
+		(pin LVDS_IBUF_OUT LVDS_IBUF_OUT output)
+		(pin LVDS_IBUF_OUT_B LVDS_IBUF_OUT_B output)
+		(element LVDS_IN_N 1
+			(pin LVDS_IN_N output)
+			(conn LVDS_IN_N LVDS_IN_N ==> DIFFINBUF DIFF_IN_N)
+		)
+		(element LVDS_IN_P 1
+			(pin LVDS_IN_P output)
+			(conn LVDS_IN_P LVDS_IN_P ==> DIFFINBUF DIFF_IN_P)
+		)
+		(element LVDS_IBUF_OUT 1
+			(pin LVDS_IBUF_OUT input)
+			(conn LVDS_IBUF_OUT LVDS_IBUF_OUT <== DIFFINBUF O)
+		)
+		(element LVDS_IBUF_OUT_B 1
+			(pin LVDS_IBUF_OUT_B input)
+			(conn LVDS_IBUF_OUT_B LVDS_IBUF_OUT_B <== DIFFINBUF O_B)
+		)
+		(element DIFFINBUF 4 # BEL
+			(pin DIFF_IN_N input)
+			(pin DIFF_IN_P input)
+			(pin O output)
+			(pin O_B output)
+			(conn DIFFINBUF DIFF_IN_N <== LVDS_IN_N LVDS_IN_N)
+			(conn DIFFINBUF DIFF_IN_P <== LVDS_IN_P LVDS_IN_P)
+			(conn DIFFINBUF O ==> LVDS_IBUF_OUT LVDS_IBUF_OUT)
+			(conn DIFFINBUF O_B ==> LVDS_IBUF_OUT_B LVDS_IBUF_OUT_B)
+		)
+	)
