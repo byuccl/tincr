@@ -1,0 +1,39 @@
+	(primitive_def PLL_SELECT_SITE 5 6
+		(pin D0 D0 input)
+		(pin D1 D1 input)
+		(pin PLL_CLK_EN PLL_CLK_EN input)
+		(pin REFCLK_DFD REFCLK_DFD input)
+		(pin Z Z output)
+		(element D0 1
+			(pin D0 output)
+			(conn D0 D0 ==> PLL_SELECT PLL0)
+		)
+		(element D1 1
+			(pin D1 output)
+			(conn D1 D1 ==> PLL_SELECT PLL1)
+		)
+		(element PLL_CLK_EN 1
+			(pin PLL_CLK_EN output)
+			(conn PLL_CLK_EN PLL_CLK_EN ==> PLL_SELECT PLL_CLK_EN)
+		)
+		(element REFCLK_DFD 1
+			(pin REFCLK_DFD output)
+			(conn REFCLK_DFD REFCLK_DFD ==> PLL_SELECT REFCLK_DFD)
+		)
+		(element Z 1
+			(pin Z input)
+			(conn Z Z <== PLL_SELECT CLOCK_OUT)
+		)
+		(element PLL_SELECT 5 # BEL
+			(pin PLL0 input)
+			(pin PLL1 input)
+			(pin PLL_CLK_EN input)
+			(pin REFCLK_DFD input)
+			(pin CLOCK_OUT output)
+			(conn PLL_SELECT CLOCK_OUT ==> Z Z)
+			(conn PLL_SELECT PLL0 <== D0 D0)
+			(conn PLL_SELECT PLL1 <== D1 D1)
+			(conn PLL_SELECT PLL_CLK_EN <== PLL_CLK_EN PLL_CLK_EN)
+			(conn PLL_SELECT REFCLK_DFD <== REFCLK_DFD REFCLK_DFD)
+		)
+	)

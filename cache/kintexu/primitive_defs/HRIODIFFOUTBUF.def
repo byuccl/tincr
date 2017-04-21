@@ -1,0 +1,36 @@
+	(primitive_def HRIODIFFOUTBUF 5 6
+		(pin O_B O_B input)
+		(pin TERM_EN_TEST TERM_EN_TEST input)
+		(pin TSTATEB TSTATEB input)
+		(pin AOUT AOUT output)
+		(pin BOUT BOUT output)
+		(element O_B 1
+			(pin O_B output)
+			(conn O_B O_B ==> DIFFOUTBUF O_B)
+		)
+		(element TERM_EN_TEST 1
+			(pin TERM_EN_TEST output)
+		)
+		(element TSTATEB 1
+			(pin TSTATEB output)
+			(conn TSTATEB TSTATEB ==> DIFFOUTBUF TRI)
+		)
+		(element AOUT 1
+			(pin AOUT input)
+			(conn AOUT AOUT <== DIFFOUTBUF AOUT)
+		)
+		(element BOUT 1
+			(pin BOUT input)
+			(conn BOUT BOUT <== DIFFOUTBUF BOUT)
+		)
+		(element DIFFOUTBUF 4 # BEL
+			(pin O_B input)
+			(pin TRI input)
+			(pin AOUT output)
+			(pin BOUT output)
+			(conn DIFFOUTBUF AOUT ==> AOUT AOUT)
+			(conn DIFFOUTBUF BOUT ==> BOUT BOUT)
+			(conn DIFFOUTBUF O_B <== O_B O_B)
+			(conn DIFFOUTBUF TRI <== TSTATEB TSTATEB)
+		)
+	)
