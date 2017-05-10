@@ -14,7 +14,8 @@ namespace eval ::tincr:: {
         write_primitive_defs \
         write_partial_primitive_def \
         test_eappd \
-        extract_all_partial_primitive_defs
+        extract_all_partial_primitive_defs \
+        get_parts_unique
 }
 
 proc ::tincr::write_xdlrc { args } {
@@ -38,7 +39,10 @@ proc ::tincr::write_xdlrc { args } {
         puts "primitive_defs: $primitive_defs"
         puts "file: $file"
     }
-        
+    
+    # set a flag if the XDLRC is for series7 devices
+    set is_series7 [expr {[string first "7" [get_property ARCHITECTURE $part]] != -1}]
+    
     set start_time [clock seconds]
     puts "Process began at [clock format $start_time -format %H:%M:%S] on [clock format $start_time -format %D]"
     
@@ -73,7 +77,7 @@ proc ::tincr::write_xdlrc { args } {
         file mkdir $tmpDir
     
         if {$tile!= ""} {
-            write_xdlrc_tile [get_tiles $tile] $outfile $brief
+            write_xdlrc_tile [get_tiles $tile] $outfile $brief $is_series7
         } else {
             set tiles [get_tiles]
             set num_tiles [llength $tiles]
@@ -112,7 +116,7 @@ proc ::tincr::write_xdlrc { args } {
                 puts $p "set outfile \[open \"$path\" w\]"
                 puts $p "set tiles \[get_tiles\]"
                 puts $p "for \{set i $start_tile\} \{\$i <= $end_tile\} \{incr i\} \{"
-                puts $p "tincr::write_xdlrc_tile \[lindex \$tiles \$i\] \$outfile $brief"
+                puts $p "tincr::write_xdlrc_tile \[lindex \$tiles \$i\] \$outfile $brief $is_series7"
                 puts $p "flush \$outfile"
                 puts $p "\}"
                 puts $p "close \$outfile"
@@ -162,6 +166,7 @@ proc ::tincr::write_xdlrc { args } {
                 fconfigure $infile -translation binary
                 fcopy $infile $outfile
                 close $infile
+                puts $outfile "" ; # put a new line between primitive defs
             }
             
             puts $outfile ")"
@@ -189,7 +194,7 @@ proc ::tincr::write_xdlrc { args } {
     puts "Process ended at [clock format $end_time -format %H:%M:%S] on [clock format $end_time -format %D]"
 }
 
-proc ::tincr::write_xdlrc_tile { tile outfile brief } {
+proc ::tincr::write_xdlrc_tile { tile outfile brief is_series7 } {
     set sites [lsort [get_sites -quiet -of_object $tile]]
     # TODO Fix this line of output
     puts $outfile "\t(tile [get_property ROW $tile] [get_property COLUMN $tile] [get_property NAME $tile] [get_property TYPE $tile] [llength $sites]"
@@ -206,7 +211,10 @@ proc ::tincr::write_xdlrc_tile { tile outfile brief } {
         if {[get_property IS_PAD $site]} {
             if {[get_property IS_BONDED $site]} {
                 set state "bonded"
-                set name [get_property NAME [get_package_pins -quiet -of_object $site]]
+                # Only use the PACKAGE PIN name for series7 devices.
+                if {$is_series7} {
+                    set name [get_property NAME [get_package_pins -quiet -of_object $site]]
+                }
             } else {
                 set state "unbonded"
             }

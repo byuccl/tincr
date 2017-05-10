@@ -19,8 +19,10 @@ namespace eval ::tincr:: {
 # @param lib_cells List of supported library cells for the current device
 # @param site_map Dictionary mapping site types, to site locations
 # @param alternate_site_set Set of sites that are only alternate sites
+# @param ignore_sitename Set to true, if the algorithm should ignore site names while placing cells
+#
 # @return A dictionary that maps a cell to all sites it can be placed on
-proc create_cell_to_site_map {lib_cells site_map alternate_site_set} {
+proc create_cell_to_site_map {lib_cells site_map alternate_site_set {ignore_sitename 0}} {
     
     set cell_site_map [dict create]
     
@@ -39,8 +41,15 @@ proc create_cell_to_site_map {lib_cells site_map alternate_site_set} {
             }
             
             if {[catch {[place_cell $cell_instance $site]} err] == 0} {
-                dict lappend cell_site_map $lib_cell $sitename
-                unplace_cell $cell_instance
+                
+                set actual_site_type [lindex [split [get_property BEL $cell_instance] "."] 0]
+                
+                # Need to add a check to verify that the site-type did not implicitly change when
+                # the BEL was placed. If it has, then the cell cannot be placed on the site
+                if {$sitename == $actual_site_type || $ignore_sitename} {
+                    dict lappend cell_site_map $lib_cell $sitename
+                    unplace_cell $cell_instance
+                }
             }
             
             if { $is_alternate } {
@@ -73,7 +82,9 @@ proc process_leaf_cell {cell site xml_out} {
   
     # create_net tmp_net
     set cell_group [get_property PRIMITIVE_GROUP $cell]
-    set cell_can_permute_pins [expr {$cell_group == "LUT" || $cell_group == "INV" || $cell_group == "BUF"}] 
+	set cell_subgroup [get_property PRIMITIVE_SUBGROUP $cell]
+    set cell_can_permute_pins [expr {$cell_group == "LUT" || $cell_group == "INV" || $cell_group == "BUF" || 
+                                $cell_subgroup == "LUT" || $cell_subgroup == "INV" || $cell_subgroup == "BUF"}] 
     
     # Find all of the configurations of the cell : TODO: add this at a later date
     if {$::tincr::debug} {
@@ -384,7 +395,7 @@ proc get_unique_pin_mappings { cell bel pinmap_list } {
 # @param pin_map Dictionary from cell pin -> list of bel pins
 # @param xml_out File handle to the output XML file
 proc write_possible_pin_mappings { pin_map xml_out } {
-
+    
     if { [dict size $pin_map] > 0 } {
         puts $xml_out "          <pins>"
     
@@ -470,38 +481,34 @@ proc create_leaf_cell_pin_mapping_permutable {cell bel xml_out} {
     place_cell $cell $bel
     
     set pin_map [dict create]
-    
-    set input_bel_pin_names [list] 
-    foreach input_bel_pin [get_bel_pins -of $bel -filter {DIRECTION==IN} -quiet] {
-        lappend input_bel_pin_names [lindex [split [get_property NAME $input_bel_pin] "/"] end]
-    }
-    
+    set input_bel_pins [get_bel_pins -of $bel -filter {DIRECTION==IN} -quiet]
+   
     foreach cell_pin [get_pins -of $cell] {
         
-        set is_input [expr {[get_property DIRECTION $cell_pin] == "IN"}]
-       
-        set cell_pin_name [lindex [split $cell_pin "/"] end]
         set bel_pins [get_bel_pins -of $cell_pin -quiet]
         
-        if {$is_input} {
-            ::tincr::assert { [llength $bel_pins] == 0 } "\[Assertion Error\] Input pin to permutable cell should have no default pin mapping $cell/$cell_pin_name [get_sites -of $cell]"
-            foreach bel_pin_name $input_bel_pin_names {    
-                
+        if {[get_property DIRECTION $cell_pin] == "IN"} {
+            ::tincr::assert { [llength $bel_pins] == 0 } "\[Assertion Error\] Input pin to permutable cell should have no default pin mapping $cell/$cell_pin [get_sites -of $cell]"
+            
+            set cell_pin_name [lindex [split $cell_pin "/"] end]
+            foreach bel_pin $input_bel_pins {    
+                set bel_pin_name [lindex [split [get_property NAME $bel_pin] "/"] end]
                 if { [catch {[set_property LOCK_PINS "{$cell_pin_name:$bel_pin_name}" $cell]} err] == 0 } {
-                    dict lappend pin_map $cell_pin_name $bel_pin_name
+                    dict lappend pin_map $cell_pin $bel_pin
                 }
                 reset_property LOCK_PINS $cell
             }
         } else { ; # output cell pin
-            ::tincr::assert { [llength $bel_pins] == 1 } "\[Assertion Error\] An output pin should map to exactly one bel pin. $cell/$cell_pin_name [get_sites -of $cell]"
-            set bel_pin_name [lindex [split $bel_pins "/"] end]
-            dict lappend pin_map $cell_pin_name $bel_pin_name
+            ::tincr::assert { [llength $bel_pins] == 1 } "\[Assertion Error\] An output pin of a permutable cell should map to exactly one bel pin. $cell_pin [get_sites -of $cell]"
+            
+            dict lappend pin_map $cell_pin [lindex $bel_pins 0]
         }
         
-        ::tincr::assert { [dict exists $pin_map $cell_pin_name] } "Cell Pin $cell/$cell_pin_name does not map to any bel pins"
+        ::tincr::assert { [dict exists $pin_map $cell_pin] } "Cell Pin $cell_pin does not map to any bel pins"
     }
     
-    write_pin_mappings $cell [list $pin_map] [list "DEFAULT"] $xml_out
+    write_possible_pin_mappings $pin_map $xml_out
+    # write_pin_mappings $cell [list $pin_map] [list "DEFAULT"] $xml_out
     
     unplace_cell $cell
 }
@@ -592,13 +599,15 @@ proc write_port_xml { port_type pin_direction port_map xml_out } {
     puts $xml_out "      <bels>"
     
     # print the bel info for the port
-    dict for {site_type bel_type} $port_map {
-        puts $xml_out "        <bel>"
-        puts $xml_out "          <id>"
-        puts $xml_out "            <site_type>$site_type</site_type>"
-        puts $xml_out "            <name>$bel_type</name>"
-        puts $xml_out "          </id>"
-        puts $xml_out "        </bel>"        
+    dict for {site_type bel_list} $port_map {
+        foreach bel_type $bel_list { 
+            puts $xml_out "        <bel>"
+            puts $xml_out "          <id>"
+            puts $xml_out "            <site_type>$site_type</site_type>"
+            puts $xml_out "            <name>$bel_type</name>"
+            puts $xml_out "          </id>"
+            puts $xml_out "        </bel>"
+        }
     }
     
     puts $xml_out "      </bels>"
@@ -614,6 +623,10 @@ proc create_port_xml { site_map xml_out } {
 
     puts "Creating port definitions..."
     
+    # series7 needs to be processed differently than ultrascale and beyond
+    set arch [get_property ARCHITECTURE [get_parts -of [get_design]]]
+    set is_series7 [expr {[string first 7 $arch] != -1}]
+    
     set iport_map [dict create]
     set oport_map [dict create]
     set ioport_map [dict create]
@@ -622,24 +635,40 @@ proc create_port_xml { site_map xml_out } {
     dict for {type site} $site_map {
     
         if { [get_property IS_PAD $site] } {
-        
-            set num_inputs [get_property NUM_INPUTS $site]
-            set num_outputs [get_property NUM_OUTPUTS $site]
             
-            set is_output_pad [expr {$num_inputs > 0} ]
-            set is_input_pad [expr {$num_outputs > 0} ]
-            set is_inout_pad [expr {$num_inputs > 0 && $num_outputs > 0} ]
+            if {$is_series7} {
+                set num_inputs [get_property NUM_INPUTS $site]
+                set num_outputs [get_property NUM_OUTPUTS $site]
+                
+                set is_output_pad [expr {$num_inputs > 0} ]
+                set is_input_pad [expr {$num_outputs > 0} ]
+                set is_inout_pad [expr {$num_inputs > 0 && $num_outputs > 0} ]\
+            }
             
-            foreach bel [get_bels -of $site -filter {TYPE=="PAD"}] {
+            foreach bel [get_bels -of $site -filter {TYPE=~"*PAD*"}] {
                 set bel_name [tincr::suffix [get_property NAME $bel] "/"]
-                if {$is_input_pad} {
-                    dict lappend iport_map $type $bel_name
-                }
-                if {$is_output_pad} {
-                    dict lappend oport_map $type $bel_name
-                }
-                if {$is_inout_pad} {
-                    dict lappend ioport_map $type $bel_name
+                
+                # process series 7 pads
+                if {$is_series7} {
+                    if {$is_input_pad} {
+                        dict lappend iport_map $type $bel_name
+                    }
+                    if {$is_output_pad} {
+                        dict lappend oport_map $type $bel_name
+                    }
+                    if {$is_inout_pad} {
+                        dict lappend ioport_map $type $bel_name
+                    }
+                } else { ; # process ultrascale and beyond pads
+                    if {[get_property NUM_BIDIR $bel] > 0} {
+                        dict lappend ioport_map $type $bel_name
+                        dict lappend iport_map $type $bel_name
+                        dict lappend oport_map $type $bel_name
+                    } elseif {[get_property NUM_INPUTS $bel] > 0} {
+                        dict lappend oport_map $type $bel_name
+                    } else {
+                        dict lappend iport_map $type $bel_name 
+                    }
                 }
             }
         }
@@ -970,6 +999,7 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} {
     set xml_out [open $filename w]
     
     # Open empty design to gain access to the Vivado cell library
+    set cur_part [get_parts $part]
     tincr::designs new mydes [get_parts $part]
 
     # Find all of the supported library cells in the current part
@@ -983,7 +1013,9 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} {
     set alternate_only_sites [lindex $unique_sites 1]
 
     puts "Finding all valid site placements for each supported cell...\n"
-    set cell_to_sitetype_map [create_cell_to_site_map $supported_lib_cells $site_map $alternate_only_sites]
+    set family [get_property ARCHITECTURE $cur_part]
+    set is_series7 [expr {[string first "7" $family] != -1}]
+    set cell_to_sitetype_map [create_cell_to_site_map $supported_lib_cells $site_map $alternate_only_sites $is_series7]
  
     # Write the cell library xml file header
     puts $xml_out {<?xml version="1.0" encoding="UTF-8"?>}
@@ -1040,7 +1072,7 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} {
     close_design -quiet
 
     puts "CellLibrary \"$filename\" created successfully!"
-    close_project * -quiet
+    close_project -quiet
 }
 
 ## Function to test the <code>create_xml_cell_library</code> function with assertions
