@@ -432,7 +432,7 @@ proc ::tincr::write_partial_primitive_def { site filename {includeConfigs 0} } {
     set pin_maps [list]
     if {[llength $bels] == 1} {
         set is_single_bel_site 1
-        set pin_maps [get_single_bel_pin_maps $site [lindex $bels 0] $outfile]
+        set pin_maps [get_single_bel_pin_maps $site [lindex $bels 0]]
     } else {
         set num_bel_pins_site [llength [get_bel_pins -of $site -quiet]]
         
@@ -442,7 +442,7 @@ proc ::tincr::write_partial_primitive_def { site filename {includeConfigs 0} } {
             # if a single bel in a site contains 80% of all bel pins in the site, mark it as a single bel site
             if {[expr {double($num_bel_pins_bel) / double($num_bel_pins_site)}] > .800} {
                 set is_single_bel_site 1
-                set pin_maps [get_single_bel_pin_maps $site $bel $outfile]
+                set pin_maps [get_single_bel_pin_maps $site $bel]
                 break
             }
         }
@@ -943,7 +943,7 @@ proc ::tincr::get_parts_unique {{arch ""}} {
 # @return A list of 2 maps:
 #       Item 0: Map of Site Pin -> Bel Pin for the specified {@link site} and {@link bel}
 #       Item 1: Map of Bel Pin -> Site Pin for the specified {@link site} and {@link bel}
-proc get_single_bel_pin_maps {site bel {outfile ""} } {
+proc get_single_bel_pin_maps {site bel} {
 
     foreach lib_cell [get_lib_cells] {
 
@@ -996,11 +996,7 @@ proc get_single_bel_pin_maps {site bel {outfile ""} } {
         
         return [list $bel_pin_map $site_pin_map]
     }
-   
-    if {$outfile != ""} {
-        puts $outfile "\t\tWARNING: Cannot infer single bel connections for site!"
-    }
-    
+       
     puts "\t\tWARNING: Cannot infer single bel connections for site!"
 }
 

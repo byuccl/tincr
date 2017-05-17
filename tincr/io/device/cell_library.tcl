@@ -1,4 +1,4 @@
-package provide tincr.io.library 0.0
+package provide tincr.io.device 0.0
 package require Tcl 8.5
 package require tincr.cad.design 0.0
 package require tincr.cad.device 0.0
@@ -838,9 +838,10 @@ proc write_bel_placement_xml { cell_instance site_type_list site_map alternate_o
     puts $xml_out "      </bels>"
 }
 
-##
+## Generates an XML cell-specification for the specified Macro cell.
 #
-#
+# @param Macro cell instance
+# @param outfile XML file handle
 proc ::tincr::write_macro_xml {macro outfile} {
 
     set boundary_nets ""
@@ -851,9 +852,8 @@ proc ::tincr::write_macro_xml {macro outfile} {
     puts $outfile "        <cells>"
     foreach internal [get_cells $macro/*] {
         puts $outfile "            <internal>"
-        set cell_name [get_property NAME $internal]
-        set first [expr {[string first "/" $cell_name] + 1}]
-        puts $outfile "                <name>[string range $cell_name $first end]</name>"
+        set internal_name [lindex [split [get_property NAME $internal] "/"] end]
+        puts $outfile "                <name>$internal_name</name>"
         puts $outfile "                <type>[get_property REF_NAME $internal]</type>"
         puts $outfile "            </internal>"
     }
@@ -882,19 +882,14 @@ proc ::tincr::write_macro_xml {macro outfile} {
         set internal_net [get_nets -boundary_type lower -of $pin]
         ::struct::set add boundary_nets $internal_net
     
-        foreach internal [get_pins -of $internal_net -filter IS_LEAF] {
-            set first [expr {[string first "/" $internal] + 1}]
-            puts $outfile "                    <pinname>[string range $internal $first end]</pinname>"
+        foreach internal_pin [get_pins -of $internal_net -filter IS_LEAF] {
+            set name_toks [split $internal_pin "/"]
+            puts $outfile "                    <pinname>[lindex $name_toks end-1]/[lindex $name_toks end]</pinname>"
         }
         puts $outfile "                </internalConnections>"
         puts $outfile "            </pin>"
     }
-    
-    #foreach net $boundary_nets {
-    #    puts -nonewline "$net "
-    #}
-    #puts ""
-  
+      
     puts $outfile "        </pins>"   
     
     # print the macro internal net structure  
@@ -908,19 +903,12 @@ proc ::tincr::write_macro_xml {macro outfile} {
     
             # skip nets that connect to the macro boundary
             if {[::struct::set contains $boundary_nets $net]} {
-                puts $net
                 continue
             }
             
-            set first [expr {[string first "/" $net] + 1}]
-            set netname [string range $net $first end]
             lappend internal_nets $net
             puts $outfile "            <internalNet>"
             
-            # Replace angle brackets with <const0> and <const1>)
-            set netname [string map {< &lt; > &gt;} $netname]
-            puts $outfile "                <name>$netname</name>"
-
             # add the type for GND and VCC nets
             set nettype [get_property TYPE $net]
             if {$nettype == {GROUND}} {
@@ -929,11 +917,15 @@ proc ::tincr::write_macro_xml {macro outfile} {
                 puts $outfile "                <type>VCC</type>"
             }
             
+            set netname [lindex [split $net "/"] end]
+            # Replace angle brackets with sequences XML can understand
+            set netname [string map {< &lt; > &gt;} $netname]
+            
             puts $outfile "                <name>$netname</name>"
             puts $outfile "                <pins>"
             foreach pin [get_pins -of $net] {
-                set first [expr {[string first "/" $pin] + 1}]
-                puts $outfile "                    <pinname>[string range $pin $first end]</pinname>"
+                set name_toks [split $pin "/"]
+                puts $outfile "                    <pinname>[lindex $name_toks end-1]/[lindex $name_toks end]</pinname>"
             }   
     
             puts $outfile "                </pins>"
@@ -946,7 +938,9 @@ proc ::tincr::write_macro_xml {macro outfile} {
     return $internal_nets
 }
 
-
+## Prints the RapidSmith license to the specified XML file
+#
+# @param outfile XML file handle
 proc ::tincr::print_rapidSmith_license {outfile} {
     puts $outfile "<!--"
     puts $outfile " ~ Copyright (c) 2016 Brigham Young University"

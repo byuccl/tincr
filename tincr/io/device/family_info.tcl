@@ -1,4 +1,4 @@
-package provide tincr.io.library 0.0
+package provide tincr.io.device 0.0
 package require Tcl 8.5
 package require tincr.cad.design 0.0
 package require tincr.cad.device 0.0
@@ -8,7 +8,6 @@ namespace eval ::tincr:: {
     namespace export \
 	create_xml_family_info 
 }
-
 
 # #########################################
 #           Family Info Notes:
@@ -332,7 +331,9 @@ proc print_routing_mux_corrections {routing_muxes fileout} {
 
 ## Prints the family info XML header
 #
-proc print_xml_header {family fileout} {
+# @param family Vivado family name
+# @param fileout XML file handle
+proc print_header_family_info {family fileout} {
     # print XML header 
     puts $fileout "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
     puts $fileout "<device_description>"
@@ -424,46 +425,6 @@ proc create_compatible_site_map {site_type_map alternate_site_set compute_extend
     return $compatible_type_map
 }
 
-## Adds the clock pads of the currently opened part to the specified clock pad map.
-#   Since we have to print the clock pads to the family info XML after processing all sites
-#   we need to store them in a map.
-#
-# @param prt Current part
-# @param clock_pad_map Map variable 
-proc add_clock_pads {prt clock_pad_map} {
-    
-    upvar $clock_pad_map clock_pad_map_local
-    
-    set clock_pads [get_sites -filter {(IS_CLOCK_PAD || IS_GLOBAL_CLOCK_PAD) && IS_BONDED}]
-    
-    foreach pad $clock_pads {
-        dict lappend clock_pad_map_local $prt [get_property NAME [get_package_pins -quiet -of_object $pad]] 
-    }
-}
-
-## Prints the clock pads to the Family Info XML. This function should be called
-#   after all devices have finished processing.
-#
-# @param clock_pad_map Map from Xilinx part to a list of clock pads for that part
-# @param fileout XML file handle
-proc print_clock_pads {clock_pad_map fileout} {
- 
-    dict for {prt clock_pad_list} $clock_pad_map {
-        puts $fileout "  <clock_pads>"
-        # remove the speed grade from the part name (the clock pads are the same across all speed grades).
-        regexp {^(x[a-z0-9]+(?:-[a-z0-9]+)?)-.+} $prt -> partname_no_speedgrade
-        
-        
-        puts $fileout "    <part>$partname_no_speedgrade</part>"
-        
-        foreach pad_name $clock_pad_list {
-            puts $fileout "      <clock_pad>$pad_name</clock_pad>" 
-        }
-        
-        puts $fileout "  </clock_pads>"
-    }
-}
-
 ## Parses the VSRT "addedBels.txt" file for the current architecture,
 #   and creates a map of BELs to add to the Family Info.
 #
@@ -546,14 +507,13 @@ proc ::tincr::create_xml_family_info { filename family {vsrt_bels_file ""} } {
     set vsrt_bel_map [parse_vsrt_bels $family $vsrt_bels_file]
     
     # print header
-    print_xml_header $family $fileout
+    print_header_family_info $family $fileout
     
     # Initialize variables
     set primary_set [list]
     set alternate_set [list]
     set unique_parts [tincr::get_parts_unique $family]
     set i 1
-    set clock_pad_map [dict create]
     global is_series7
     set is_series7 [expr {[string first "7" $family] != -1}] 
     
@@ -615,23 +575,18 @@ proc ::tincr::create_xml_family_info { filename family {vsrt_bels_file ""} } {
                 }
             }
         }
-        # add the clock pads of the part to the clock pad map to be printed later
-        add_clock_pads $prt clock_pad_map 
         incr i
         close_design -quiet
     }
     
     # print series 7 corrections
     # TODO: this should be removed ASAP by removing bad primitive defs from Tincr
-    if {$is_series7 != -1} {
+    if {$is_series7 == 1} {
         print_series7_corrections $site_type_map $fileout
     }
     
     puts $fileout "  </site_types>"
-    
-    # print the clock pads to the family info XML
-    print_clock_pads $clock_pad_map $fileout
-    
+        
     # print the ending tag and close the file
     puts $fileout "</device_description>"
     flush $fileout
