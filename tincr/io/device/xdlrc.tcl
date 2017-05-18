@@ -39,10 +39,7 @@ proc ::tincr::write_xdlrc { args } {
         puts "primitive_defs: $primitive_defs"
         puts "file: $file"
     }
-    
-    # set a flag if the XDLRC is for series7 devices
-    set is_series7 [expr {[string first "7" [get_property ARCHITECTURE $part]] != -1}]
-    
+        
     set start_time [clock seconds]
     puts "Process began at [clock format $start_time -format %H:%M:%S] on [clock format $start_time -format %D]"
     
@@ -76,6 +73,9 @@ proc ::tincr::write_xdlrc { args } {
         set tmpDir ".Tincr/xdlrc/$part"
         file mkdir $tmpDir
     
+        # set a flag if the XDLRC is for series7 devices
+        set is_series7 [expr {[string first "7" [get_property ARCHITECTURE $part]] != -1}]
+        
         if {$tile!= ""} {
             write_xdlrc_tile [get_tiles $tile] $outfile $brief $is_series7
         } else {
