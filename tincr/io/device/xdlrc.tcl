@@ -14,7 +14,8 @@ namespace eval ::tincr:: {
         write_primitive_defs \
         write_partial_primitive_def \
         test_eappd \
-        extract_all_partial_primitive_defs
+        extract_all_partial_primitive_defs \
+        get_parts_unique
 }
 
 proc ::tincr::write_xdlrc { args } {
@@ -41,6 +42,9 @@ proc ::tincr::write_xdlrc { args } {
         
     set start_time [clock seconds]
     puts "Process began at [clock format $start_time -format %H:%M:%S] on [clock format $start_time -format %D]"
+    
+    # set a flag if the XDLRC is for series7 devices
+    set is_series7 [expr {[string first "7" [get_property ARCHITECTURE [get_parts $part]]] != -1}]
     
     tincr::run_in_temporary_project -part $part {
         # Declare a semaphore to restrict the number of concurrent processes to "max_processes"
@@ -71,9 +75,9 @@ proc ::tincr::write_xdlrc { args } {
         # Create a temporary folder for the child processes to dump their data
         set tmpDir ".Tincr/xdlrc/$part"
         file mkdir $tmpDir
-    
+        
         if {$tile!= ""} {
-            write_xdlrc_tile [get_tiles $tile] $outfile $brief
+            write_xdlrc_tile [get_tiles $tile] $outfile $brief $is_series7
         } else {
             set tiles [get_tiles]
             set num_tiles [llength $tiles]
@@ -112,7 +116,7 @@ proc ::tincr::write_xdlrc { args } {
                 puts $p "set outfile \[open \"$path\" w\]"
                 puts $p "set tiles \[get_tiles\]"
                 puts $p "for \{set i $start_tile\} \{\$i <= $end_tile\} \{incr i\} \{"
-                puts $p "tincr::write_xdlrc_tile \[lindex \$tiles \$i\] \$outfile $brief"
+                puts $p "tincr::write_xdlrc_tile \[lindex \$tiles \$i\] \$outfile $brief $is_series7"
                 puts $p "flush \$outfile"
                 puts $p "\}"
                 puts $p "close \$outfile"
@@ -162,6 +166,7 @@ proc ::tincr::write_xdlrc { args } {
                 fconfigure $infile -translation binary
                 fcopy $infile $outfile
                 close $infile
+                puts $outfile "" ; # put a new line between primitive defs
             }
             
             puts $outfile ")"
@@ -189,7 +194,7 @@ proc ::tincr::write_xdlrc { args } {
     puts "Process ended at [clock format $end_time -format %H:%M:%S] on [clock format $end_time -format %D]"
 }
 
-proc ::tincr::write_xdlrc_tile { tile outfile brief } {
+proc ::tincr::write_xdlrc_tile { tile outfile brief is_series7 } {
     set sites [lsort [get_sites -quiet -of_object $tile]]
     # TODO Fix this line of output
     puts $outfile "\t(tile [get_property ROW $tile] [get_property COLUMN $tile] [get_property NAME $tile] [get_property TYPE $tile] [llength $sites]"
@@ -206,7 +211,10 @@ proc ::tincr::write_xdlrc_tile { tile outfile brief } {
         if {[get_property IS_PAD $site]} {
             if {[get_property IS_BONDED $site]} {
                 set state "bonded"
-                set name [get_property NAME [get_package_pins -quiet -of_object $site]]
+                # Only use the PACKAGE PIN name for series7 devices.
+                if {$is_series7} {
+                    set name [get_property NAME [get_package_pins -quiet -of_object $site]]
+                }
             } else {
                 set state "unbonded"
             }
@@ -424,7 +432,7 @@ proc ::tincr::write_partial_primitive_def { site filename {includeConfigs 0} } {
     set pin_maps [list]
     if {[llength $bels] == 1} {
         set is_single_bel_site 1
-        set pin_maps [get_single_bel_pin_maps $site [lindex $bels 0] $outfile]
+        set pin_maps [get_single_bel_pin_maps $site [lindex $bels 0]]
     } else {
         set num_bel_pins_site [llength [get_bel_pins -of $site -quiet]]
         
@@ -434,7 +442,7 @@ proc ::tincr::write_partial_primitive_def { site filename {includeConfigs 0} } {
             # if a single bel in a site contains 80% of all bel pins in the site, mark it as a single bel site
             if {[expr {double($num_bel_pins_bel) / double($num_bel_pins_site)}] > .800} {
                 set is_single_bel_site 1
-                set pin_maps [get_single_bel_pin_maps $site $bel $outfile]
+                set pin_maps [get_single_bel_pin_maps $site $bel]
                 break
             }
         }
@@ -935,7 +943,7 @@ proc ::tincr::get_parts_unique {{arch ""}} {
 # @return A list of 2 maps:
 #       Item 0: Map of Site Pin -> Bel Pin for the specified {@link site} and {@link bel}
 #       Item 1: Map of Bel Pin -> Site Pin for the specified {@link site} and {@link bel}
-proc get_single_bel_pin_maps {site bel {outfile ""} } {
+proc get_single_bel_pin_maps {site bel} {
 
     foreach lib_cell [get_lib_cells] {
 
@@ -988,11 +996,7 @@ proc get_single_bel_pin_maps {site bel {outfile ""} } {
         
         return [list $bel_pin_map $site_pin_map]
     }
-   
-    if {$outfile != ""} {
-        puts $outfile "\t\tWARNING: Cannot infer single bel connections for site!"
-    }
-    
+       
     puts "\t\tWARNING: Cannot infer single bel connections for site!"
 }
 
