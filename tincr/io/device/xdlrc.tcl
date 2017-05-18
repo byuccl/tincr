@@ -43,6 +43,9 @@ proc ::tincr::write_xdlrc { args } {
     set start_time [clock seconds]
     puts "Process began at [clock format $start_time -format %H:%M:%S] on [clock format $start_time -format %D]"
     
+    # set a flag if the XDLRC is for series7 devices
+    set is_series7 [expr {[string first "7" [get_property ARCHITECTURE [get_parts $part]]] != -1}]
+    
     tincr::run_in_temporary_project -part $part {
         # Declare a semaphore to restrict the number of concurrent processes to "max_processes"
         # This has to be global so that the process handler can access it
@@ -72,9 +75,6 @@ proc ::tincr::write_xdlrc { args } {
         # Create a temporary folder for the child processes to dump their data
         set tmpDir ".Tincr/xdlrc/$part"
         file mkdir $tmpDir
-    
-        # set a flag if the XDLRC is for series7 devices
-        set is_series7 [expr {[string first "7" [get_property ARCHITECTURE $part]] != -1}]
         
         if {$tile!= ""} {
             write_xdlrc_tile [get_tiles $tile] $outfile $brief $is_series7
