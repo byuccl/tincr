@@ -1,0 +1,11 @@
+	(primitive_def VCC 1 2
+		(pin HARD1 HARD1 output)
+		(element HARD1 1
+			(pin HARD1 input)
+			(conn HARD1 HARD1 <== HARD1VCC P)
+		)
+		(element HARD1VCC 1 # BEL
+			(pin P output)
+			(conn HARD1VCC P ==> HARD1 HARD1)
+		)
+	)

@@ -698,7 +698,8 @@ proc write_net_routing { net_list is_series7 channel } {
             set route_string [get_property ROUTE $net]
             # only print non-empty route strings for routing nets.
             if { ( $route_status=="ROUTED" || $route_status=="HIERPORT" ) && $route_string != "{}" } {
-                puts $channel "ROUTE $net_name [get_wires -of $net]"
+                puts $channel "ROUTE $net_name [get_pips -of $net]"
+                #puts $channel "ROUTE $net_name [get_wires -of $net]"
             }
         }
     }
@@ -712,16 +713,32 @@ proc write_net_routing { net_list is_series7 channel } {
         puts $channel "INTERSITE GND [join $gnd_sinks]"
     }
     
+    if {0} {
     set vcc_wires [get_wires -of $vcc_net -quiet]
     if {[llength $vcc_wires] > 0} {
         puts $channel "VCC $vcc_wires"
         puts $channel "START_WIRES [tincr::nets::get_static_source_wires $vcc_net]"
     }
+    }
     
+    set vcc_pips [get_pips -of $vcc_net -quiet]
+    if {[llength $vcc_pips] > 0} {
+        puts $channel "VCC $vcc_pips"
+        puts $channel "START_WIRES [tincr::nets::get_static_source_wires $vcc_net]"
+    }
+    
+    set gnd_pips [get_pips -of $gnd_net -quiet]
+    if {[llength $gnd_pips] > 0} {
+        puts $channel "GND $gnd_pips"
+        puts $channel "START_WIRES [tincr::nets::get_static_source_wires $gnd_net]"
+    }
+    
+    if {0} {
     set gnd_wires [get_wires -of $gnd_net -quiet] 
     if {[llength $gnd_wires] > 0} {
         puts $channel "GND $gnd_wires"
         puts $channel "START_WIRES [tincr::nets::get_static_source_wires $gnd_net]"
+    }
     }
     
     # re-enable the TCL display limit

@@ -1,0 +1,11 @@
+	(primitive_def GND 1 2
+		(pin HARD0 HARD0 output)
+		(element HARD0 1
+			(pin HARD0 input)
+			(conn HARD0 HARD0 <== HARD0GND G)
+		)
+		(element HARD0GND 1 # BEL
+			(pin G output)
+			(conn HARD0GND G ==> HARD0 HARD0)
+		)
+	)

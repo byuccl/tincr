@@ -135,7 +135,7 @@ proc ::tincr::write_xdlrc { args } {
             # Stitch the tile data files together
             foreach tile_file $tile_files {    
                 set infile [open $tile_file]
-                fconfigure $infile -translation binary
+                #fconfigure $infile -translation binary
                 fcopy $infile $outfile
                 close $infile
             }
@@ -150,6 +150,12 @@ proc ::tincr::write_xdlrc { args } {
     
         if {$primitive_defs} {
             # Primitive Definitions
+            
+            # For ultrascale devices add power/ground source sites that aren't explicitly represented in Vivado
+            if {$is_series7 == 0} {
+                lappend site_types "VCC" "GND"
+            }
+            
             puts $outfile "(primitive_defs [llength $site_types]"
             
             # Append primitive definitions
@@ -196,8 +202,17 @@ proc ::tincr::write_xdlrc { args } {
 
 proc ::tincr::write_xdlrc_tile { tile outfile brief is_series7 } {
     set sites [lsort [get_sites -quiet -of_object $tile]]
+    
+    set gnd_sources [list] 
+    set vcc_sources [list] 
+    if {$is_series7 == 0} {
+        set gnd_sources [get_wires -of $tile -filter {NAME=~*/GND_WIRE*} -quiet]
+        set vcc_sources [get_wires -of $tile -filter {NAME=~*/VCC_WIRE*} -quiet]
+    }
+    
+    set num_sites [expr {[llength $sites] + [llength $gnd_sources] + [llength $vcc_sources]}]
     # TODO Fix this line of output
-    puts $outfile "\t(tile [get_property ROW $tile] [get_property COLUMN $tile] [get_property NAME $tile] [get_property TYPE $tile] [llength $sites]"
+    puts $outfile "\t(tile [get_property ROW $tile] [get_property COLUMN $tile] [get_property NAME $tile] [get_property TYPE $tile] $num_sites"
 #    [get_property NUM_SITES $tile]"
     
     set wires [list]
@@ -258,6 +273,7 @@ proc ::tincr::write_xdlrc_tile { tile outfile brief is_series7 } {
     
                 puts $outfile "\t\t\t(pinwire $pin_name $direction $wire_name)"
             }
+                        
             puts -nonewline $outfile "\t\t"
         }
     
@@ -265,7 +281,37 @@ proc ::tincr::write_xdlrc_tile { tile outfile brief is_series7 } {
     
         incr num_pins [get_property NUM_PINS $site]
     }
+    
+    # print GND and VCC primitive sites for ultrascale devices and later
+    set i 0
+    foreach gnd_source $gnd_sources {
+        regexp {.*_(X.*)/(.*)} $gnd_source -> tile_offset wire_name
+        set site_name "GND_${tile_offset}_$i"
+        puts -nonewline $outfile "\t\t(primitive_site $site_name GND internal 1"
         
+        if {$brief == 0} {
+            puts $outfile "\n\t\t\t(pinwire HARD0 output $wire_name)"
+            puts -nonewline $outfile "\t\t"
+        }    
+        puts $outfile ")"
+        incr i
+    }
+    
+    set i 0
+    foreach vcc_source $vcc_sources {
+        regexp {.*_(X.*)/(.*)} $vcc_source -> tile_offset wire_name
+        set site_name "VCC_${tile_offset}_$i"
+        puts -nonewline $outfile "\t\t(primitive_site $site_name VCC internal 1"
+        
+        if {$brief == 0} {
+            puts $outfile "\n\t\t\t(pinwire HARD1 output $wire_name)"
+            puts -nonewline $outfile "\t\t"
+        }    
+        puts $outfile ")"
+        incr i
+    }
+    
+    # print wire information
     if {$brief == 0} {
 #        puts "Printing wire information..."
 #        set wires [lsort [get_wires -quiet -of_object $tile -filter {COST_CODE!=0}]]
@@ -723,6 +769,63 @@ proc ::tincr::write_partial_primitive_def { site filename {includeConfigs 0} } {
     
     seek $outfile 0 start
     puts -nonewline $outfile "\t(primitive_def [get_property SITE_TYPE $site] [llength $site_pins] $num_elements $mode" ; #Elements"
+    close $outfile
+}
+
+## Creates a "VCC.def" primitive definition for use in Ultrascale and later devices.
+#   This site does not actually exist on ultrascale parts, but is needed to create
+#   more accurate device descriptions.
+#
+# @param directory Directory to create the "VCC.def" file in
+proc ::tincr::write_vcc_primitive_def { directory } {
+    
+    if { [file isdirectory $directory] == 0 } {
+        puts "$directory is not a valid directory location"
+        return
+    }
+    
+    set outfile [open [file join $directory "VCC.def"] w]
+    
+    
+    puts $outfile "\t(primitive_def VCC 1 2"
+    puts $outfile "\t\t(pin HARD1 HARD1 output)"
+    puts $outfile "\t\t(element HARD1 1"
+    puts $outfile "\t\t\t(pin HARD1 input)"
+    puts $outfile "\t\t\t(conn HARD1 HARD1 <== HARD1VCC P)"
+    puts $outfile "\t\t)"
+    puts $outfile "\t\t(element HARD1VCC 1 # BEL"
+    puts $outfile "\t\t\t(pin P output)"
+    puts $outfile "\t\t\t(conn HARD1VCC P ==> HARD1 HARD1)"
+    puts $outfile "\t\t)"
+    puts -nonewline $outfile "\t)"
+    close $outfile
+}
+
+## Creates a "GND.def" primitive definition for use in Ultrascale and later devices.
+#   This site does not actually exist on ultrascale parts, but is needed to create
+#   more accurate device descriptions.
+#
+# @param directory Directory to create the "GND.def" file in
+proc ::tincr::write_gnd_primitive_def { directory } {
+    
+    if { [file isdirectory $directory] == 0 } {
+        puts "$directory is not a valid directory location"
+        return
+    }
+    
+    set outfile [open [file join $directory "GND.def"] w]
+    
+    puts $outfile "\t(primitive_def GND 1 2"
+    puts $outfile "\t\t(pin HARD0 HARD0 output)"
+    puts $outfile "\t\t(element HARD0 1"
+    puts $outfile "\t\t\t(pin HARD0 input)"
+    puts $outfile "\t\t\t(conn HARD0 HARD0 <== HARD0GND G)"
+    puts $outfile "\t\t)"
+    puts $outfile "\t\t(element HARD0GND 1 # BEL"
+    puts $outfile "\t\t\t(pin G output)"
+    puts $outfile "\t\t\t(conn HARD0GND G ==> HARD0 HARD0)"
+    puts $outfile "\t\t)"
+    puts -nonewline $outfile "\t)"
     close $outfile
 }
 
