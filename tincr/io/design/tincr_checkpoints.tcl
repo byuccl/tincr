@@ -619,6 +619,15 @@ proc write_static_and_routethrough_luts { site_list channel } {
         }
     }
     
+    # In some cases, FFs that are configured as Latches can be used with no cell being placed on the
+    # corresponding Flip Flip. Look for this and add them to the routethrough list. (D and Q are always the input/output pin)
+    foreach bel [get_bels -quiet -of $site_list -filter {NAME=~*FF* && !IS_USED}] {
+        set mode [string trim [get_property CONFIG.LATCH_OR_FF $bel]]
+        if {$mode == "LATCH"} {
+            lappend routethrough_luts "$bel/D/Q"
+        }
+    }
+    
     # print the gnd sources, vcc sources, and lut routethroughs to the routing file
     ::tincr::print_list -header "VCC_SOURCES" -channel $channel $vcc_sources
     ::tincr::print_list -header "GND_SOURCES" -channel $channel $gnd_sources

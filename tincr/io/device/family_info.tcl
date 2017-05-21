@@ -211,6 +211,31 @@ proc process_site {site type is_alt compatible_list fileout vsrt_bels_to_add } {
     puts $fileout "    </site_type>"
 }
 
+## Prints primitive sites that represent VCC and GND to the
+# family info file. This is only required for ultrascale and later
+# devices.
+#
+# @param fileout XML file handle
+proc process_static_sites { fileout } {
+
+    set static_types [list {VCC HARD1VCC} {GND HARD0GND}]
+    
+    foreach static_type $static_types {
+        set sitename [lindex $static_type 0]
+        set belname [lindex $static_type 1]
+        
+        puts $fileout "    <site_type> "
+        puts $fileout "      <name>$sitename</name>"
+        puts $fileout "      <bels>"
+        puts $fileout "        <bel>"
+        puts $fileout "          <name>$belname</name>"
+        puts $fileout "          <type>$sitename</type>"
+        puts $fileout "        </bel>"
+        puts $fileout "      </bels>"
+        puts $fileout "    </site_type>"
+    }
+}
+
 ## Prints the compatible types of a site to the family info XML file.
 #
 # @param compatible_list List of compatible sites to print
@@ -261,7 +286,7 @@ proc print_routethroughs {bel fileout} {
     set bel_type [get_property TYPE $bel]
 
     # Match LUT types against two possble patterns (they differ between series7 and ultrascale)
-    set is_lut [expr { [regexp {.*([5,6])LUT$} $bel_type -> size] || [regexp {.*LUT([5,6])$} $bel_type -> size]}]
+    set is_lut [expr { [regexp {.*([5,6])LUT$} $bel_type -> size] || [regexp {.*LUT(?:_OR_MEM)?([5,6])$} $bel_type -> size]}]
         
     # If the BEL is a LUT, then create the routethrough connections in the XML
     if { $is_lut } {
@@ -276,6 +301,32 @@ proc print_routethroughs {bel fileout} {
         }
         puts $fileout "          </routethroughs>"
     }
+        
+    # series7 way of finding potential latches
+    set reg_modes [get_property CONFIG.LATCH_OR_FF.VALUES $bel]
+    
+    if {$reg_modes == ""} {
+        # ultrascale and later way of finding potential latches
+        set reg_modes [get_property CONFIG.FFORLATCH.VALUES $bel]
+    }
+    
+    # BELs that can be configured as latches, can be used as routethroughs potentially as well 
+    if {[string first "LATCH" $reg_modes] != -1} {
+        set inputPin [get_bel_pins $bel/D -quiet]
+        set outputPin [get_bel_pins $bel/Q -quiet]
+        
+        if {$inputPin=="" || $outputPin==""} {
+            puts "[CRITICAL WARNING]: Routethrough latch $bel has been identified, but is missing a D or Q pin." 
+            puts "The routethrough information printed to the family info XML file may be correct."
+        }
+        
+        puts $fileout "          <routethroughs>"
+        puts $fileout "            <routethrough>"
+        puts $fileout "              <input>D</input>"
+        puts $fileout "              <output>Q</output>"
+        puts $fileout "            </routethrough>"
+        puts $fileout "          </routethroughs>"
+    }    
 }
 
 ## Primitive definitions for Series7 devices mark INOUT pins as INPUT pins
@@ -553,7 +604,7 @@ proc ::tincr::create_xml_family_info { filename family {vsrt_bels_file ""} } {
                     exit
                 }
                 # If we haven't already processed the site, then create the XML for the family info
-                if {[::struct::set contains $alternate_set $type] == 0} {
+                if {[::struct::set contains $alternate_set $type] == 0 && [::struct::set contains $primary_set $type] == 0} {
                     puts "\t ALTERNATE:$type -> $site"
                     # for alternate types, set the type before processing the site
                     reset_property MANUAL_ROUTING $site
@@ -575,8 +626,14 @@ proc ::tincr::create_xml_family_info { filename family {vsrt_bels_file ""} } {
                 }
             }
         }
+        
         incr i
         close_design -quiet
+    }
+    
+    # print the static site information at the end of the family info file 
+    if {$is_series7 == 0} {
+        process_static_sites $fileout
     }
     
     # print series 7 corrections

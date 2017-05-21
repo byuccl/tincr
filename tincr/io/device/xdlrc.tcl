@@ -45,6 +45,8 @@ proc ::tincr::write_xdlrc { args } {
     
     # set a flag if the XDLRC is for series7 devices
     set is_series7 [expr {[string first "7" [get_property ARCHITECTURE [get_parts $part]]] != -1}]
+    set vcc_count 0
+    set gnd_count 0
     
     tincr::run_in_temporary_project -part $part {
         # Declare a semaphore to restrict the number of concurrent processes to "max_processes"
@@ -283,10 +285,10 @@ proc ::tincr::write_xdlrc_tile { tile outfile brief is_series7 } {
     }
     
     # print GND and VCC primitive sites for ultrascale devices and later
-    set i 0
+    upvar gnd_count gnd_count_local
     foreach gnd_source $gnd_sources {
         regexp {.*_(X.*)/(.*)} $gnd_source -> tile_offset wire_name
-        set site_name "GND_${tile_offset}_$i"
+        set site_name "GND_$gnd_count_local"
         puts -nonewline $outfile "\t\t(primitive_site $site_name GND internal 1"
         
         if {$brief == 0} {
@@ -294,13 +296,13 @@ proc ::tincr::write_xdlrc_tile { tile outfile brief is_series7 } {
             puts -nonewline $outfile "\t\t"
         }    
         puts $outfile ")"
-        incr i
+        incr gnd_count_local
     }
     
-    set i 0
+    upvar vcc_count vcc_count_local
     foreach vcc_source $vcc_sources {
         regexp {.*_(X.*)/(.*)} $vcc_source -> tile_offset wire_name
-        set site_name "VCC_${tile_offset}_$i"
+        set site_name "VCC_$vcc_count_local"
         puts -nonewline $outfile "\t\t(primitive_site $site_name VCC internal 1"
         
         if {$brief == 0} {
@@ -308,7 +310,7 @@ proc ::tincr::write_xdlrc_tile { tile outfile brief is_series7 } {
             puts -nonewline $outfile "\t\t"
         }    
         puts $outfile ")"
-        incr i
+        incr vcc_count_local
     }
     
     # print wire information
