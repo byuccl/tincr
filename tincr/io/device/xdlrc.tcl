@@ -51,9 +51,6 @@ proc ::tincr::write_xdlrc { args } {
         # This has to be global so that the process handler can access it
         global _TINCR_XDLRC_PROCESS_COUNT
         set _TINCR_XDLRC_PROCESS_COUNT 0
-        
-        set vcc_count 0
-        set gnd_count 0
             
         # Open the XDLRC file
         set outfile [open $file w]
@@ -138,7 +135,7 @@ proc ::tincr::write_xdlrc { args } {
             # Stitch the tile data files together
             foreach tile_file $tile_files {    
                 set infile [open $tile_file]
-                #fconfigure $infile -translation binary
+                fconfigure $infile -translation binary
                 fcopy $infile $outfile
                 close $infile
             }
@@ -286,10 +283,11 @@ proc ::tincr::write_xdlrc_tile { tile outfile brief is_series7 } {
     }
     
     # print GND and VCC primitive sites for ultrascale devices and later
-    upvar gnd_count gnd_count_local
+    set unique_tile_num "[get_property TILE_X $tile][get_property TILE_Y $tile]"
+    set gnd_count_local 0
     foreach gnd_source $gnd_sources {
         regexp {.*/(.*)} $gnd_source -> wire_name
-        set site_name "GND_$gnd_count_local"
+        set site_name "GND_${unique_tile_num}_$gnd_count_local"
         puts -nonewline $outfile "\t\t(primitive_site $site_name GND internal 1"
         
         if {$brief == 0} {
@@ -300,10 +298,10 @@ proc ::tincr::write_xdlrc_tile { tile outfile brief is_series7 } {
         incr gnd_count_local
     }
     
-    upvar vcc_count vcc_count_local
+    set vcc_count_local 0
     foreach vcc_source $vcc_sources {
-        regexp {.*/(.*)} $vcc_source -> wire_name
-        set site_name "VCC_$vcc_count_local"
+        regexp {(.*)/(.*)} $vcc_source -> wire_name
+        set site_name "VCC_${unique_tile_num}_$vcc_count_local"
         puts -nonewline $outfile "\t\t(primitive_site $site_name VCC internal 1"
         
         if {$brief == 0} {
