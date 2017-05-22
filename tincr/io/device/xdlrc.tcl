@@ -300,7 +300,7 @@ proc ::tincr::write_xdlrc_tile { tile outfile brief is_series7 } {
     
     set vcc_count_local 0
     foreach vcc_source $vcc_sources {
-        regexp {(.*)/(.*)} $vcc_source -> wire_name
+        regexp {.*/(.*)} $vcc_source -> wire_name
         set site_name "VCC_${unique_tile_num}_$vcc_count_local"
         puts -nonewline $outfile "\t\t(primitive_site $site_name VCC internal 1"
         
