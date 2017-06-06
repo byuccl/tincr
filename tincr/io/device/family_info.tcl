@@ -43,8 +43,10 @@ namespace eval ::tincr:: {
 #       <compatible_type>HPIOB</compatible_type>
 #     </compatible_types>
 
-# global variable set to 1 if a family is within the series7 of devices  
+# global variable set to 1 if a family is within the series7 of devices
+# Global variables
 set is_series7 0
+set invalid_alternate_types [list "ILOGICE3"]
 
 ## Helper function to return the suffix of a split string. For example,
 #   the following call to this function [suffix a/b/c/d "/"] will return "d".
@@ -420,7 +422,7 @@ proc create_compatible_site_map {site_type_map alternate_site_set compute_extend
             }
         }
         
-        # for each site, go through and try to determine more compatible sitea 
+        # for each site, go through and try to determine more compatible sites 
         dict for {type site} $site_type_map {
                 
             if { [llength [get_bels -of $site -quiet]] == 1 && [dict exists $sitetype_to_cell_map $type] } {
@@ -520,11 +522,27 @@ proc parse_vsrt_bels {family vsrt_bels_file} {
         
         # only include added bels for the current family
         if {$family_name == $family} {
-            dict lappend vsrt_bels_map $site_name ${bel_name}:$type
+            dict lappend vsrt_bels_map [string toupper $site_name] ${bel_name}:$type
         }
     }
     
     return $vsrt_bels_map
+}
+
+## Returns true if the specified site is a valid alternate.
+#   The type site should be set before this function is called.
+#
+# @param site Site handle
+proc is_valid_alternate_type { site } {
+    global is_series7
+    global invalid_alternate_types
+    if {$is_series7} {
+        set type [get_property SITE_TYPE $site]
+        if {[lsearch $invalid_alternate_types $type] != -1} {
+            return 0
+        }
+    }
+    return 1
 }
 
 ## Creates a new familyInfo.xml file for the specified family
@@ -568,22 +586,37 @@ proc ::tincr::create_xml_family_info { filename family {vsrt_bels_file ""} } {
     global is_series7
     set is_series7 [expr {[string first "7" $family] != -1}] 
     
+    # dictionary that contains a map from alternate-only type -> [list part site compatible_types] 
+    set global_alternate_map [dict create]
+    
+    # suppress clock placement warnings 
+    set_msg_config -id {Constraints 18-4434} -suppress -quiet
+    
     # Iterate through each part in the family and print the site information
     puts $fileout "  <site_types>"
+    
+    puts "Processing Default Types:"
+    puts "--------------------------"
     foreach prt $unique_parts {
         puts "processing $prt ($i out of [llength $unique_parts])..."
         
         # open the part 
         link_design -part $prt -quiet
         
-        # find the unique sites for the part 
+        # find the unique sites for the part
         set site_types [tincr::sites unique 1]
         set site_type_map [lindex $site_types 0]
         set alternate_type_set [lindex $site_types 1]
-        set compatible_type_map [create_compatible_site_map $site_type_map $alternate_type_set [expr {$i==1}]]
+        # [expr {$i==1}]
+        set compatible_type_map [create_compatible_site_map $site_type_map $alternate_type_set 1]
         
-        # process the sites 
+        # process the default site types first
         dict for {type site} $site_type_map {
+            # skip default types that we have already done
+            if {[::struct::set contains $primary_set $type]} {
+                continue
+            }
+            
             # get the compatible list for the type
             set compatible_types [list]
             if {[dict exists $compatible_type_map $type]} {
@@ -598,36 +631,71 @@ proc ::tincr::create_xml_family_info { filename family {vsrt_bels_file ""} } {
             
             # generate the family info XML for the site
             if {[::struct::set contains $alternate_type_set $type]} {
-                # Process alternate type
-                if {[::struct::set contains $primary_set $type]} { 
-                    puts "ASSUMPTION WRONG! Default site appears as alternate-only site in a later part: $prt $type $site"
-                    exit
-                }
-                # If we haven't already processed the site, then create the XML for the family info
-                if {[::struct::set contains $alternate_set $type] == 0 && [::struct::set contains $primary_set $type] == 0} {
-                    puts "\t ALTERNATE:$type -> $site"
-                    # for alternate types, set the type before processing the site
-                    reset_property MANUAL_ROUTING $site
-                    set_property MANUAL_ROUTING $type $site
-                    process_site $site $type 1 $compatible_types $fileout $vsrt_bels
-                    ::struct::set add alternate_set $type
+
+                if { [dict exists $global_alternate_map $type] } {
+                    set compatible_set [lindex [dict get $global_alternate_map $type] end]
+                    foreach compatible_type $compatible_types {
+                        ::struct::set add compatible_set $compatible_type
+                    }
+                } else {
+                    #set comptible_set [list]
+                    #foreach comp_type $compatible_types {
+                    #    ::struct::set add compatible_set $comp_type
+                    #}
+                    dict set global_alternate_map $type [list $prt [get_property NAME $site] $compatible_types]
                 }
             } else {
                 # Process default (or primary) type
-                if {[::struct::set contains $alternate_set $type]} {
-                    puts "ASSUMPTION WRONG! Alternate type appears as default type in a later part"
-                    exit
+                puts "\t $type -> $site"
+                
+                if {[dict exists $global_alternate_map $type]} {
+                    dict unset global_alternate_map $type
                 }
-                # If we haven't already processed the site, then create the XML for the family info
-                if {[::struct::set contains $primary_set $type] == 0} {
-                    puts "\t $type -> $site"
-                    process_site $site $type 0 $compatible_types $fileout $vsrt_bels
-                    ::struct::set add primary_set $type
-                }
+                
+                process_site $site $type 0 $compatible_types $fileout $vsrt_bels
+                ::struct::set add primary_set $type
             }
         }
         
         incr i
+        close_design -quiet
+    }
+    
+    # After processing all of the default types, go through and process the alternate types
+    puts "\nProcessing alternate types:"
+    puts "----------------------------"
+    set part_to_type_map [dict create]
+    
+    # create a map from part -> alternate-only types for that part
+    dict for {type info_list} $global_alternate_map {
+        dict lappend part_to_type_map [lindex $info_list 0] $type
+    }
+    
+    set alternate_part_count [dict size $part_to_type_map]
+    
+    # load each part and process the alternate types
+    set i 1
+    dict for {prt type_list} $part_to_type_map {
+        puts "$prt...($i out of $alternate_part_count)"
+        link_design -part $prt -quiet
+        
+        foreach type $type_list {
+            
+            # get the list of VSRT bels to add
+            set vsrt_bels [list]
+            if {[dict exists $vsrt_bel_map $type]} {
+                set vsrt_bels [dict get $vsrt_bel_map $type]
+            }
+            
+            set info_list [dict get $global_alternate_map $type]
+            set site [get_sites [lindex $info_list 1]]
+            set compatible_types [lindex $info_list 2]
+            
+            puts "\t ALTERNATE:$type -> $site"
+            reset_property MANUAL_ROUTING $site
+            set_property MANUAL_ROUTING $type $site
+            process_site $site $type 1 $compatible_types $fileout $vsrt_bels
+        }
         close_design -quiet
     }
     

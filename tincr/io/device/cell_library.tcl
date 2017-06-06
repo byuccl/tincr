@@ -513,71 +513,6 @@ proc create_leaf_cell_pin_mapping_permutable {cell bel xml_out} {
     unplace_cell $cell
 }
 
-## Writes the cell library XML for a macro library cell. This functions is
-#   currently not being used, but may be used in the future when/if macro cells
-#   are supported in RapidSmith
-#   TODO: revisit this if macro cells are supported in RapidSmith.
-proc write_macro_xml_original {c s fo} {
-    puts $fo "        <bel>"
-    puts $fo "          <id>"
-    puts $fo "            <site_type>[tincr::sites::get_type $s]</site_type>"
-    puts $fo "            <name>[tincr::suffix [get_property BEL $c] "."]</name>"
-    puts $fo "          </id>"
-
-    puts $fo "          <bel_mappings>"
-
-    foreach bel [get_bels -of $s -filter {IS_USED==1}] {
-        puts $fo "            <name>[tincr::suffix $bel "/"]</name>"
-    }
-
-    puts $fo "          </bel_mappings>"
-    puts $fo "          <pin_mappings>"
-
-    #get the cell pin to bel pin mappings
-    foreach net [get_nets "$c/*"] {
-        puts $fo "            <pin>"
-        puts $fo "              <name>[tincr::suffix $net "/"]</name>"
-
-        foreach bp [get_bel_pins -of $net -quiet] {
-            puts $fo "              <mapping>"
-            puts $fo "                <bel_name>[lindex [split $bp "/"] 1]</bel_name>"
-            puts $fo "                <bel_pin>[tincr::suffix $bp "/"]</bel_pin>"
-            puts $fo "              </mapping>"
-        }
-        puts $fo "            </pin>"
-    }
-
-    puts $fo "          </pin_mappings>"
-    puts $fo "        </bel>"
-}
-
-## Creates the cell library XML for a macro library cell
-#   TODO: revisit this function if/when macro cells are supported in RapidSmith
-#
-# @param c Instance of a library cell to process
-# @param s Site location to place the cell on
-# @param fo Output file to print the XML to
-proc process_macrocell {c s fo} {
-    set bel_cnt 0
-
-    #first, try to place the MACRO cell onto each BEL of the site
-    foreach b [get_bels -of $s] {
-        if { [tincr::cells::is_placement_legal $c $b] == 1 } then {
-            incr bel_cnt
-            place_cell $c $b
-            write_macro_xml_original $c $s $fo
-            unplace_cell $c
-        }
-    }
-
-    # If i can't place the cell onto any of the BELS, than place it on the site itself
-    if { $bel_cnt == 0 } {
-        place_cell $c $s
-        write_macro_xml_original $c $s $fo
-        unplace_cell $c
-    }
-}
-
 ## Writes the cell library XML for a RapidSmith port cell.
 #
 # @param port_type Type of port (either IPORT, OPORT, or IOPORT)
@@ -844,20 +779,32 @@ proc write_bel_placement_xml { cell_instance site_type_list site_map alternate_o
 # @param outfile XML file handle
 proc ::tincr::write_macro_xml {macro outfile} {
 
-    set boundary_nets ""
-
+    # initialize macro data structures
+    set tmp_list [get_internal_cells_and_nets $macro]
+    set internal_cells [lindex $tmp_list 0]
+    set macro_nets [lindex $tmp_list 1]
+    set boundary_nets [lindex $tmp_list 2]
+    set internal_cell_name_map [lindex $tmp_list 3]
+    set internal_net_name_map [lindex $tmp_list 4]
+    
     puts $outfile "    <macro>"
     puts $outfile "        <type>[get_property REF_NAME $macro]</type>"
     # print the macro internal cell information
     puts $outfile "        <cells>"
-    foreach internal [get_cells $macro/*] {
+    foreach internal $internal_cells {
         puts $outfile "            <internal>"
-        set internal_name [lindex [split [get_property NAME $internal] "/"] end]
+        
+        if {[dict exists $internal_cell_name_map $internal]} {
+            set internal_name [dict get $internal_cell_name_map $internal]
+        } else {
+            set internal_name [lindex [split [get_property NAME $internal] "/"] end] 
+        }
+
         puts $outfile "                <name>$internal_name</name>"
         puts $outfile "                <type>[get_property REF_NAME $internal]</type>"
         puts $outfile "            </internal>"
     }
-    puts $outfile "        </cells>"  
+    puts $outfile "        </cells>"
  
     # print the macro pin information
     puts $outfile "        <pins>"
@@ -878,13 +825,20 @@ proc ::tincr::write_macro_xml {macro outfile} {
         puts $outfile "                <type>MACRO</type>"
         puts $outfile "                <internalConnections>"
     
-        # Add the boundary net to the set of boundary nets. this should only return one object... add an assertion here?
-        set internal_net [get_nets -boundary_type lower -of $pin]
-        ::struct::set add boundary_nets $internal_net
-    
-        foreach internal_pin [get_pins -of $internal_net -filter IS_LEAF] {
+        # mark the external macro pin to internal leaf pin mappings 
+        foreach internal_pin [get_internal_pin_connections $pin] {
+           
             set name_toks [split $internal_pin "/"]
-            puts $outfile "                    <pinname>[lindex $name_toks end-1]/[lindex $name_toks end]</pinname>"
+            set parent_cell [get_cells -of $internal_pin]
+            
+            if {[dict exists $internal_cell_name_map $parent_cell]} {
+                set internal_name [dict get $internal_cell_name_map $parent_cell]
+                set pinname "$internal_name/[lindex $name_toks end]"
+            } else {
+                set pinname [lindex $name_toks end-1]/[lindex $name_toks end]
+            }
+            
+            puts $outfile "                    <pinname>$pinname</pinname>"
         }
         puts $outfile "                </internalConnections>"
         puts $outfile "            </pin>"
@@ -892,21 +846,17 @@ proc ::tincr::write_macro_xml {macro outfile} {
       
     puts $outfile "        </pins>"   
     
-    # print the macro internal net structure  
-    set macro_nets [get_nets $macro/*]
+    # Print the internal nets to the XML if any exist
     set internal_nets [list]
-    
-    # check to see if some internal nets exist
+
     if {[::struct::set size $boundary_nets] != [llength $macro_nets]} {  
         puts $outfile "        <internalNets>"
         foreach net $macro_nets {
-    
             # skip nets that connect to the macro boundary
             if {[::struct::set contains $boundary_nets $net]} {
                 continue
             }
             
-            lappend internal_nets $net
             puts $outfile "            <internalNet>"
             
             # add the type for GND and VCC nets
@@ -917,15 +867,30 @@ proc ::tincr::write_macro_xml {macro outfile} {
                 puts $outfile "                <type>VCC</type>"
             }
             
-            set netname [lindex [split $net "/"] end]
+            if {[dict exists $internal_net_name_map $net]} {
+                set netname [dict get $internal_net_name_map $net]
+            } else { 
+                set netname [lindex [split $net "/"] end]
+            }
+            lappend internal_nets $netname
+            
             # Replace angle brackets with sequences XML can understand
             set netname [string map {< &lt; > &gt;} $netname]
             
             puts $outfile "                <name>$netname</name>"
             puts $outfile "                <pins>"
-            foreach pin [get_pins -of $net] {
+            foreach pin [get_leaf_pins_of_net $net] {
                 set name_toks [split $pin "/"]
-                puts $outfile "                    <pinname>[lindex $name_toks end-1]/[lindex $name_toks end]</pinname>"
+                set parent_cell [get_cells -of $pin]
+                
+                if {[dict exists $internal_cell_name_map $parent_cell]} {
+                    set internal_name [dict get $internal_cell_name_map $parent_cell]
+                    set pinname "$internal_name/[lindex $name_toks end]"
+                } else {
+                    set pinname [lindex $name_toks end-1]/[lindex $name_toks end]
+                }
+                
+                puts $outfile "                    <pinname>$pinname</pinname>"
             }   
     
             puts $outfile "                </pins>"
@@ -935,7 +900,82 @@ proc ::tincr::write_macro_xml {macro outfile} {
     }
     
     puts $outfile "    </macro>"
+
     return $internal_nets
+}
+
+## Collects internal information about the specified macro to be used in the function write_macro_xml. 
+#   Specifically, three things are returned in a list object:
+#   1.) A list of internal LEAF cells of the macro. If other macro primitives exist within the macro,
+#       their corresponding internal cells are included in this list. Only one level of hierarchy
+#       is searched. 
+#   2.) A list of internal macro nets. One level of hierarchy is searched to find these nets 
+#   3.) A list of boundary macro nets (nets that connect to macro cell pins and not leaf cell pins)
+#
+proc get_internal_cells_and_nets {macro} { 
+    
+    set internal_cell_list [get_cells $macro/* -filter {PRIMITIVE_COUNT==1} -quiet]
+    set internal_net_list [get_nets $macro/*]
+    set boundary_nets ""
+    set cell_name_map [dict create]
+    set net_name_map [dict create]
+    
+    foreach icell [get_cells $macro/* -filter {PRIMITIVE_COUNT > 1} -quiet] {
+        set outer_cell_name [lindex [split $icell "/"] end]
+        foreach second_level_cell [get_cells $icell/*] {
+            lappend internal_cell_list $second_level_cell
+            set inner_cell_name [lindex [split $second_level_cell "/"] end]
+            dict set cell_name_map $second_level_cell "$outer_cell_name/$inner_cell_name" 
+        }
+        
+        foreach second_level_net [get_nets $icell/*] {
+            lappend internal_net_list $second_level_net
+            set inner_net_name [lindex [split $second_level_net "/"] end]
+            dict set net_name_map $second_level_net "$outer_cell_name/$inner_net_name"             
+        }
+        
+        foreach ipin [get_pins -of $icell -filter !IS_LEAF] {
+            ::struct::set add boundary_nets [get_nets -boundary_type lower -of $ipin]
+        }
+    }
+    
+    foreach ipin [get_pins -of $macro] {
+        ::struct::set add boundary_nets [get_nets -boundary_type lower -of $ipin]
+    }
+    
+    return [list $internal_cell_list $internal_net_list $boundary_nets $cell_name_map $net_name_map]
+}
+
+## Returns the internal leaf pins that the corresponding external macro
+#   pin connects to. Only searches through one level of hierarchy.
+#
+# @param macro_pin Cell pin attached to a macro primitive
+proc get_internal_pin_connections {macro_pin} { 
+    set internal_net [get_nets -boundary_type lower -of $macro_pin]
+    set internal_pins [get_pins -of $internal_net -filter IS_LEAF -quiet]
+    
+    foreach internal_macro_pin [get_pins -of $internal_net -filter !IS_LEAF] {
+        if {$internal_macro_pin != $macro_pin} {
+            set internal_net [get_nets -boundary_type lower -of $internal_macro_pin]
+            lappend internal_pins [get_pins -of $internal_net -filter IS_LEAF]
+        }
+    }
+    return $internal_pins
+}
+
+## Returns the leaf pins connected to the corresponding Vivado net. Only searches through
+#   one level of hierarchy.
+#
+# @param net Vivado net object
+proc get_leaf_pins_of_net {net} {
+    set leaf_pins [get_pins -of $net -filter IS_LEAF -quiet]
+    
+    foreach macro_pin [get_pins -of $net -filter !IS_LEAF -quiet] {
+        set boundary_net [get_nets -boundary_type lower -of $macro_pin]
+        lappend leaf_pins [get_pins -of $boundary_net -filter IS_LEAF]
+    }
+    
+    return $leaf_pins
 }
 
 ## Prints the RapidSmith license to the specified XML file

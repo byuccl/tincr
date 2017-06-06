@@ -773,23 +773,36 @@ proc ::tincr::nets::get_site_pins_of_net { net } {
 # @param net Top-level net object (i.e. not an internal macro net)
 proc ::tincr::nets::get_site_pins_hierarchical {net} {
     
+    ## new versions
+    
     # If there are no macro cell pins connected to the net, return the result of the default Xilinx command
-    set macro_pins [get_pins -of $net -filter {IS_LEAF==0} -quiet] 
+    set macro_pins [get_pins -of $net -filter {!IS_LEAF} -quiet] 
     
     if {[llength $macro_pins] == 0} {
         return [get_site_pins -of $net -quiet]
     }
     
+    ::struct::queue macro_pin_queue
+    macro_pin_queue put $macro_pins
+    
     # create a set of site pins from the regular net 
     set site_pin_list [get_site_pins -of $net -quiet]
-       
-    # find site pins of internal macro nets that are not reported with the default command, and add them to the list
-    foreach macro_pin $macro_pins {
-        foreach site_pin [get_site_pins -of [get_nets -of $macro_pin -boundary_type lower] -quiet] {
+
+    while {[macro_pin_queue size] > 0} {
+        set macro_pin [macro_pin_queue get]
+        set lower_net [get_nets -of $macro_pin -boundary_type lower]
+        foreach site_pin [get_site_pins -of $lower_net -quiet] {
             lappend site_pin_list $site_pin
+        }
+        
+        foreach pin [get_pins -of $lower_net -filter !IS_LEAF] {
+            if {$pin != $macro_pin} {
+                macro_pin_queue put $pin
+            }
         }
     }
     
+    macro_pin_queue destroy
     return [lsort -unique $site_pin_list]
 }
 

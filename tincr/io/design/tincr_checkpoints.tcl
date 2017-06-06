@@ -53,10 +53,7 @@ proc ::tincr::write_rscp {args} {
     } else {
         set ::tincr::verbose 1
     }
-    
-    # Mark series7 devices for IOB naming
-    set is_series7 [expr {[string first "7" [get_property ARCHITECTURE [get_parts -of [get_design]]]] != -1}]
-    
+        
     ::tincr::print_verbose "Writing RapidSmith2 checkpoint to $filename..."
 
     write_design_info "${filename}/design.info"
@@ -70,10 +67,10 @@ proc ::tincr::write_rscp {args} {
     write_xdc -force "${filename}/constraints.rsc"
     ::tincr::print_verbose "XDC Done..."
     
-    write_placement_rs2 $is_series7 "${filename}/placement.rsc"
+    write_placement_rs2 "${filename}/placement.rsc"
     ::tincr::print_verbose "Placement Done..."
     
-    write_routing_rs2 -global_logic "${filename}/routing.rsc" $internal_net_map $is_series7
+    write_routing_rs2 -global_logic "${filename}/routing.rsc" $internal_net_map
     ::tincr::print_verbose "Routing Done..."
     
     ::tincr::print_verbose "Successfully Created RapidSmith2 Checkpoint!"
@@ -103,7 +100,7 @@ proc ::tincr::read_tcp {args} {
     ::tincr::print_verbose "Reading netlist and constraint files..."
     set edif_runtime [report_runtime "read_edif $q ${filename}/netlist.edf" s]
     set import_fileset [create_fileset -constrset xdc_constraints]
-    add_files -fileset $import_fileset [glob ${filename}/*.xdc] 
+    add_files -fileset $import_fileset [glob ${filename}/*.xdc]
     ::tincr::print_verbose "Netlist and constraints added successfully. ($edif_runtime seconds)"
 
     ::tincr::print_verbose "Linking design (this may take awhile)..."
@@ -371,15 +368,19 @@ proc ::tincr::write_macros { {filename macros.xml } } {
         }
     }
     
+    set internal_net_map [dict create]
     # write the XML for new macros
     foreach macro $macros_to_write {
-        tincr::write_macro_xml $macro $xml
+        set internal_nets [tincr::write_macro_xml $macro $xml]
+        dict set internal_net_map [get_property REF_NAME $macro] $internal_nets
     }
-    
+        
     # Create the map of type -> internal netnames for all macros
-    set internal_net_map [dict create]
+    #set internal_net_map [dict create]
     foreach macro $macros_in_design {
-        dict set internal_net_map [get_property REF_NAME $macro] [get_internal_macro_nets $macro]
+        if { [dict exists $internal_net_map [get_property REF_NAME $macro]] == 0 } {
+            dict set internal_net_map [get_property REF_NAME $macro] [get_internal_macro_nets $macro]
+        }
     }
     
     puts $xml "  </macros>"
@@ -392,27 +393,39 @@ proc ::tincr::write_macros { {filename macros.xml } } {
 ## Creates the "placement.rsc" file within a TINCR checkpoint targeting RapidSmith
 #
 # @param filename The name of the placement checkpoint file, "placement.rsc" is the default.
-proc ::tincr::write_placement_rs2 { is_series7 {filename placement.rsc} }  {
+proc ::tincr::write_placement_rs2 { {filename placement.rsc} }  {
 
     set filename [::tincr::add_extension ".rsc" $filename]
     set txt [open $filename w]
-
-    # first, write all internal cell properties that were not included in the EDIF netlist
-    foreach cell [get_cells -hierarchical -filter {PRIMITIVE_LEVEL==INTERNAL} -quiet] {
-        foreach property [tincr::cells::get_configurable_properties $cell] {
-           
-            set value [get_property $property $cell]
-            # only print the configurations to the file a value exists, and its not the default value
-            # this is the same behavior as EDIF
-            if {$value != "" && $value != [tincr::get_default_value $cell $property]} { 
-                puts $txt "IPROP $cell $property $value"
+    
+    # determine if the current device is a series7 or not
+    set is_series7 [expr {[string first "7" [get_property ARCHITECTURE [get_parts -of [get_design]]]] != -1}]
+    
+    # First, write all internal cell properties that were not included in the EDIF netlist    
+    foreach internal_cell [get_cells -hierarchical -filter {PRIMITIVE_LEVEL==INTERNAL} -quiet] {
+        
+        if {[get_property PRIMITIVE_COUNT $internal_cell] > 1} {
+            set leaf_cells [get_cells $internal_cell/*]
+        } else {
+            set leaf_cells [list $internal_cell]
+        }
+        
+        foreach cell $leaf_cells {
+            foreach property [tincr::cells::get_configurable_properties $cell] {
+               
+                set value [get_property $property $cell]
+                # only print the configurations to the file a value exists, and its not the default value
+                # this is the same behavior as EDIF
+                if {$value != "" && $value != [tincr::get_default_value $cell $property]} { 
+                    puts $txt "IPROP $cell $property $value"
+                }
             }
         }
     }
-    
+
     # write placement information for leaf and internal cells
     # set cells [get_cells -hierarchical -filter {PRIMITIVE_LEVEL!=MACRO && STATUS!=UNPLACED && BEL!="")}]
-    set cells [get_cells -hierarchical -filter {PRIMITIVE_LEVEL!=MACRO && BEL!=""}]
+    set cells [get_cells -hierarchical -filter {PRIMITIVE_LEVEL!=MACRO && BEL!="" && PRIMITIVE_COUNT==1}]
 
     # print the placement location and pin-mappings foreach cell in the design 
     foreach cell $cells {
@@ -460,8 +473,7 @@ proc ::tincr::write_placement_rs2 { is_series7 {filename placement.rsc} }  {
     }
     
     # write the port information to the checkpoint file AFTER the cell information
-    
-    foreach site [get_sites -filter {IS_PAD && IS_USED}] {
+    foreach site [get_sites -of [get_ports]] {
         foreach bel [get_bels -of $site -filter TYPE=~*PAD*] {
             set net [get_nets -of $bel]
             if { [llength $net] == 1 } {
@@ -479,23 +491,12 @@ proc ::tincr::write_placement_rs2 { is_series7 {filename placement.rsc} }  {
     close $txt
 }
 
-## Gets the name of a site that RapidSmith expects. The only time this is different than the
-#   name from {@code [get_property NAME $site] is if the site is an input or output PAD. In this
-#   case, the RapidSmith site name is the package pin name .
+## Finds the nets inside of macro primitives that are NOT connected to 
+#   a macro pin. The routing information for these nets need to be
+#   exported when creating a RSCP.
 #
-# @param site Site object
-proc get_rapidSmith_sitename { site } {
-    set sitename [get_property SITENAME $site]
-    
-    if {[get_property IS_PAD $site] == 1 && $is_series7} {
-        set sitename [get_property NAME [get_package_pins -quiet -of_object $site]]
-    }
-
-    return $sitename
-} 
-
+# @param macro Macro cell instance 
 proc ::tincr::get_internal_macro_nets {macro} {
-    
     set boundary_nets ""
     foreach pin [get_pins -of $macro] {
         set internal_net [get_nets -boundary_type lower -of $pin]
@@ -506,27 +507,45 @@ proc ::tincr::get_internal_macro_nets {macro} {
     foreach net [get_nets $macro/*] {
         # skip nets that connect to the macro boundary        
         if {![::struct::set contains $boundary_nets $net]} {
-            set first [expr {[string first "/" $net] + 1}]
-            set netname [string range $net $first end] 
+            set last [expr {[string last "/" $net] + 1}]
+            set netname [string range $net $last end] 
             lappend internal_nets $netname
         }
     }
+    
+    foreach icell [get_cells $macro/* -filter {PRIMITIVE_COUNT > 1} -quiet] {
+        foreach pin [get_pins -of $icell] {
+            ::struct::set add boundary_nets [get_nets -boundary_type lower -of $pin]
+        }
+        
+        set outer_cell_name [lindex [split $icell "/"] end]
+        foreach net [get_nets $icell/*] {
+            if {[::struct::set contains $boundary_nets $net] == 0} {
+                set inner_net_name [lindex [split $net "/"] end]
+                lappend internal_nets "$outer_cell_name/$inner_net_name"
+            }
+        }
+    }
+    
     return $internal_nets
 }
 
 ## Creates the RapidSmith routing checkpoint file. This file includes the site pips for each site,
-#   the wires in each net, the site pins attached to each net, the BELs that are being used
+#   the pips in each net, the site pins attached to each net, the BELs that are being used
 #   as a static source, and the BELs that are being used as routethroughs 
 #
 # @param args A string of arguments into the function. Usage is as follows: <br>
 #           "tincr::write_routing_rs2 [-global_logic] filename"
 proc ::tincr::write_routing_rs2 {args} {
     set global_logic 0
-    ::tincr::parse_args {} {global_logic} {} {filename internal_net_map is_series7} $args
+    ::tincr::parse_args {} {global_logic} {} {filename internal_net_map} $args
 
     # create the routing file
     set filename [::tincr::add_extension ".rsc" $filename]
     set channel_out [open $filename w]
+
+    # Mark series7 devices for IOB naming
+    set is_series7 [expr {[string first "7" [get_property ARCHITECTURE [get_parts -of [get_design]]]] != -1}]
 
     # write the used sites pips to the file
     set used_sites [get_sites -quiet -filter IS_USED] 
@@ -548,7 +567,7 @@ proc ::tincr::write_routing_rs2 {args} {
     # Add internal hierarchical nets to the list of nets whose routing information should be printed 
     foreach macro [get_cells -filter {PRIMITIVE_LEVEL==MACRO} -quiet] {
         foreach netname [dict get $internal_net_map [get_property REF_NAME $macro]] {
-           lappend nets [get_nets $macro/$netname]    
+            lappend nets [get_nets $macro/$netname]    
         }
     }
     
@@ -635,14 +654,14 @@ proc write_static_and_routethrough_luts { site_list channel } {
 }
 
 ## Writes the physical elements used in each net of the design. This includes the
-#   wires and site pins of the net. VCC and GND nets are treated specially. The physical 
+#   pips and site pins of the net. VCC and GND nets are treated specially. The physical 
 #   components of these nets are collapsed into one, and all exported together. This means,
 #   VCC and GND are both only represented once in the routing export file.
 #
 # @param net_list A list of nets in the design to export
 # @param channel Output file handle
 proc write_net_routing { net_list is_series7 channel } {
-
+   
     # disable the TCL display limit to fully print a list of wires
     tincr::set_tcl_display_limit 0
     
@@ -664,9 +683,7 @@ proc write_net_routing { net_list is_series7 channel } {
         }
         
         if {$type == "POWER"} { ; # VCC net
-           
-            #set site_sinks [tincr::nets::get_site_pins_of_net $net]
-           
+                      
             if {[llength $site_pins] > 0 } {
                 lappend vcc_sinks $site_pins
             }
@@ -676,7 +693,6 @@ proc write_net_routing { net_list is_series7 channel } {
             }           
         } elseif {$type == "GROUND"} { ; # GND net
             
-            #set site_sinks [tincr::nets::get_site_pins_of_net $net]
             if {[llength $site_pins] > 0 } {
                 lappend gnd_sinks $site_pins
             }
@@ -688,13 +704,7 @@ proc write_net_routing { net_list is_series7 channel } {
             # mark nets as intrasite in the output routing file
             puts $channel "INTRASITE [get_property NAME $net]"
         } else { ; # regular nets
-            
-            #if {$is_series7} { ; # 
-            #    set site_pins [tincr::nets::get_site_pins_of_net $net]
-            #} else {
-            #    set site_pins [get_site_pins -of $net -quiet]
-            #}
-            
+                        
             set net_name [get_property NAME $net]
             
             # add the site pins the routing export file if any exist
@@ -708,7 +718,6 @@ proc write_net_routing { net_list is_series7 channel } {
             # only print non-empty route strings for routing nets.
             if { ( $route_status=="ROUTED" || $route_status=="HIERPORT" ) && $route_string != "{}" } {
                 puts $channel "ROUTE $net_name [get_pips -of $net]"
-                #puts $channel "ROUTE $net_name [get_wires -of $net]"
             }
         }
     }
@@ -722,14 +731,6 @@ proc write_net_routing { net_list is_series7 channel } {
         puts $channel "INTERSITE GND [join $gnd_sinks]"
     }
     
-    if {0} {
-    set vcc_wires [get_wires -of $vcc_net -quiet]
-    if {[llength $vcc_wires] > 0} {
-        puts $channel "VCC $vcc_wires"
-        puts $channel "START_WIRES [tincr::nets::get_static_source_wires $vcc_net]"
-    }
-    }
-    
     set vcc_pips [get_pips -of $vcc_net -quiet]
     if {[llength $vcc_pips] > 0} {
         puts $channel "VCC $vcc_pips"
@@ -740,14 +741,6 @@ proc write_net_routing { net_list is_series7 channel } {
     if {[llength $gnd_pips] > 0} {
         puts $channel "GND $gnd_pips"
         puts $channel "START_WIRES [tincr::nets::get_static_source_wires $gnd_net]"
-    }
-    
-    if {0} {
-    set gnd_wires [get_wires -of $gnd_net -quiet] 
-    if {[llength $gnd_wires] > 0} {
-        puts $channel "GND $gnd_wires"
-        puts $channel "START_WIRES [tincr::nets::get_static_source_wires $gnd_net]"
-    }
     }
     
     # re-enable the TCL display limit

@@ -76,7 +76,9 @@ proc print_header_device_info {partname_no_speedgrade fileout} {
 #
 # @param fileout XML file handle
 proc print_package_pins { fileout } {
-        
+    set family [get_property ARCHITECTURE [get_parts -of [get_design]]]
+    set is_series7 [expr {[string first "7" $family] != -1}] 
+    
     puts $fileout "  <package_pins>"
     foreach site [get_sites -filter {IS_PAD && IS_BONDED}] {
         foreach bel [get_bels -of $site -filter TYPE=~*PAD*] {
@@ -90,7 +92,13 @@ proc print_package_pins { fileout } {
             
             puts $fileout "    <package_pin>"
             puts $fileout "      <name>$package_pin</name>"
-            puts $fileout "      <bel>$bel</bel>"
+            
+            if {$is_series7} {
+                set ref_bel_name [lindex [split $bel "/"] end]  
+                puts $fileout "      <bel>$package_pin/$ref_bel_name</bel>"
+            } else {            
+                puts $fileout "      <bel>$bel</bel>"
+            }
             
             # mark clock pads
             if { [get_property IS_CLOCK_PAD $site -quiet] == "1" || [get_property IS_GLOBAL_CLOCK_PAD $site -quiet] == "1" } {
