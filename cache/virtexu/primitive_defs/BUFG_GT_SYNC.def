@@ -1,0 +1,39 @@
+	(primitive_def BUFG_GT_SYNC 5 6
+		(pin CE_IN CE_IN input)
+		(pin CLK_IN CLK_IN input)
+		(pin RST_IN RST_IN input)
+		(pin CE_OUT CE_OUT output)
+		(pin RST_OUT RST_OUT output)
+		(element CE_IN 1
+			(pin CE_IN output)
+			(conn CE_IN CE_IN ==> BUFG_GT_SYNC CE)
+		)
+		(element CLK_IN 1
+			(pin CLK_IN output)
+			(conn CLK_IN CLK_IN ==> BUFG_GT_SYNC CLK)
+		)
+		(element RST_IN 1
+			(pin RST_IN output)
+			(conn RST_IN RST_IN ==> BUFG_GT_SYNC CLR)
+		)
+		(element CE_OUT 1
+			(pin CE_OUT input)
+			(conn CE_OUT CE_OUT <== BUFG_GT_SYNC CESYNC)
+		)
+		(element RST_OUT 1
+			(pin RST_OUT input)
+			(conn RST_OUT RST_OUT <== BUFG_GT_SYNC CLRSYNC)
+		)
+		(element BUFG_GT_SYNC 5 # BEL
+			(pin CE input)
+			(pin CLK input)
+			(pin CLR input)
+			(pin CESYNC output)
+			(pin CLRSYNC output)
+			(conn BUFG_GT_SYNC CE <== CE_IN CE_IN)
+			(conn BUFG_GT_SYNC CESYNC ==> CE_OUT CE_OUT)
+			(conn BUFG_GT_SYNC CLK <== CLK_IN CLK_IN)
+			(conn BUFG_GT_SYNC CLR <== RST_IN RST_IN)
+			(conn BUFG_GT_SYNC CLRSYNC ==> RST_OUT RST_OUT)
+		)
+	)
