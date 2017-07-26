@@ -43,11 +43,6 @@ namespace eval ::tincr:: {
 #       <compatible_type>HPIOB</compatible_type>
 #     </compatible_types>
 
-# global variable set to 1 if a family is within the series7 of devices
-# Global variables
-set is_series7 0
-set invalid_alternate_types [list "ILOGICE3"]
-
 ## Helper function to return the suffix of a split string. For example,
 #   the following call to this function [suffix a/b/c/d "/"] will return "d".
 #
@@ -80,7 +75,8 @@ proc get_routing_bel_names {site} {
 #   If the given site does not fit into any group, nothing will be 
 #   printed to output file
 #
-# @param site_name Name of the site object
+# @param site_name Name of the site object (i.e. SLICEL_X0Y10)
+# @param site_type Type of the site (i.e. SLICEL)
 # @param fileout Output XML file
 proc write_site_group {site_name site_type fileout} {
     if {[string first SLICE $site_name 0] == 0} {
@@ -88,6 +84,29 @@ proc write_site_group {site_name site_type fileout} {
     } elseif {[string first IOB $site_name 0] == 0} {
         puts $fileout "      <is_iob/>"
     } elseif {[string first DSP $site_name 0] == 0} {
+        puts $fileout "      <is_dsp/>"
+    } elseif {[string first RAMB $site_type] != -1} {
+        puts $fileout "      <is_bram/>"
+        # for RAMBFIFO sites, mark the site as a fifo as well
+        if {[string first FIFO $site_type] != -1} {
+            puts $fileout "      <is_fifo/>"
+        }
+    } elseif {[string first FIFO $site_type] != -1} {
+        puts $fileout "      <is_fifo/>"
+    }
+}
+
+## Writes the type of the specified site if the actual site object is missing.
+#   This function is for series7 devices to write out invalid alternate types.
+#
+# @param site_type Type of the site (i.e. SLICEL)
+# @param fileout Output XML file
+proc write_site_type {site_type fileout} {
+    if {[string first SLICE $site_type 0] == 0} {
+        puts $fileout "      <is_slice/>"
+    } elseif {[string first IOB $site_type 0] == 0} {
+        puts $fileout "      <is_iob/>"
+    } elseif {[string first DSP $site_type 0] == 0} {
         puts $fileout "      <is_dsp/>"
     } elseif {[string first RAMB $site_type] != -1} {
         puts $fileout "      <is_bram/>"
@@ -256,7 +275,7 @@ proc print_compatible_sites {compatible_list fileout} {
 # @param Site object
 # @param XML file handle
 proc print_alternate_types {site fileout} {
-    global is_series7
+    set is_series7 [::tincr::parts::is_series7] 
     set alternate_types [get_property ALTERNATE_SITE_TYPES $site]     
     if { [llength $alternate_types] != 0 } {
         puts $fileout "      <alternatives>"
@@ -534,8 +553,8 @@ proc parse_vsrt_bels {family vsrt_bels_file} {
 #
 # @param site Site handle
 proc is_valid_alternate_type { site } {
-    global is_series7
-    global invalid_alternate_types
+    set is_series7 [::tincr::parts::is_series7]
+    set invalid_alternate_types [list "ILOGICE3"]
     if {$is_series7} {
         set type [get_property SITE_TYPE $site]
         if {[lsearch $invalid_alternate_types $type] != -1} {
@@ -566,6 +585,7 @@ proc is_valid_alternate_type { site } {
 #   while creating primitive defs in VSRT. If you don't know what this means, you can safely ignore it.
 proc ::tincr::create_xml_family_info { filename family {vsrt_bels_file ""} } {
 
+    # close any currently opened projects
     catch { close_project -quiet  }
     
     # create the XML file
@@ -583,8 +603,7 @@ proc ::tincr::create_xml_family_info { filename family {vsrt_bels_file ""} } {
     set alternate_set [list]
     set unique_parts [tincr::get_parts_unique $family]
     set i 1
-    global is_series7
-    set is_series7 [expr {[string first "7" $family] != -1}] 
+    set is_series7 [expr {[string first "7" $family] != -1}]
     
     # dictionary that contains a map from alternate-only type -> [list part site compatible_types] 
     set global_alternate_map [dict create]
@@ -607,7 +626,6 @@ proc ::tincr::create_xml_family_info { filename family {vsrt_bels_file ""} } {
         set site_types [tincr::sites unique 1]
         set site_type_map [lindex $site_types 0]
         set alternate_type_set [lindex $site_types 1]
-        # [expr {$i==1}]
         set compatible_type_map [create_compatible_site_map $site_type_map $alternate_type_set 1]
         
         # process the default site types first
@@ -638,10 +656,6 @@ proc ::tincr::create_xml_family_info { filename family {vsrt_bels_file ""} } {
                         ::struct::set add compatible_set $compatible_type
                     }
                 } else {
-                    #set comptible_set [list]
-                    #foreach comp_type $compatible_types {
-                    #    ::struct::set add compatible_set $comp_type
-                    #}
                     dict set global_alternate_map $type [list $prt [get_property NAME $site] $compatible_types]
                 }
             } else {
@@ -695,9 +709,22 @@ proc ::tincr::create_xml_family_info { filename family {vsrt_bels_file ""} } {
             reset_property MANUAL_ROUTING $site
             set_property MANUAL_ROUTING $type $site
             process_site $site $type 1 $compatible_types $fileout $vsrt_bels
+            ::struct::set add alternate_site_set $type
         }
+        
+        if {0} {
+        # print invalid alternate types so that the family info agrees with the 
+        foreach type [::tincr::sites get_types [get_sites]] {
+            if {[::struct::set contains $primary_set $type] == 0 && [dict exists $global_alternate_map $type] == 0} {
+                puts "\t ALTERNATE:$type -> (no site)"
+                printSingleBelPrimitiveList $type $fileout
+            }
+        }
+        }
+        
         close_design -quiet
     }
+    
     
     # print the static site information at the end of the family info file 
     if {$is_series7 == 0} {
@@ -706,8 +733,10 @@ proc ::tincr::create_xml_family_info { filename family {vsrt_bels_file ""} } {
     
     # print series 7 corrections
     # TODO: this should be removed ASAP by removing bad primitive defs from Tincr
-    if {$is_series7 == 1} {
-        print_series7_corrections $site_type_map $fileout
+    if {0} {
+        if {$is_series7 == 1} {
+            print_series7_corrections $site_type_map $fileout
+        }
     }
     
     puts $fileout "  </site_types>"
@@ -762,6 +791,7 @@ proc printSingleBelPrimitiveList {sites fileout} {
     foreach site $sites {
         puts $fileout "    <site_type> "
         puts $fileout "      <name>$site</name>"
+        write_site_type $site $fileout
         puts $fileout "      <bels>"
         puts $fileout "        <bel>"
         puts $fileout "          <name>$site</name>"

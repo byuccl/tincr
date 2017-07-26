@@ -21,9 +21,14 @@ namespace eval ::tincr:: {
 }
 
 # TODO Create bulleted list of the files in a TCP
-## Writes a Tincr checkpoint to file. A Tincr checkpoint is able to store a basic design, its placement, and routing in a human-readble format. consists of five files: an EDIF netlist representation and XDC files that constrain the placement and routing of the design. Currently, designs with route-throughs are not supported, though this functionality is planned for a future release of Tincr.
+## Writes a Tincr checkpoint to file. A Tincr checkpoint is able to store a basic design, its placement, 
+#   and routing in a human-readable format. consists of five files: an EDIF netlist representation and XDC files 
+#   that constrain the placement and routing of the design. Currently, designs with route-throughs are not supported, 
+#   though this functionality is planned for a future release of Tincr. 
+#   
+#   \deprecated This function is no longer used to represent external Vivado designs. See tincr::write_rscp instead.
+#
 # @param filename The path and filename where the Tincr checkpoint is to be written.
-
 proc ::tincr::write_tcp {filename} {
     set filename [::tincr::add_extension ".tcp" $filename]
 
@@ -36,15 +41,25 @@ proc ::tincr::write_tcp {filename} {
     write_xdc -force "${filename}/constraints.xdc"
     write_placement_xdc "${filename}/placement.xdc"
     write_routing_xdc -global_logic "${filename}/routing.xdc"
-
 }
 
-# Creates a RapidSmith2 checkpoint directory to load designs into RapidSmith
-# Should I modify the extension to ".rscp" instead?
+## Generates a RSCP. RSCPs are an external representation of a Xilinx design
+#   which can be used to reconstruct Vivado designs in external CAD tools. The format
+#   of RSCPs are extensively documented in the RapidSmith2 tech report found at
+#   <a href="https://github.com/byuccl/RapidSmith2/tree/master/doc">https://github.com/byuccl/RapidSmith2/tree/master/doc</a>
+#   and Thomas Townsend's Masters Thesis.
+#
+#   USAGE: tincr::write_rscp [-quiet] [-ooc] filename.rscp
+#
+# @params args Argument list as defined above. The flag "-quiet" 
+#   can be used to suppress console output. The flag "-ooc" needs to be 
+#   set for designs implemented "out-of-context". The filename parameter is the name
+#   for the generated RSCP.
 proc ::tincr::write_rscp {args} {
     set quiet 0
-    ::tincr::parse_args {} {quiet} {} {filename} $args
-    set filename [::tincr::add_extension ".tcp" $filename]
+    set ooc 0
+    ::tincr::parse_args {} {quiet ooc} {} {filename} $args
+    set filename [::tincr::add_extension ".rscp" $filename]
     file mkdir $filename
 
     set old_verbose $::tincr::verbose 
@@ -56,31 +71,61 @@ proc ::tincr::write_rscp {args} {
         
     ::tincr::print_verbose "Writing RapidSmith2 checkpoint to $filename..."
 
-    write_design_info "${filename}/design.info"
+    # generate the design info file
+    write_design_info $ooc "${filename}/design.info"
     
+    # generate the EDIF
+    set start_time [clock clicks -microseconds]
     write_edif -force "${filename}/netlist.edf"
-    ::tincr::print_verbose "EDIF Done..."
+    set end_time [clock clicks -microseconds]
+    ::tincr::print_verbose "EDIF Done...([::tincr::format_time [expr $end_time -$start_time] s]s)"
     
-    set internal_net_map [write_macros "${filename}/macros.xml"]   
-    ::tincr::print_verbose "Macros Done..."
+    # generate the macros.xml
+    set start_time [clock clicks -microseconds]
+    set internal_net_map [write_macros "${filename}/macros.xml"]
+    set end_time [clock clicks -microseconds]
+    ::tincr::print_verbose "Macros Done...([::tincr::format_time [expr $end_time -$start_time] s]s)"
     
-    write_xdc -force "${filename}/constraints.rsc"
-    ::tincr::print_verbose "XDC Done..."
+    # write design constraints
+    set start_time [clock clicks -microseconds]
+    write_xdc -force "${filename}/constraints.xdc"
+    set end_time [clock clicks -microseconds]
+    ::tincr::print_verbose "XDC Done...([::tincr::format_time [expr $end_time -$start_time] s]s)"
     
+    # write placement information
+    set start_time [clock clicks -microseconds]
     write_placement_rs2 "${filename}/placement.rsc"
-    ::tincr::print_verbose "Placement Done..."
+    set end_time [clock clicks -microseconds]
+    ::tincr::print_verbose "Placement Done...([::tincr::format_time [expr $end_time -$start_time] s]s)"
     
+    # write routing information
+    set start_time [clock clicks -microseconds]
     write_routing_rs2 -global_logic "${filename}/routing.rsc" $internal_net_map
-    ::tincr::print_verbose "Routing Done..."
+    set end_time [clock clicks -microseconds]
+    ::tincr::print_verbose "Routing Done...([::tincr::format_time [expr $end_time -$start_time] s]s)"
     
     ::tincr::print_verbose "Successfully Created RapidSmith2 Checkpoint!"
     set ::tincr::verbose $old_verbose
 }
 
+## Parses a TCP design representation and creates an equivalent design in Vivado. 
+#   The TCP format is extensively documented in the RapidSmith2 tech report at
+#   <a href="https://github.com/byuccl/RapidSmith2/tree/master/doc">https://github.com/byuccl/RapidSmith2/tree/master/doc</a>
+#   and Thomas Townsend's Masters thesis. The required rules to follow when formatting TCP is also
+#   found in TT's Masters thesis published at BYU.
+#
+#   USAGE: tincr::read_tcp [-quiet] [-verbose] [-ooc] filename
+#   
+#   @param args Argument list shown in the usage statement above. The "-quiet " flag
+#       can be used to suppress console output. The "-verbose" flag can be used to print
+#       all messages to the console. This is useful for printing error messages. The flag
+#       "-ooc" can be used to load a design "out_of_context". The required filename parameter
+#       specifies the TCP to load into Vivado.
 proc ::tincr::read_tcp {args} {
     set quiet 0
     set verbose 0
-    ::tincr::parse_args {} {quiet verbose} {} {filename} $args
+    set ooc 0
+    ::tincr::parse_args {} {quiet verbose ooc} {} {filename} $args
     
     set q "-quiet"
     set ::tincr::verbose 1
@@ -90,6 +135,13 @@ proc ::tincr::read_tcp {args} {
         set ::tincr::verbose 0     
     } elseif {$verbose} {
         set q "-verbose"
+    }
+    
+    # Set the link mode to "out_of_context" or "default" based on the command arguments
+    if {$ooc} {
+        set link_mode "out_of_context"
+    } else {
+        set link_mode "default"
     }
 
     set filename [::tincr::add_extension ".tcp" $filename]
@@ -104,7 +156,7 @@ proc ::tincr::read_tcp {args} {
     ::tincr::print_verbose "Netlist and constraints added successfully. ($edif_runtime seconds)"
 
     ::tincr::print_verbose "Linking design (this may take awhile)..."
-    set link_runtime [report_runtime "link_design $q -constrset $import_fileset -part $part" s]
+    set link_runtime [report_runtime "link_design $q -mode $link_mode -constrset $import_fileset -part $part" s]
     ::tincr::print_verbose "Design linked successfully. ($link_runtime seconds)"
     
     # complete the route for differential pair nets
@@ -133,8 +185,10 @@ proc ::tincr::read_tcp {args} {
     ::tincr::print_verbose "Design importation complete. ($total_runtime seconds)"
 }
 
-# TODO: When filtering through cells in sites should we use the PRIMITIVE_LEVEL==LEAF if our search?
-# 		or can we ignore it?
+## Sorts the cells of SLICE sites in the the order that is required to import the design successfully. 
+#
+# @param cells List of cells to sort
+# @return A list of sorted cells
 proc ::tincr::sort_cells_for_export { cells } {
 
     set primitives [list]
@@ -167,19 +221,37 @@ proc ::tincr::sort_cells_for_export { cells } {
     return [concat $primitives $luts $ff $carrys $ff_5]
 }
 
+## Creates the "design.info" file of a RSCP.
+#   
+#   USAGE: tincr::write_design_info [ooc] filename
+#
+# @param args Argument list shown in the usage statement above. The optional parameter
+#       "ooc" is used to output the mode of the design. The filename parameter is the 
+#       name for the generated design.info.
 proc ::tincr::write_design_info {args} {
-    ::tincr::parse_args {} {} {} {filename} $args
+    set ooc 0
+    ::tincr::parse_args {} {} {ooc} {filename} $args
 
     set filename [::tincr::add_extension ".info" $filename]
 
     set outfile [open $filename w]
 
     puts $outfile "part=[get_property PART [current_design]]"
-    #    puts $outfile [get_property TOP [current_design]]
-
+    
+    if {$ooc != 0} {
+        puts $outfile "mode=out_of_context"
+    } else {
+        puts $outfile "mode=regular"
+    }
+    
     close $outfile
 }
 
+## Writes a "placement.xdc" file for a TCP. This contains all
+#   placement information or a design.
+#
+# \deprecated This function is no longer used to represent placement. See tincr::write_placement_rs2 instead.
+#
 proc ::tincr::write_placement_xdc {args} {
     ::tincr::parse_args {cells} {} {} {filename} $args
 
@@ -224,6 +296,11 @@ proc ::tincr::write_placement_xdc {args} {
     close $xdc
 }
 
+## Writes a "routing.xdc" file for a TCP. This contains all
+#   routing information for a design.
+#
+# \deprecated This function is no longer used to represent routing. See tincr::write_routing_rs2 instead.
+#
 proc ::tincr::write_routing_xdc {args} {
     set global_logic 0
     ::tincr::parse_args {nets sites} {global_logic} {} {filename} $args
@@ -286,6 +363,17 @@ proc ::tincr::write_routing_xdc {args} {
     close $xdc
 }
 
+## Parses a design.info file of a TCP and returns the requested information.
+#   Currently, it is used to parse the partname that a given design is
+#   implemented on.
+#
+#   USAGE: tincr::get_design_info filename info
+#
+# @param Argument list shown in the usage statement above. The parameter
+#       "filename" is the design.info file to parse. The parameter "info"
+#       is the name of the key to parse (i.e. part).
+#
+# @return The value of the specified key, or "" if the key is not found
 proc ::tincr::get_design_info {args} {
     ::tincr::parse_args {} {} {} {filename info} $args
 
@@ -347,7 +435,7 @@ proc ::tincr::write_macros { {filename macros.xml } } {
     puts $xml "<root>"
     puts $xml "  <macros>"
     
-    set macro_cells [get_cells -filter {PRIMITIVE_LEVEL==MACRO} -quiet]
+    set macro_cells [get_cells -filter {PRIMITIVE_LEVEL==MACRO || (PRIMITIVE_COUNT > 1 && PARENT=="")} -quiet]
     set macros_to_write [list]
     set macros_in_design [list]
     
@@ -376,7 +464,6 @@ proc ::tincr::write_macros { {filename macros.xml } } {
     }
         
     # Create the map of type -> internal netnames for all macros
-    #set internal_net_map [dict create]
     foreach macro $macros_in_design {
         if { [dict exists $internal_net_map [get_property REF_NAME $macro]] == 0 } {
             dict set internal_net_map [get_property REF_NAME $macro] [get_internal_macro_nets $macro]
@@ -390,7 +477,12 @@ proc ::tincr::write_macros { {filename macros.xml } } {
     return $internal_net_map
 }
 
-## Creates the "placement.rsc" file within a TINCR checkpoint targeting RapidSmith
+## Creates the "placement.rsc" file within a RSCP. This contains all placement information
+#   about a design including:
+#       - Cell to BEL mappings
+#       - Cell pin to BEL pin mappings
+#       - Top-level port placement
+#       - Internal cell properties
 #
 # @param filename The name of the placement checkpoint file, "placement.rsc" is the default.
 proc ::tincr::write_placement_rs2 { {filename placement.rsc} }  {
@@ -399,35 +491,26 @@ proc ::tincr::write_placement_rs2 { {filename placement.rsc} }  {
     set txt [open $filename w]
     
     # determine if the current device is a series7 or not
-    set is_series7 [expr {[string first "7" [get_property ARCHITECTURE [get_parts -of [get_design]]]] != -1}]
+    set is_series7 [::tincr::parts::is_series7]
     
     # First, write all internal cell properties that were not included in the EDIF netlist    
-    foreach internal_cell [get_cells -hierarchical -filter {PRIMITIVE_LEVEL==INTERNAL} -quiet] {
+    foreach internal_cell [get_cells -hierarchical -filter {PRIMITIVE_LEVEL==INTERNAL && PRIMITIVE_COUNT==1} -quiet] {
         
-        if {[get_property PRIMITIVE_COUNT $internal_cell] > 1} {
-            set leaf_cells [get_cells $internal_cell/*]
-        } else {
-            set leaf_cells [list $internal_cell]
-        }
-        
-        foreach cell $leaf_cells {
-            foreach property [tincr::cells::get_configurable_properties $cell] {
-               
-                set value [get_property $property $cell]
-                # only print the configurations to the file a value exists, and its not the default value
-                # this is the same behavior as EDIF
-                if {$value != "" && $value != [tincr::get_default_value $cell $property]} { 
-                    puts $txt "IPROP $cell $property $value"
-                }
+        foreach property [tincr::cells::get_configurable_properties $internal_cell] {
+           
+            set value [get_property $property $internal_cell]
+            # only print the configurations to the file if a value exists, and its not the default value
+            # this is the same behavior as EDIF
+            if {$value != "" && $value != [tincr::get_default_value $internal_cell $property]} { 
+                puts $txt "IPROP $internal_cell $property $value"
             }
         }
     }
 
     # write placement information for leaf and internal cells
-    # set cells [get_cells -hierarchical -filter {PRIMITIVE_LEVEL!=MACRO && STATUS!=UNPLACED && BEL!="")}]
     set cells [get_cells -hierarchical -filter {PRIMITIVE_LEVEL!=MACRO && BEL!="" && PRIMITIVE_COUNT==1}]
 
-    # print the placement location and pin-mappings foreach cell in the design 
+    # print the placement location and pin-mappings foreach cell in the design
     foreach cell $cells {
         
         set site [get_sites -of $cell]
@@ -473,7 +556,7 @@ proc ::tincr::write_placement_rs2 { {filename placement.rsc} }  {
     }
     
     # write the port information to the checkpoint file AFTER the cell information
-    foreach site [get_sites -of [get_ports]] {
+    foreach site [get_sites -of [get_ports -quiet] -quiet] {
         foreach bel [get_bels -of $site -filter TYPE=~*PAD*] {
             set net [get_nets -of $bel]
             if { [llength $net] == 1 } {
@@ -496,6 +579,7 @@ proc ::tincr::write_placement_rs2 { {filename placement.rsc} }  {
 #   exported when creating a RSCP.
 #
 # @param macro Macro cell instance 
+# @return A list of internal macro nets
 proc ::tincr::get_internal_macro_nets {macro} {
     set boundary_nets ""
     foreach pin [get_pins -of $macro] {
@@ -530,12 +614,19 @@ proc ::tincr::get_internal_macro_nets {macro} {
     return $internal_nets
 }
 
-## Creates the RapidSmith routing checkpoint file. This file includes the site pips for each site,
-#   the pips in each net, the site pins attached to each net, the BELs that are being used
-#   as a static source, and the BELs that are being used as routethroughs 
+## Creates the "routing.rsc" file within a RSCP. This file includes:
+#   - Used site pips for each site
+#   - Pips in each net
+#   - Site pins attached to each net
+#   - BEL Routethroughs
+#   - Static Source BELs
+#   - Merged VCC/GND net information 
 #
-# @param args A string of arguments into the function. Usage is as follows: <br>
-#           "tincr::write_routing_rs2 [-global_logic] filename"
+#   USAGE: tincr::write_routing_rs2 [-global_logic] filename
+# @param args Argument list shown in the usage statement above. The flag "-global_logic"
+#       is used to include VCC and GND routing. The parameter "filename" is the name
+#       of the file to write the routing information to. The parameter "internal_net_map"
+#       is a list of internal macro nets so the routing information for these nets can be exported.
 proc ::tincr::write_routing_rs2 {args} {
     set global_logic 0
     ::tincr::parse_args {} {global_logic} {} {filename internal_net_map} $args
@@ -544,15 +635,12 @@ proc ::tincr::write_routing_rs2 {args} {
     set filename [::tincr::add_extension ".rsc" $filename]
     set channel_out [open $filename w]
 
-    # Mark series7 devices for IOB naming
-    set is_series7 [expr {[string first "7" [get_property ARCHITECTURE [get_parts -of [get_design]]]] != -1}]
-
     # write the used sites pips to the file
     set used_sites [get_sites -quiet -filter IS_USED] 
-    write_site_pips $used_sites $is_series7 $channel_out
+    write_site_pips $used_sites $channel_out
     
     set single_port_sites [get_sites -quiet -of [get_ports] -filter {!IS_USED}]
-    write_site_pips $single_port_sites $is_series7 $channel_out
+    write_site_pips $single_port_sites $channel_out
     
     # write the static and routethrough lut information to the file
     write_static_and_routethrough_luts $used_sites $channel_out
@@ -565,14 +653,14 @@ proc ::tincr::write_routing_rs2 {args} {
     }
     
     # Add internal hierarchical nets to the list of nets whose routing information should be printed 
-    foreach macro [get_cells -filter {PRIMITIVE_LEVEL==MACRO} -quiet] {
+    foreach macro [get_cells -filter {PRIMITIVE_LEVEL==MACRO || (PRIMITIVE_COUNT>1 && PARENT=="") } -quiet] {
         foreach netname [dict get $internal_net_map [get_property REF_NAME $macro]] {
             lappend nets [get_nets $macro/$netname]    
         }
     }
     
     # write the physical routing information of each net
-    write_net_routing $nets $is_series7 $channel_out
+    write_net_routing $nets $channel_out
    
     close $channel_out
 }
@@ -584,7 +672,9 @@ proc ::tincr::write_routing_rs2 {args} {
 #
 # @param site_list List of <b>used</b> sites in the design
 # @param channel Output file handle 
-proc write_site_pips { site_list is_series7 channel } {
+proc write_site_pips { site_list channel } {
+    
+    set is_series7 [::tincr::parts::is_series7] 
     
     foreach site $site_list {
         set site_pips [get_site_pips -quiet -of_objects $site -filter IS_USED]
@@ -660,10 +750,11 @@ proc write_static_and_routethrough_luts { site_list channel } {
 #
 # @param net_list A list of nets in the design to export
 # @param channel Output file handle
-proc write_net_routing { net_list is_series7 channel } {
+proc write_net_routing { net_list channel } {
    
     # disable the TCL display limit to fully print a list of wires
     tincr::set_tcl_display_limit 0
+    set is_series7 [::tincr::parts::is_series7]
     
     set vcc_sinks [list]
     set gnd_sinks [list]
@@ -709,7 +800,7 @@ proc write_net_routing { net_list is_series7 channel } {
             
             # add the site pins the routing export file if any exist
             if {[llength $site_pins] > 0} {            
-                write_intersite_pins $net_name $site_pins $is_series7 $channel
+                write_intersite_pins $net_name $site_pins $channel
             }
             
             # add the wires of the net to the routing export file for routed nets
@@ -753,7 +844,9 @@ proc write_net_routing { net_list is_series7 channel } {
 # @param net_name Name of a net in the design
 # @param site_pin_list A list of site pins connected to that net
 # @param channel Output file handle
-proc write_intersite_pins { net_name site_pin_list is_series7 channel } {
+proc write_intersite_pins { net_name site_pin_list channel } {
+    
+    set is_series7 [::tincr::parts::is_series7]
     
     puts -nonewline $channel "INTERSITE $net_name "
     

@@ -12,7 +12,8 @@ namespace eval ::tincr:: {
 ## Creates a new device info XML in the specified directory for the specified 
 #   part. Currently, the device info XML stores additional information about
 #   pads in a device (i.e. clock pads and bel to package pin mappings). Other useful 
-#   information may be added in the future.
+#   information may be added in the future. NOTE: any open projects will be closed
+#   when this function is called.
 #   
 #   Example Usage: tincr::create_xml_device_info /home/ xcku025-ffva1156-1-c
 #

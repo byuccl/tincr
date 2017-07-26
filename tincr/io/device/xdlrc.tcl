@@ -77,7 +77,7 @@ proc ::tincr::write_xdlrc { args } {
         file mkdir $tmpDir
         
         if {$tile!= ""} {
-            write_xdlrc_tile [get_tiles $tile] $outfile $brief $is_series7
+            write_xdlrc_tile [get_tiles $tile] $outfile $brief
         } else {
             set tiles [get_tiles]
             set num_tiles [llength $tiles]
@@ -116,7 +116,7 @@ proc ::tincr::write_xdlrc { args } {
                 puts $p "set outfile \[open \"$path\" w\]"
                 puts $p "set tiles \[get_tiles\]"
                 puts $p "for \{set i $start_tile\} \{\$i <= $end_tile\} \{incr i\} \{"
-                puts $p "tincr::write_xdlrc_tile \[lindex \$tiles \$i\] \$outfile $brief $is_series7"
+                puts $p "tincr::write_xdlrc_tile \[lindex \$tiles \$i\] \$outfile $brief"
                 puts $p "flush \$outfile"
                 puts $p "\}"
                 puts $p "close \$outfile"
@@ -146,7 +146,7 @@ proc ::tincr::write_xdlrc { args } {
         # Newline
         puts "\rPercent complete: 100%"
         
-        set site_types [::tincr::sites get_types [get_sites]]
+        set site_types [::tincr::sites unique]
     
         if {$primitive_defs} {
             # Primitive Definitions
@@ -200,7 +200,8 @@ proc ::tincr::write_xdlrc { args } {
     puts "Process ended at [clock format $end_time -format %H:%M:%S] on [clock format $end_time -format %D]"
 }
 
-proc ::tincr::write_xdlrc_tile { tile outfile brief is_series7 } {
+proc ::tincr::write_xdlrc_tile { tile outfile brief} {
+    set is_series7 [::tincr::parts::is_series7] 
     set sites [lsort [get_sites -quiet -of_object $tile]]
     
     set gnd_sources [list] 

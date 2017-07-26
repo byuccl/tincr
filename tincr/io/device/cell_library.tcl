@@ -778,14 +778,13 @@ proc write_bel_placement_xml { cell_instance site_type_list site_map alternate_o
 # @param Macro cell instance
 # @param outfile XML file handle
 proc ::tincr::write_macro_xml {macro outfile} {
-
+    
     # initialize macro data structures
     set tmp_list [get_internal_cells_and_nets $macro]
     set internal_cells [lindex $tmp_list 0]
     set macro_nets [lindex $tmp_list 1]
     set boundary_nets [lindex $tmp_list 2]
-    set internal_cell_name_map [lindex $tmp_list 3]
-    set internal_net_name_map [lindex $tmp_list 4]
+    set name_offset [expr {[string length $macro] + 1}]
     
     puts $outfile "    <macro>"
     puts $outfile "        <type>[get_property REF_NAME $macro]</type>"
@@ -794,11 +793,7 @@ proc ::tincr::write_macro_xml {macro outfile} {
     foreach internal $internal_cells {
         puts $outfile "            <internal>"
         
-        if {[dict exists $internal_cell_name_map $internal]} {
-            set internal_name [dict get $internal_cell_name_map $internal]
-        } else {
-            set internal_name [lindex [split [get_property NAME $internal] "/"] end] 
-        }
+        set internal_name [string range $internal $name_offset end]
 
         puts $outfile "                <name>$internal_name</name>"
         puts $outfile "                <type>[get_property REF_NAME $internal]</type>"
@@ -827,17 +822,7 @@ proc ::tincr::write_macro_xml {macro outfile} {
     
         # mark the external macro pin to internal leaf pin mappings 
         foreach internal_pin [get_internal_pin_connections $pin] {
-           
-            set name_toks [split $internal_pin "/"]
-            set parent_cell [get_cells -of $internal_pin]
-            
-            if {[dict exists $internal_cell_name_map $parent_cell]} {
-                set internal_name [dict get $internal_cell_name_map $parent_cell]
-                set pinname "$internal_name/[lindex $name_toks end]"
-            } else {
-                set pinname [lindex $name_toks end-1]/[lindex $name_toks end]
-            }
-            
+            set pinname [string range $internal_pin $name_offset end]
             puts $outfile "                    <pinname>$pinname</pinname>"
         }
         puts $outfile "                </internalConnections>"
@@ -867,11 +852,7 @@ proc ::tincr::write_macro_xml {macro outfile} {
                 puts $outfile "                <type>VCC</type>"
             }
             
-            if {[dict exists $internal_net_name_map $net]} {
-                set netname [dict get $internal_net_name_map $net]
-            } else { 
-                set netname [lindex [split $net "/"] end]
-            }
+            set netname [string range $net $name_offset end] 
             lappend internal_nets $netname
             
             # Replace angle brackets with sequences XML can understand
@@ -880,16 +861,7 @@ proc ::tincr::write_macro_xml {macro outfile} {
             puts $outfile "                <name>$netname</name>"
             puts $outfile "                <pins>"
             foreach pin [get_leaf_pins_of_net $net] {
-                set name_toks [split $pin "/"]
-                set parent_cell [get_cells -of $pin]
-                
-                if {[dict exists $internal_cell_name_map $parent_cell]} {
-                    set internal_name [dict get $internal_cell_name_map $parent_cell]
-                    set pinname "$internal_name/[lindex $name_toks end]"
-                } else {
-                    set pinname [lindex $name_toks end-1]/[lindex $name_toks end]
-                }
-                
+                set pinname [string range $pin $name_offset end]
                 puts $outfile "                    <pinname>$pinname</pinname>"
             }   
     
@@ -914,24 +886,18 @@ proc ::tincr::write_macro_xml {macro outfile} {
 #
 proc get_internal_cells_and_nets {macro} { 
     
-    set internal_cell_list [get_cells $macro/* -filter {PRIMITIVE_COUNT==1} -quiet]
+    set internal_cell_list [get_cells $macro/* -filter {PRIMITIVE_COUNT==1 && PRIMITIVE_LEVEL!=MACRO} -quiet]
     set internal_net_list [get_nets $macro/*]
     set boundary_nets ""
-    set cell_name_map [dict create]
-    set net_name_map [dict create]
     
-    foreach icell [get_cells $macro/* -filter {PRIMITIVE_COUNT > 1} -quiet] {
-        set outer_cell_name [lindex [split $icell "/"] end]
+    foreach icell [get_cells $macro/* -filter {PRIMITIVE_COUNT > 1 || PRIMITIVE_LEVEL==MACRO} -quiet] {
+        
         foreach second_level_cell [get_cells $icell/*] {
             lappend internal_cell_list $second_level_cell
-            set inner_cell_name [lindex [split $second_level_cell "/"] end]
-            dict set cell_name_map $second_level_cell "$outer_cell_name/$inner_cell_name" 
         }
         
         foreach second_level_net [get_nets $icell/*] {
-            lappend internal_net_list $second_level_net
-            set inner_net_name [lindex [split $second_level_net "/"] end]
-            dict set net_name_map $second_level_net "$outer_cell_name/$inner_net_name"             
+            lappend internal_net_list $second_level_net          
         }
         
         foreach ipin [get_pins -of $icell -filter !IS_LEAF] {
@@ -940,10 +906,10 @@ proc get_internal_cells_and_nets {macro} {
     }
     
     foreach ipin [get_pins -of $macro] {
-        ::struct::set add boundary_nets [get_nets -boundary_type lower -of $ipin]
+        ::struct::set add boundary_nets [get_nets -boundary_type lower -of $ipin -quiet]
     }
     
-    return [list $internal_cell_list $internal_net_list $boundary_nets $cell_name_map $net_name_map]
+    return [list $internal_cell_list $internal_net_list $boundary_nets]
 }
 
 ## Returns the internal leaf pins that the corresponding external macro
@@ -951,10 +917,29 @@ proc get_internal_cells_and_nets {macro} {
 #
 # @param macro_pin Cell pin attached to a macro primitive
 proc get_internal_pin_connections {macro_pin} { 
-    set internal_net [get_nets -boundary_type lower -of $macro_pin]
+    set internal_net [get_nets -boundary_type lower -of $macro_pin -quiet]
+    
+    if {0} {; #START COMMENT
+    if {[get_property DIRECTION $macro_pin] == "OUT"} {
+    
+        set net_type [get_property TYPE $internal_net]
+        if {$net_type == "POWER"} { 
+            puts "$macro_pin [get_property DIRECTION $macro_pin]"
+            set parent_cell [get_cells -of $macro_pin]
+            return [get_pins -of [lindex [get_cells $parent_cell/* -filter REF_NAME==VCC] 0]]
+        }
+        
+        if {$net_type == "GROUND"} {
+            puts $macro_pin
+            set parent_cell [get_cells -of $macro_pin]
+            return [get_pins -of [lindex [get_cells $parent_cell/* -filter REF_NAME==GND] 0]]
+        }
+    }
+    }; #END COMMENT
+    
     set internal_pins [get_pins -of $internal_net -filter IS_LEAF -quiet]
     
-    foreach internal_macro_pin [get_pins -of $internal_net -filter !IS_LEAF] {
+    foreach internal_macro_pin [get_pins -of $internal_net -filter !IS_LEAF -quiet] {
         if {$internal_macro_pin != $macro_pin} {
             set internal_net [get_nets -boundary_type lower -of $internal_macro_pin]
             lappend internal_pins [get_pins -of $internal_net -filter IS_LEAF]

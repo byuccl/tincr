@@ -16,7 +16,8 @@ namespace eval ::tincr {
 namespace eval ::tincr::parts {
     namespace export \
         test \
-        get
+        get \
+        is_series7
     namespace ensemble create
 }
 
@@ -26,4 +27,20 @@ proc ::tincr::parts::test {args} {
 
 proc ::tincr::parts::get { args } {
     return [get_parts {*}$args]
+}
+
+## Returns {@code true} if the specified Xilinx device is within the Series7
+#   architecture, {@code false} otherwise.
+#
+# @param prt Handle to a Tcl device object. If no part is specified, the part for the
+#     currently open design is used.
+proc ::tincr::parts::is_series7 { {prt ""} } {
+
+    if {$prt == ""} {
+        set prt [get_parts -of [get_design]]
+    }
+    
+    set family [get_property ARCHITECTURE $prt]
+    
+    return [expr {[string first "7" $family] != -1}]   
 }
