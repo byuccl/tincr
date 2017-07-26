@@ -1021,6 +1021,9 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} {
     set cur_part [get_parts $part]
     tincr::designs new mydes [get_parts $part]
 
+    # suppress clock placement warnings for ultrascale 
+    set_msg_config -id {Constraints 18-4434} -suppress -quiet
+    
     # Find all of the supported library cells in the current part
     puts "\nFinding all of the supported cells in the current part..."
     set supported_lib_cells [::tincr::get_supported_leaf_libcells]
