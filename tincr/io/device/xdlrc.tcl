@@ -1026,11 +1026,10 @@ proc ::tincr::get_parts_unique {{arch ""}} {
     }
     
     foreach part $parts {
-        #remove speed grade from the part name
-        regexp {^(x[a-z0-9]+(?:-[a-z0-9]+)?)-.+} $part -> partname
+        set device_name [get_property DEVICE $part]
         
-        if { ![::struct::set contains $unique_part_set $partname] } {
-            ::struct::set add unique_part_set $partname
+        if { ![::struct::set contains $unique_part_set $device_name] } {
+            ::struct::set add unique_part_set $device_name
             lappend part_list $part
         }
     }

@@ -712,16 +712,6 @@ proc ::tincr::create_xml_family_info { filename family {vsrt_bels_file ""} } {
             ::struct::set add alternate_site_set $type
         }
         
-        if {0} {
-        # print invalid alternate types so that the family info agrees with the 
-        foreach type [::tincr::sites get_types [get_sites]] {
-            if {[::struct::set contains $primary_set $type] == 0 && [dict exists $global_alternate_map $type] == 0} {
-                puts "\t ALTERNATE:$type -> (no site)"
-                printSingleBelPrimitiveList $type $fileout
-            }
-        }
-        }
-        
         close_design -quiet
     }
     

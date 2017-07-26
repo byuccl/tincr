@@ -42,5 +42,5 @@ proc ::tincr::parts::is_series7 { {prt ""} } {
     
     set family [get_property ARCHITECTURE $prt]
     
-    return [expr {[string first "7" $family] != -1}]   
+    return [expr {[string first "7" $family] != -1 || $family=="zynq"}]   
 }
