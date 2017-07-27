@@ -78,7 +78,7 @@ proc print_header_device_info {partname_no_speedgrade fileout} {
 # @param fileout XML file handle
 proc print_package_pins { fileout } {
     set family [get_property ARCHITECTURE [get_parts -of [get_design]]]
-    set is_series7 [expr {[string first "7" $family] != -1}] 
+    set is_series7 [tincr::parts::is_series7]
     
     puts $fileout "  <package_pins>"
     foreach site [get_sites -filter {IS_PAD && IS_BONDED}] {

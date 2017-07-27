@@ -603,7 +603,7 @@ proc ::tincr::create_xml_family_info { filename family {vsrt_bels_file ""} } {
     set alternate_set [list]
     set unique_parts [tincr::get_parts_unique $family]
     set i 1
-    set is_series7 [expr {[string first "7" $family] != -1}]
+    set is_series7 [expr {[string first "7" $family] != -1 || $family=="zynq"}]
     
     # dictionary that contains a map from alternate-only type -> [list part site compatible_types] 
     set global_alternate_map [dict create]

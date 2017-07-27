@@ -560,7 +560,7 @@ proc create_port_xml { site_map xml_out } {
     
     # series7 needs to be processed differently than ultrascale and beyond
     set arch [get_property ARCHITECTURE [get_parts -of [get_design]]]
-    set is_series7 [expr {[string first 7 $arch] != -1}]
+    set is_series7 [tincr::parts::is_series7]
     
     set iport_map [dict create]
     set oport_map [dict create]
@@ -1036,7 +1036,7 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} {
 
     puts "Finding all valid site placements for each supported cell...\n"
     set family [get_property ARCHITECTURE $cur_part]
-    set is_series7 [expr {[string first "7" $family] != -1}]
+    set is_series7 [tincr::parts::is_series7]
     set cell_to_sitetype_map [create_cell_to_site_map $supported_lib_cells $site_map $alternate_only_sites $is_series7]
  
     # Write the cell library xml file header

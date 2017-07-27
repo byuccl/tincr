@@ -44,7 +44,8 @@ proc ::tincr::write_xdlrc { args } {
     puts "Process began at [clock format $start_time -format %H:%M:%S] on [clock format $start_time -format %D]"
     
     # set a flag if the XDLRC is for series7 devices
-    set is_series7 [expr {[string first "7" [get_property ARCHITECTURE [get_parts $part]]] != -1}]
+    set family [get_property ARCHITECTURE [get_parts $part]]
+    set is_series7 [expr {[string first "7" $family]] != -1 || $family=="zynq"}]
     
     tincr::run_in_temporary_project -part $part {
         # Declare a semaphore to restrict the number of concurrent processes to "max_processes"
@@ -1010,7 +1011,7 @@ proc ::tincr::extract_all_partial_primitive_defs {path {arch ""} {includeConfigs
     close $fileID
 }
 
-## Returns a list of unique parts, ignoring speed grade
+## Returns a list of unique parts, ignoring speed grade and package type
 #
 # @param arch Optional architecture parameter. Only parts 
 #   that match the specified architecture will be returned. 
