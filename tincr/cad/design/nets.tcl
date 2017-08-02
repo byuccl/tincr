@@ -39,6 +39,7 @@ namespace eval ::tincr::nets {
         get_root \
         get_route_throughs \
         get_site_pins_of_net \
+        get_site_pins_hierarchical\
         get_source \
         get_source_node \
         get_source_tile \
@@ -730,11 +731,11 @@ proc ::tincr::nets::recurse_split_route { target var_name path } {
     }
 }
 
-## Gets the site pins connected to the specified net. The TCL call {@code get_site_pins -of $net}
+## Gets the site pins connected to the specified net for SERIES7 devices. The TCL call {@code get_site_pins -of $net}
 #   cannot be used because there is a bug in Vivado with alternate site type site pins. When a site is switched
 #   to an alternate type, the site pins are not updated in the TCL interface, but they may have changed.
 #   This function identifies these pins, and returns the correct site pins in this scenario.
-#
+#   NOTE: for ultrascale devices and later, use the default function [get_site_pins -of $net]
 # @param net TCL net object
 # @return a list of corrected site pins connected to the net
 proc ::tincr::nets::get_site_pins_of_net { net } {
@@ -763,6 +764,46 @@ proc ::tincr::nets::get_site_pins_of_net { net } {
     }
     
     return $pin_set
+}
+
+## Returns a list of Site Pin objects that the specified net is connected to.
+#   If the net is connected to macro primitive pins, the site pins connected 
+#   to the corresponding internal nets are also returned.
+#
+# @param net Top-level net object (i.e. not an internal macro net)
+proc ::tincr::nets::get_site_pins_hierarchical {net} {
+    
+    ## new versions
+    
+    # If there are no macro cell pins connected to the net, return the result of the default Xilinx command
+    set macro_pins [get_pins -of $net -filter {!IS_LEAF} -quiet] 
+    
+    if {[llength $macro_pins] == 0} {
+        return [get_site_pins -of $net -quiet]
+    }
+    
+    ::struct::queue macro_pin_queue
+    macro_pin_queue put $macro_pins
+    
+    # create a set of site pins from the regular net 
+    set site_pin_list [get_site_pins -of $net -quiet]
+
+    while {[macro_pin_queue size] > 0} {
+        set macro_pin [macro_pin_queue get]
+        set lower_net [get_nets -of $macro_pin -boundary_type lower]
+        foreach site_pin [get_site_pins -of $lower_net -quiet] {
+            lappend site_pin_list $site_pin
+        }
+        
+        foreach pin [get_pins -of $lower_net -filter !IS_LEAF] {
+            if {$pin != $macro_pin} {
+                macro_pin_queue put $pin
+            }
+        }
+    }
+    
+    macro_pin_queue destroy
+    return [lsort -unique $site_pin_list]
 }
 
 ## Returns the source wires of VCC and GND nets (i.e. the wires that are connected to tieoff bels).

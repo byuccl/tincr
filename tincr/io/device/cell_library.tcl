@@ -1,4 +1,4 @@
-package provide tincr.io.library 0.0
+package provide tincr.io.device 0.0
 package require Tcl 8.5
 package require tincr.cad.design 0.0
 package require tincr.cad.device 0.0
@@ -19,8 +19,10 @@ namespace eval ::tincr:: {
 # @param lib_cells List of supported library cells for the current device
 # @param site_map Dictionary mapping site types, to site locations
 # @param alternate_site_set Set of sites that are only alternate sites
+# @param ignore_sitename Set to true, if the algorithm should ignore site names while placing cells
+#
 # @return A dictionary that maps a cell to all sites it can be placed on
-proc create_cell_to_site_map {lib_cells site_map alternate_site_set} {
+proc create_cell_to_site_map {lib_cells site_map alternate_site_set {ignore_sitename 0}} {
     
     set cell_site_map [dict create]
     
@@ -39,8 +41,15 @@ proc create_cell_to_site_map {lib_cells site_map alternate_site_set} {
             }
             
             if {[catch {[place_cell $cell_instance $site]} err] == 0} {
-                dict lappend cell_site_map $lib_cell $sitename
-                unplace_cell $cell_instance
+                
+                set actual_site_type [lindex [split [get_property BEL $cell_instance] "."] 0]
+                
+                # Need to add a check to verify that the site-type did not implicitly change when
+                # the BEL was placed. If it has, then the cell cannot be placed on the site
+                if {$sitename == $actual_site_type || $ignore_sitename} {
+                    dict lappend cell_site_map $lib_cell $sitename
+                    unplace_cell $cell_instance
+                }
             }
             
             if { $is_alternate } {
@@ -73,7 +82,9 @@ proc process_leaf_cell {cell site xml_out} {
   
     # create_net tmp_net
     set cell_group [get_property PRIMITIVE_GROUP $cell]
-    set cell_can_permute_pins [expr {$cell_group == "LUT" || $cell_group == "INV" || $cell_group == "BUF"}] 
+	set cell_subgroup [get_property PRIMITIVE_SUBGROUP $cell]
+    set cell_can_permute_pins [expr {$cell_group == "LUT" || $cell_group == "INV" || $cell_group == "BUF" || 
+                                $cell_subgroup == "LUT" || $cell_subgroup == "INV" || $cell_subgroup == "BUF"}] 
     
     # Find all of the configurations of the cell : TODO: add this at a later date
     if {$::tincr::debug} {
@@ -384,7 +395,7 @@ proc get_unique_pin_mappings { cell bel pinmap_list } {
 # @param pin_map Dictionary from cell pin -> list of bel pins
 # @param xml_out File handle to the output XML file
 proc write_possible_pin_mappings { pin_map xml_out } {
-
+    
     if { [dict size $pin_map] > 0 } {
         puts $xml_out "          <pins>"
     
@@ -470,105 +481,36 @@ proc create_leaf_cell_pin_mapping_permutable {cell bel xml_out} {
     place_cell $cell $bel
     
     set pin_map [dict create]
-    
-    set input_bel_pin_names [list] 
-    foreach input_bel_pin [get_bel_pins -of $bel -filter {DIRECTION==IN} -quiet] {
-        lappend input_bel_pin_names [lindex [split [get_property NAME $input_bel_pin] "/"] end]
-    }
-    
+    set input_bel_pins [get_bel_pins -of $bel -filter {DIRECTION==IN} -quiet]
+   
     foreach cell_pin [get_pins -of $cell] {
         
-        set is_input [expr {[get_property DIRECTION $cell_pin] == "IN"}]
-       
-        set cell_pin_name [lindex [split $cell_pin "/"] end]
         set bel_pins [get_bel_pins -of $cell_pin -quiet]
         
-        if {$is_input} {
-            ::tincr::assert { [llength $bel_pins] == 0 } "\[Assertion Error\] Input pin to permutable cell should have no default pin mapping $cell/$cell_pin_name [get_sites -of $cell]"
-            foreach bel_pin_name $input_bel_pin_names {    
-                
+        if {[get_property DIRECTION $cell_pin] == "IN"} {
+            ::tincr::assert { [llength $bel_pins] == 0 } "\[Assertion Error\] Input pin to permutable cell should have no default pin mapping $cell/$cell_pin [get_sites -of $cell]"
+            
+            set cell_pin_name [lindex [split $cell_pin "/"] end]
+            foreach bel_pin $input_bel_pins {    
+                set bel_pin_name [lindex [split [get_property NAME $bel_pin] "/"] end]
                 if { [catch {[set_property LOCK_PINS "{$cell_pin_name:$bel_pin_name}" $cell]} err] == 0 } {
-                    dict lappend pin_map $cell_pin_name $bel_pin_name
+                    dict lappend pin_map $cell_pin $bel_pin
                 }
                 reset_property LOCK_PINS $cell
             }
         } else { ; # output cell pin
-            ::tincr::assert { [llength $bel_pins] == 1 } "\[Assertion Error\] An output pin should map to exactly one bel pin. $cell/$cell_pin_name [get_sites -of $cell]"
-            set bel_pin_name [lindex [split $bel_pins "/"] end]
-            dict lappend pin_map $cell_pin_name $bel_pin_name
+            ::tincr::assert { [llength $bel_pins] == 1 } "\[Assertion Error\] An output pin of a permutable cell should map to exactly one bel pin. $cell_pin [get_sites -of $cell]"
+            
+            dict lappend pin_map $cell_pin [lindex $bel_pins 0]
         }
         
-        ::tincr::assert { [dict exists $pin_map $cell_pin_name] } "Cell Pin $cell/$cell_pin_name does not map to any bel pins"
+        ::tincr::assert { [dict exists $pin_map $cell_pin] } "Cell Pin $cell_pin does not map to any bel pins"
     }
     
-    write_pin_mappings $cell [list $pin_map] [list "DEFAULT"] $xml_out
+    write_possible_pin_mappings $pin_map $xml_out
+    # write_pin_mappings $cell [list $pin_map] [list "DEFAULT"] $xml_out
     
     unplace_cell $cell
-}
-
-## Writes the cell library XML for a macro library cell. This functions is
-#   currently not being used, but may be used in the future when/if macro cells
-#   are supported in RapidSmith
-#   TODO: revisit this if macro cells are supported in RapidSmith.
-proc write_macro_xml_original {c s fo} {
-    puts $fo "        <bel>"
-    puts $fo "          <id>"
-    puts $fo "            <site_type>[tincr::sites::get_type $s]</site_type>"
-    puts $fo "            <name>[tincr::suffix [get_property BEL $c] "."]</name>"
-    puts $fo "          </id>"
-
-    puts $fo "          <bel_mappings>"
-
-    foreach bel [get_bels -of $s -filter {IS_USED==1}] {
-        puts $fo "            <name>[tincr::suffix $bel "/"]</name>"
-    }
-
-    puts $fo "          </bel_mappings>"
-    puts $fo "          <pin_mappings>"
-
-    #get the cell pin to bel pin mappings
-    foreach net [get_nets "$c/*"] {
-        puts $fo "            <pin>"
-        puts $fo "              <name>[tincr::suffix $net "/"]</name>"
-
-        foreach bp [get_bel_pins -of $net -quiet] {
-            puts $fo "              <mapping>"
-            puts $fo "                <bel_name>[lindex [split $bp "/"] 1]</bel_name>"
-            puts $fo "                <bel_pin>[tincr::suffix $bp "/"]</bel_pin>"
-            puts $fo "              </mapping>"
-        }
-        puts $fo "            </pin>"
-    }
-
-    puts $fo "          </pin_mappings>"
-    puts $fo "        </bel>"
-}
-
-## Creates the cell library XML for a macro library cell
-#   TODO: revisit this function if/when macro cells are supported in RapidSmith
-#
-# @param c Instance of a library cell to process
-# @param s Site location to place the cell on
-# @param fo Output file to print the XML to
-proc process_macrocell {c s fo} {
-    set bel_cnt 0
-
-    #first, try to place the MACRO cell onto each BEL of the site
-    foreach b [get_bels -of $s] {
-        if { [tincr::cells::is_placement_legal $c $b] == 1 } then {
-            incr bel_cnt
-            place_cell $c $b
-            write_macro_xml_original $c $s $fo
-            unplace_cell $c
-        }
-    }
-
-    # If i can't place the cell onto any of the BELS, than place it on the site itself
-    if { $bel_cnt == 0 } {
-        place_cell $c $s
-        write_macro_xml_original $c $s $fo
-        unplace_cell $c
-    }
 }
 
 ## Writes the cell library XML for a RapidSmith port cell.
@@ -592,13 +534,15 @@ proc write_port_xml { port_type pin_direction port_map xml_out } {
     puts $xml_out "      <bels>"
     
     # print the bel info for the port
-    dict for {site_type bel_type} $port_map {
-        puts $xml_out "        <bel>"
-        puts $xml_out "          <id>"
-        puts $xml_out "            <site_type>$site_type</site_type>"
-        puts $xml_out "            <name>$bel_type</name>"
-        puts $xml_out "          </id>"
-        puts $xml_out "        </bel>"        
+    dict for {site_type bel_list} $port_map {
+        foreach bel_type $bel_list { 
+            puts $xml_out "        <bel>"
+            puts $xml_out "          <id>"
+            puts $xml_out "            <site_type>$site_type</site_type>"
+            puts $xml_out "            <name>$bel_type</name>"
+            puts $xml_out "          </id>"
+            puts $xml_out "        </bel>"
+        }
     }
     
     puts $xml_out "      </bels>"
@@ -614,6 +558,10 @@ proc create_port_xml { site_map xml_out } {
 
     puts "Creating port definitions..."
     
+    # series7 needs to be processed differently than ultrascale and beyond
+    set arch [get_property ARCHITECTURE [get_parts -of [get_design]]]
+    set is_series7 [tincr::parts::is_series7]
+    
     set iport_map [dict create]
     set oport_map [dict create]
     set ioport_map [dict create]
@@ -622,24 +570,40 @@ proc create_port_xml { site_map xml_out } {
     dict for {type site} $site_map {
     
         if { [get_property IS_PAD $site] } {
-        
-            set num_inputs [get_property NUM_INPUTS $site]
-            set num_outputs [get_property NUM_OUTPUTS $site]
             
-            set is_output_pad [expr {$num_inputs > 0} ]
-            set is_input_pad [expr {$num_outputs > 0} ]
-            set is_inout_pad [expr {$num_inputs > 0 && $num_outputs > 0} ]
+            if {$is_series7} {
+                set num_inputs [get_property NUM_INPUTS $site]
+                set num_outputs [get_property NUM_OUTPUTS $site]
+                
+                set is_output_pad [expr {$num_inputs > 0} ]
+                set is_input_pad [expr {$num_outputs > 0} ]
+                set is_inout_pad [expr {$num_inputs > 0 && $num_outputs > 0} ]\
+            }
             
-            foreach bel [get_bels -of $site -filter {TYPE=="PAD"}] {
+            foreach bel [get_bels -of $site -filter {TYPE=~"*PAD*"}] {
                 set bel_name [tincr::suffix [get_property NAME $bel] "/"]
-                if {$is_input_pad} {
-                    dict lappend iport_map $type $bel_name
-                }
-                if {$is_output_pad} {
-                    dict lappend oport_map $type $bel_name
-                }
-                if {$is_inout_pad} {
-                    dict lappend ioport_map $type $bel_name
+                
+                # process series 7 pads
+                if {$is_series7} {
+                    if {$is_input_pad} {
+                        dict lappend iport_map $type $bel_name
+                    }
+                    if {$is_output_pad} {
+                        dict lappend oport_map $type $bel_name
+                    }
+                    if {$is_inout_pad} {
+                        dict lappend ioport_map $type $bel_name
+                    }
+                } else { ; # process ultrascale and beyond pads
+                    if {[get_property NUM_BIDIR $bel] > 0} {
+                        dict lappend ioport_map $type $bel_name
+                        dict lappend iport_map $type $bel_name
+                        dict lappend oport_map $type $bel_name
+                    } elseif {[get_property NUM_INPUTS $bel] > 0} {
+                        dict lappend oport_map $type $bel_name
+                    } else {
+                        dict lappend iport_map $type $bel_name 
+                    }
                 }
             }
         }
@@ -809,26 +773,33 @@ proc write_bel_placement_xml { cell_instance site_type_list site_map alternate_o
     puts $xml_out "      </bels>"
 }
 
-##
+## Generates an XML cell-specification for the specified Macro cell.
 #
-#
+# @param Macro cell instance
+# @param outfile XML file handle
 proc ::tincr::write_macro_xml {macro outfile} {
-
-    set boundary_nets ""
-
+    
+    # initialize macro data structures
+    set tmp_list [get_internal_cells_and_nets $macro]
+    set internal_cells [lindex $tmp_list 0]
+    set macro_nets [lindex $tmp_list 1]
+    set boundary_nets [lindex $tmp_list 2]
+    set name_offset [expr {[string length $macro] + 1}]
+    
     puts $outfile "    <macro>"
     puts $outfile "        <type>[get_property REF_NAME $macro]</type>"
     # print the macro internal cell information
     puts $outfile "        <cells>"
-    foreach internal [get_cells $macro/*] {
+    foreach internal $internal_cells {
         puts $outfile "            <internal>"
-        set cell_name [get_property NAME $internal]
-        set first [expr {[string first "/" $cell_name] + 1}]
-        puts $outfile "                <name>[string range $cell_name $first end]</name>"
+        
+        set internal_name [string range $internal $name_offset end]
+
+        puts $outfile "                <name>$internal_name</name>"
         puts $outfile "                <type>[get_property REF_NAME $internal]</type>"
         puts $outfile "            </internal>"
     }
-    puts $outfile "        </cells>"  
+    puts $outfile "        </cells>"
  
     # print the macro pin information
     puts $outfile "        <pins>"
@@ -849,49 +820,30 @@ proc ::tincr::write_macro_xml {macro outfile} {
         puts $outfile "                <type>MACRO</type>"
         puts $outfile "                <internalConnections>"
     
-        # Add the boundary net to the set of boundary nets. this should only return one object... add an assertion here?
-        set internal_net [get_nets -boundary_type lower -of $pin]
-        ::struct::set add boundary_nets $internal_net
-    
-        foreach internal [get_pins -of $internal_net -filter IS_LEAF] {
-            set first [expr {[string first "/" $internal] + 1}]
-            puts $outfile "                    <pinname>[string range $internal $first end]</pinname>"
+        # mark the external macro pin to internal leaf pin mappings 
+        foreach internal_pin [get_internal_pin_connections $pin] {
+            set pinname [string range $internal_pin $name_offset end]
+            puts $outfile "                    <pinname>$pinname</pinname>"
         }
         puts $outfile "                </internalConnections>"
         puts $outfile "            </pin>"
     }
-    
-    #foreach net $boundary_nets {
-    #    puts -nonewline "$net "
-    #}
-    #puts ""
-  
+      
     puts $outfile "        </pins>"   
     
-    # print the macro internal net structure  
-    set macro_nets [get_nets $macro/*]
+    # Print the internal nets to the XML if any exist
     set internal_nets [list]
-    
-    # check to see if some internal nets exist
+
     if {[::struct::set size $boundary_nets] != [llength $macro_nets]} {  
         puts $outfile "        <internalNets>"
         foreach net $macro_nets {
-    
             # skip nets that connect to the macro boundary
             if {[::struct::set contains $boundary_nets $net]} {
-                puts $net
                 continue
             }
             
-            set first [expr {[string first "/" $net] + 1}]
-            set netname [string range $net $first end]
-            lappend internal_nets $net
             puts $outfile "            <internalNet>"
             
-            # Replace angle brackets with <const0> and <const1>)
-            set netname [string map {< &lt; > &gt;} $netname]
-            puts $outfile "                <name>$netname</name>"
-
             # add the type for GND and VCC nets
             set nettype [get_property TYPE $net]
             if {$nettype == {GROUND}} {
@@ -900,11 +852,17 @@ proc ::tincr::write_macro_xml {macro outfile} {
                 puts $outfile "                <type>VCC</type>"
             }
             
+            set netname [string range $net $name_offset end] 
+            lappend internal_nets $netname
+            
+            # Replace angle brackets with sequences XML can understand
+            set netname [string map {< &lt; > &gt;} $netname]
+            
             puts $outfile "                <name>$netname</name>"
             puts $outfile "                <pins>"
-            foreach pin [get_pins -of $net] {
-                set first [expr {[string first "/" $pin] + 1}]
-                puts $outfile "                    <pinname>[string range $pin $first end]</pinname>"
+            foreach pin [get_leaf_pins_of_net $net] {
+                set pinname [string range $pin $name_offset end]
+                puts $outfile "                    <pinname>$pinname</pinname>"
             }   
     
             puts $outfile "                </pins>"
@@ -914,10 +872,100 @@ proc ::tincr::write_macro_xml {macro outfile} {
     }
     
     puts $outfile "    </macro>"
+
     return $internal_nets
 }
 
+## Collects internal information about the specified macro to be used in the function write_macro_xml. 
+#   Specifically, three things are returned in a list object:
+#   1.) A list of internal LEAF cells of the macro. If other macro primitives exist within the macro,
+#       their corresponding internal cells are included in this list. Only one level of hierarchy
+#       is searched. 
+#   2.) A list of internal macro nets. One level of hierarchy is searched to find these nets 
+#   3.) A list of boundary macro nets (nets that connect to macro cell pins and not leaf cell pins)
+#
+proc get_internal_cells_and_nets {macro} { 
+    
+    set internal_cell_list [get_cells $macro/* -filter {PRIMITIVE_COUNT==1 && PRIMITIVE_LEVEL!=MACRO} -quiet]
+    set internal_net_list [get_nets $macro/*]
+    set boundary_nets ""
+    
+    foreach icell [get_cells $macro/* -filter {PRIMITIVE_COUNT > 1 || PRIMITIVE_LEVEL==MACRO} -quiet] {
+        
+        foreach second_level_cell [get_cells $icell/*] {
+            lappend internal_cell_list $second_level_cell
+        }
+        
+        foreach second_level_net [get_nets $icell/*] {
+            lappend internal_net_list $second_level_net          
+        }
+        
+        foreach ipin [get_pins -of $icell -filter !IS_LEAF] {
+            ::struct::set add boundary_nets [get_nets -boundary_type lower -of $ipin]
+        }
+    }
+    
+    foreach ipin [get_pins -of $macro] {
+        ::struct::set add boundary_nets [get_nets -boundary_type lower -of $ipin -quiet]
+    }
+    
+    return [list $internal_cell_list $internal_net_list $boundary_nets]
+}
 
+## Returns the internal leaf pins that the corresponding external macro
+#   pin connects to. Only searches through one level of hierarchy.
+#
+# @param macro_pin Cell pin attached to a macro primitive
+proc get_internal_pin_connections {macro_pin} { 
+    set internal_net [get_nets -boundary_type lower -of $macro_pin -quiet]
+    
+    if {0} {; #START COMMENT
+    if {[get_property DIRECTION $macro_pin] == "OUT"} {
+    
+        set net_type [get_property TYPE $internal_net]
+        if {$net_type == "POWER"} { 
+            puts "$macro_pin [get_property DIRECTION $macro_pin]"
+            set parent_cell [get_cells -of $macro_pin]
+            return [get_pins -of [lindex [get_cells $parent_cell/* -filter REF_NAME==VCC] 0]]
+        }
+        
+        if {$net_type == "GROUND"} {
+            puts $macro_pin
+            set parent_cell [get_cells -of $macro_pin]
+            return [get_pins -of [lindex [get_cells $parent_cell/* -filter REF_NAME==GND] 0]]
+        }
+    }
+    }; #END COMMENT
+    
+    set internal_pins [get_pins -of $internal_net -filter IS_LEAF -quiet]
+    
+    foreach internal_macro_pin [get_pins -of $internal_net -filter !IS_LEAF -quiet] {
+        if {$internal_macro_pin != $macro_pin} {
+            set internal_net [get_nets -boundary_type lower -of $internal_macro_pin]
+            lappend internal_pins [get_pins -of $internal_net -filter IS_LEAF]
+        }
+    }
+    return $internal_pins
+}
+
+## Returns the leaf pins connected to the corresponding Vivado net. Only searches through
+#   one level of hierarchy.
+#
+# @param net Vivado net object
+proc get_leaf_pins_of_net {net} {
+    set leaf_pins [get_pins -of $net -filter IS_LEAF -quiet]
+    
+    foreach macro_pin [get_pins -of $net -filter !IS_LEAF -quiet] {
+        set boundary_net [get_nets -boundary_type lower -of $macro_pin]
+        lappend leaf_pins [get_pins -of $boundary_net -filter IS_LEAF]
+    }
+    
+    return $leaf_pins
+}
+
+## Prints the RapidSmith license to the specified XML file
+#
+# @param outfile XML file handle
 proc ::tincr::print_rapidSmith_license {outfile} {
     puts $outfile "<!--"
     puts $outfile " ~ Copyright (c) 2016 Brigham Young University"
@@ -970,8 +1018,12 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} {
     set xml_out [open $filename w]
     
     # Open empty design to gain access to the Vivado cell library
+    set cur_part [get_parts $part]
     tincr::designs new mydes [get_parts $part]
 
+    # suppress clock placement warnings for ultrascale 
+    set_msg_config -id {Constraints 18-4434} -suppress -quiet
+    
     # Find all of the supported library cells in the current part
     puts "\nFinding all of the supported cells in the current part..."
     set supported_lib_cells [::tincr::get_supported_leaf_libcells]
@@ -983,7 +1035,9 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} {
     set alternate_only_sites [lindex $unique_sites 1]
 
     puts "Finding all valid site placements for each supported cell...\n"
-    set cell_to_sitetype_map [create_cell_to_site_map $supported_lib_cells $site_map $alternate_only_sites]
+    set family [get_property ARCHITECTURE $cur_part]
+    set is_series7 [tincr::parts::is_series7]
+    set cell_to_sitetype_map [create_cell_to_site_map $supported_lib_cells $site_map $alternate_only_sites $is_series7]
  
     # Write the cell library xml file header
     puts $xml_out {<?xml version="1.0" encoding="UTF-8"?>}
@@ -1040,7 +1094,7 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} {
     close_design -quiet
 
     puts "CellLibrary \"$filename\" created successfully!"
-    close_project * -quiet
+    close_project -quiet
 }
 
 ## Function to test the <code>create_xml_cell_library</code> function with assertions

@@ -49,6 +49,7 @@ namespace eval ::tincr {
         diff_objects \
         list_properties \
         print_object_properties \
+        remove_speedgrade \
         process_handler \
         spawn_vivado_run \
         run_in_temporary_project \
@@ -1566,6 +1567,16 @@ proc ::tincr::print_object_properties { obj } {
     }
     
     return [string trimright $result]
+}
+
+## Removes the speedgrade on the specified part
+#
+# @param partname Full name of the part
+# @return The partname with the speedgrade removed
+proc ::tincr::remove_speedgrade { partname } {
+    set partname_no_speedgrade ""
+    regexp {^(x[a-z0-9]+(?:-[a-z0-9]+)?)-.+} $partname -> partname_no_speedgrade
+    return $partname_no_speedgrade
 }
 
 ############## MULTI-PROCESS FUNCTIONS ######################

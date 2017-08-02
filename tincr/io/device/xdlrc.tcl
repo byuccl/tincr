@@ -14,7 +14,8 @@ namespace eval ::tincr:: {
         write_primitive_defs \
         write_partial_primitive_def \
         test_eappd \
-        extract_all_partial_primitive_defs
+        extract_all_partial_primitive_defs \
+        get_parts_unique
 }
 
 proc ::tincr::write_xdlrc { args } {
@@ -41,6 +42,10 @@ proc ::tincr::write_xdlrc { args } {
         
     set start_time [clock seconds]
     puts "Process began at [clock format $start_time -format %H:%M:%S] on [clock format $start_time -format %D]"
+    
+    # set a flag if the XDLRC is for series7 devices
+    set family [get_property ARCHITECTURE [get_parts $part]]
+    set is_series7 [expr {[string first "7" $family]] != -1 || $family=="zynq"}]
     
     tincr::run_in_temporary_project -part $part {
         # Declare a semaphore to restrict the number of concurrent processes to "max_processes"
@@ -71,7 +76,7 @@ proc ::tincr::write_xdlrc { args } {
         # Create a temporary folder for the child processes to dump their data
         set tmpDir ".Tincr/xdlrc/$part"
         file mkdir $tmpDir
-    
+        
         if {$tile!= ""} {
             write_xdlrc_tile [get_tiles $tile] $outfile $brief
         } else {
@@ -142,10 +147,16 @@ proc ::tincr::write_xdlrc { args } {
         # Newline
         puts "\rPercent complete: 100%"
         
-        set site_types [::tincr::sites get_types [get_sites]]
+        set site_types [::tincr::sites unique]
     
         if {$primitive_defs} {
             # Primitive Definitions
+            
+            # For ultrascale devices add power/ground source sites that aren't explicitly represented in Vivado
+            if {$is_series7 == 0} {
+                lappend site_types "VCC" "GND"
+            }
+            
             puts $outfile "(primitive_defs [llength $site_types]"
             
             # Append primitive definitions
@@ -162,6 +173,7 @@ proc ::tincr::write_xdlrc { args } {
                 fconfigure $infile -translation binary
                 fcopy $infile $outfile
                 close $infile
+                puts $outfile "" ; # put a new line between primitive defs
             }
             
             puts $outfile ")"
@@ -189,10 +201,20 @@ proc ::tincr::write_xdlrc { args } {
     puts "Process ended at [clock format $end_time -format %H:%M:%S] on [clock format $end_time -format %D]"
 }
 
-proc ::tincr::write_xdlrc_tile { tile outfile brief } {
+proc ::tincr::write_xdlrc_tile { tile outfile brief} {
+    set is_series7 [::tincr::parts::is_series7] 
     set sites [lsort [get_sites -quiet -of_object $tile]]
+    
+    set gnd_sources [list] 
+    set vcc_sources [list] 
+    if {$is_series7 == 0} {
+        set gnd_sources [get_wires -of $tile -filter {NAME=~*/GND_WIRE*} -quiet]
+        set vcc_sources [get_wires -of $tile -filter {NAME=~*/VCC_WIRE*} -quiet]
+    }
+    
+    set num_sites [expr {[llength $sites] + [llength $gnd_sources] + [llength $vcc_sources]}]
     # TODO Fix this line of output
-    puts $outfile "\t(tile [get_property ROW $tile] [get_property COLUMN $tile] [get_property NAME $tile] [get_property TYPE $tile] [llength $sites]"
+    puts $outfile "\t(tile [get_property ROW $tile] [get_property COLUMN $tile] [get_property NAME $tile] [get_property TYPE $tile] $num_sites"
 #    [get_property NUM_SITES $tile]"
     
     set wires [list]
@@ -206,7 +228,10 @@ proc ::tincr::write_xdlrc_tile { tile outfile brief } {
         if {[get_property IS_PAD $site]} {
             if {[get_property IS_BONDED $site]} {
                 set state "bonded"
-                set name [get_property NAME [get_package_pins -quiet -of_object $site]]
+                # Only use the PACKAGE PIN name for series7 devices.
+                if {$is_series7} {
+                    set name [get_property NAME [get_package_pins -quiet -of_object $site]]
+                }
             } else {
                 set state "unbonded"
             }
@@ -250,6 +275,7 @@ proc ::tincr::write_xdlrc_tile { tile outfile brief } {
     
                 puts $outfile "\t\t\t(pinwire $pin_name $direction $wire_name)"
             }
+                        
             puts -nonewline $outfile "\t\t"
         }
     
@@ -257,7 +283,38 @@ proc ::tincr::write_xdlrc_tile { tile outfile brief } {
     
         incr num_pins [get_property NUM_PINS $site]
     }
+    
+    # print GND and VCC primitive sites for ultrascale devices and later
+    set unique_tile_num "[get_property TILE_X $tile][get_property TILE_Y $tile]"
+    set gnd_count_local 0
+    foreach gnd_source $gnd_sources {
+        regexp {.*/(.*)} $gnd_source -> wire_name
+        set site_name "GND_${unique_tile_num}_$gnd_count_local"
+        puts -nonewline $outfile "\t\t(primitive_site $site_name GND internal 1"
         
+        if {$brief == 0} {
+            puts $outfile "\n\t\t\t(pinwire HARD0 output $wire_name)"
+            puts -nonewline $outfile "\t\t"
+        }    
+        puts $outfile ")"
+        incr gnd_count_local
+    }
+    
+    set vcc_count_local 0
+    foreach vcc_source $vcc_sources {
+        regexp {.*/(.*)} $vcc_source -> wire_name
+        set site_name "VCC_${unique_tile_num}_$vcc_count_local"
+        puts -nonewline $outfile "\t\t(primitive_site $site_name VCC internal 1"
+        
+        if {$brief == 0} {
+            puts $outfile "\n\t\t\t(pinwire HARD1 output $wire_name)"
+            puts -nonewline $outfile "\t\t"
+        }    
+        puts $outfile ")"
+        incr vcc_count_local
+    }
+    
+    # print wire information
     if {$brief == 0} {
 #        puts "Printing wire information..."
 #        set wires [lsort [get_wires -quiet -of_object $tile -filter {COST_CODE!=0}]]
@@ -424,7 +481,7 @@ proc ::tincr::write_partial_primitive_def { site filename {includeConfigs 0} } {
     set pin_maps [list]
     if {[llength $bels] == 1} {
         set is_single_bel_site 1
-        set pin_maps [get_single_bel_pin_maps $site [lindex $bels 0] $outfile]
+        set pin_maps [get_single_bel_pin_maps $site [lindex $bels 0]]
     } else {
         set num_bel_pins_site [llength [get_bel_pins -of $site -quiet]]
         
@@ -434,7 +491,7 @@ proc ::tincr::write_partial_primitive_def { site filename {includeConfigs 0} } {
             # if a single bel in a site contains 80% of all bel pins in the site, mark it as a single bel site
             if {[expr {double($num_bel_pins_bel) / double($num_bel_pins_site)}] > .800} {
                 set is_single_bel_site 1
-                set pin_maps [get_single_bel_pin_maps $site $bel $outfile]
+                set pin_maps [get_single_bel_pin_maps $site $bel]
                 break
             }
         }
@@ -718,6 +775,63 @@ proc ::tincr::write_partial_primitive_def { site filename {includeConfigs 0} } {
     close $outfile
 }
 
+## Creates a "VCC.def" primitive definition for use in Ultrascale and later devices.
+#   This site does not actually exist on ultrascale parts, but is needed to create
+#   more accurate device descriptions.
+#
+# @param directory Directory to create the "VCC.def" file in
+proc ::tincr::write_vcc_primitive_def { directory } {
+    
+    if { [file isdirectory $directory] == 0 } {
+        puts "$directory is not a valid directory location"
+        return
+    }
+    
+    set outfile [open [file join $directory "VCC.def"] w]
+    
+    
+    puts $outfile "\t(primitive_def VCC 1 2"
+    puts $outfile "\t\t(pin HARD1 HARD1 output)"
+    puts $outfile "\t\t(element HARD1 1"
+    puts $outfile "\t\t\t(pin HARD1 input)"
+    puts $outfile "\t\t\t(conn HARD1 HARD1 <== HARD1VCC P)"
+    puts $outfile "\t\t)"
+    puts $outfile "\t\t(element HARD1VCC 1 # BEL"
+    puts $outfile "\t\t\t(pin P output)"
+    puts $outfile "\t\t\t(conn HARD1VCC P ==> HARD1 HARD1)"
+    puts $outfile "\t\t)"
+    puts -nonewline $outfile "\t)"
+    close $outfile
+}
+
+## Creates a "GND.def" primitive definition for use in Ultrascale and later devices.
+#   This site does not actually exist on ultrascale parts, but is needed to create
+#   more accurate device descriptions.
+#
+# @param directory Directory to create the "GND.def" file in
+proc ::tincr::write_gnd_primitive_def { directory } {
+    
+    if { [file isdirectory $directory] == 0 } {
+        puts "$directory is not a valid directory location"
+        return
+    }
+    
+    set outfile [open [file join $directory "GND.def"] w]
+    
+    puts $outfile "\t(primitive_def GND 1 2"
+    puts $outfile "\t\t(pin HARD0 HARD0 output)"
+    puts $outfile "\t\t(element HARD0 1"
+    puts $outfile "\t\t\t(pin HARD0 input)"
+    puts $outfile "\t\t\t(conn HARD0 HARD0 <== HARD0GND G)"
+    puts $outfile "\t\t)"
+    puts $outfile "\t\t(element HARD0GND 1 # BEL"
+    puts $outfile "\t\t\t(pin G output)"
+    puts $outfile "\t\t\t(conn HARD0GND G ==> HARD0 HARD0)"
+    puts $outfile "\t\t)"
+    puts -nonewline $outfile "\t)"
+    close $outfile
+}
+
 ## Get the minimum set cover of parts that together contain all of the possible site types for the list of given parts.
 # @param parts The set of parts that comprise the universal set of site types.
 # @param trial The number of trials (default is 300).
@@ -897,7 +1011,7 @@ proc ::tincr::extract_all_partial_primitive_defs {path {arch ""} {includeConfigs
     close $fileID
 }
 
-## Returns a list of unique parts, ignoring speed grade
+## Returns a list of unique parts, ignoring speed grade and package type
 #
 # @param arch Optional architecture parameter. Only parts 
 #   that match the specified architecture will be returned. 
@@ -913,11 +1027,10 @@ proc ::tincr::get_parts_unique {{arch ""}} {
     }
     
     foreach part $parts {
-        #remove speed grade from the part name
-        regexp {^(x[a-z0-9]+(?:-[a-z0-9]+)?)-.+} $part -> partname
+        set device_name [get_property DEVICE $part]
         
-        if { ![::struct::set contains $unique_part_set $partname] } {
-            ::struct::set add unique_part_set $partname
+        if { ![::struct::set contains $unique_part_set $device_name] } {
+            ::struct::set add unique_part_set $device_name
             lappend part_list $part
         }
     }
@@ -935,7 +1048,7 @@ proc ::tincr::get_parts_unique {{arch ""}} {
 # @return A list of 2 maps:
 #       Item 0: Map of Site Pin -> Bel Pin for the specified {@link site} and {@link bel}
 #       Item 1: Map of Bel Pin -> Site Pin for the specified {@link site} and {@link bel}
-proc get_single_bel_pin_maps {site bel {outfile ""} } {
+proc get_single_bel_pin_maps {site bel} {
 
     foreach lib_cell [get_lib_cells] {
 
@@ -988,11 +1101,7 @@ proc get_single_bel_pin_maps {site bel {outfile ""} } {
         
         return [list $bel_pin_map $site_pin_map]
     }
-   
-    if {$outfile != ""} {
-        puts $outfile "\t\tWARNING: Cannot infer single bel connections for site!"
-    }
-    
+       
     puts "\t\tWARNING: Cannot infer single bel connections for site!"
 }
 
