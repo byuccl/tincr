@@ -164,17 +164,19 @@ proc ::tincr::read_tcp {args} {
     # if the source is a port. It will give the error "ERROR: [Designutils 20-949] No driver found on net clock_N[0]"
     # work around is to have Vivado route these nets for us ...
     # TODO: add another part to the filter that says the nets are not routed
-    set differential_nets [get_nets -of [get_ports] -filter {ROUTE_STATUS != INTRASITE} -quiet]
-    
     set diff_time 0
-    if {[llength $differential_nets] > 0 } {
-        ::tincr::print_verbose "Routing [llength $differential_nets] differential pair nets..."
-        # format_time does not work for this route design command, so I have to do it manually here
-        set start_time [clock microseconds]
-        route_design -quiet -nets $differential_nets
-        set end_time [clock microseconds]
-        set diff_time [::tincr::format_time [expr $end_time - $start_time] s]
-        ::tincr::print_verbose "Done routing...($diff_time seconds)"
+    if {$link_mode=="default"} {
+        set differential_nets [get_nets -of [get_ports] -filter {ROUTE_STATUS != INTRASITE} -quiet]
+        
+        if {[llength $differential_nets] > 0 } {
+            ::tincr::print_verbose "Routing [llength $differential_nets] differential pair nets..."
+            # format_time does not work for this route design command, so I have to do it manually here
+            set start_time [clock microseconds]
+            route_design -quiet -nets $differential_nets
+            set end_time [clock microseconds]
+            set diff_time [::tincr::format_time [expr $end_time - $start_time] s]
+            ::tincr::print_verbose "Done routing...($diff_time seconds)"
+        }
     }
     
     ::tincr::print_verbose "Unlocking the design..."
@@ -570,7 +572,7 @@ proc ::tincr::write_placement_rs2 { {filename placement.rsc} }  {
             }
         }
     }
-
+    
     close $txt
 }
 
@@ -644,6 +646,9 @@ proc ::tincr::write_routing_rs2 {args} {
     
     # write the static and routethrough lut information to the file
     write_static_and_routethrough_luts $used_sites $channel_out
+    
+    # write out-of-context hierarchical ports to the file
+    write_ooc_ports $channel_out
     
     # select which nets to export (do not get the hierarchical nets)
     if {$global_logic} {
@@ -742,6 +747,24 @@ proc write_static_and_routethrough_luts { site_list channel } {
     ::tincr::print_list -header "GND_SOURCES" -channel $channel $gnd_sources
     ::tincr::print_list -header "LUT_RTS" -channel $channel $routethrough_luts
 }
+
+## Finds all out-of-context ports in a design and adds them to the routing.rsc file. 
+#   This only occurs for designs implemented in out-of-context mode. Out-of-context ports
+#   are those that aren't mapped to PAD BELs, but are partially routed to a specific
+#   wire in the device. The device wire represents the start/end wire of nets connected
+#   to the port.
+#
+# @param channel File handle to write the ooc ports to
+proc write_ooc_ports {channel} {
+    # for OOC checkpoints with hierarchical ports, print the starting wires for each port
+    # OOC checkpoints has the design property IS_BLOCK set to true
+    if {[get_property IS_BLOCK [current_design]]} {
+        # TODO: could change this to have a token of "OOC_PORTS" with a list of ports all on one line, but his is oke for now
+        foreach ooc_port [get_ports -filter HD.ASSIGNED_PPLOCS!="" -quiet] {
+             puts $channel "OOC_PORT $ooc_port [string map {" " "/"} [get_property HD.ASSIGNED_PPLOCS $ooc_port]]" 
+        }
+    }
+} 
 
 ## Writes the physical elements used in each net of the design. This includes the
 #   pips and site pins of the net. VCC and GND nets are treated specially. The physical 
