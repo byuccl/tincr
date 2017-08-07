@@ -1,0 +1,63 @@
+	(primitive_def BUFCE_LEAF 6 10
+		(pin CE_INT CE_INT input)
+		(pin CLK_CASC_IN CLK_CASC_IN input)
+		(pin CLK_IN CLK_IN input)
+		(pin ENSEL_PROG ENSEL_PROG input)
+		(pin CLK_CASC_OUT CLK_CASC_OUT output)
+		(pin CLK_LEAF CLK_LEAF output)
+		(element CE_INT 1
+			(pin CE_INT output)
+			(conn CE_INT CE_INT ==> CEINV CE_PREINV)
+		)
+		(element CLK_CASC_IN 1
+			(pin CLK_CASC_IN output)
+			(conn CLK_CASC_IN CLK_CASC_IN ==> LCLK_TEST_DELAY I_CASC)
+		)
+		(element CLK_IN 1
+			(pin CLK_IN output)
+			(conn CLK_IN CLK_IN ==> IINV I_PREINV)
+		)
+		(element ENSEL_PROG 1
+			(pin ENSEL_PROG output)
+		)
+		(element CLK_CASC_OUT 1
+			(pin CLK_CASC_OUT input)
+			(conn CLK_CASC_OUT CLK_CASC_OUT <== LCLK_TEST_DELAY O_CASC)
+		)
+		(element CLK_LEAF 1
+			(pin CLK_LEAF input)
+			(conn CLK_LEAF CLK_LEAF <== LCLK_TEST_DELAY O)
+		)
+		(element CEINV 2
+			(pin CE output)
+			(pin CE_PREINV input)
+			(cfg CE_PREINV)
+			(conn CEINV CE ==> BUFCE CE)
+			(conn CEINV CE_PREINV <== CE_INT CE_INT)
+		)
+		(element IINV 2
+			(pin I output)
+			(pin I_PREINV input)
+			(cfg I_PREINV)
+			(conn IINV I ==> BUFCE I)
+			(conn IINV I_PREINV <== CLK_IN CLK_IN)
+		)
+		(element BUFCE 3 # BEL
+			(pin CE input)
+			(pin I input)
+			(pin O output)
+			(conn BUFCE CE <== CEINV CE)
+			(conn BUFCE I <== IINV I)
+			(conn BUFCE O ==> LCLK_TEST_DELAY I)
+		)
+		(element LCLK_TEST_DELAY 4 # BEL
+			(pin I input)
+			(pin I_CASC input)
+			(pin O output)
+			(pin O_CASC output)
+			(conn LCLK_TEST_DELAY I <== BUFCE O)
+			(conn LCLK_TEST_DELAY I_CASC <== CLK_CASC_IN CLK_CASC_IN)
+			(conn LCLK_TEST_DELAY O ==> CLK_LEAF CLK_LEAF)
+			(conn LCLK_TEST_DELAY O_CASC ==> CLK_CASC_OUT CLK_CASC_OUT)
+		)
+	)

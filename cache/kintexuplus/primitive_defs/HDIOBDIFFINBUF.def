@@ -1,0 +1,32 @@
+	(primitive_def HDIOBDIFFINBUF 4 5 #SBS
+		(pin PAD_RES_0 PAD_RES_0 input)
+		(pin PAD_RES_1 PAD_RES_1 input)
+		(pin LVDS_COMP LVDS_COMP output)
+		(pin LVDS_TRUE LVDS_TRUE output)
+		(element PAD_RES_0 1
+			(pin PAD_RES_0 output)
+			(conn PAD_RES_0 PAD_RES_0 ==> DIFFINBUF DIFF_IN_P)
+		)
+		(element PAD_RES_1 1
+			(pin PAD_RES_1 output)
+			(conn PAD_RES_1 PAD_RES_1 ==> DIFFINBUF DIFF_IN_N)
+		)
+		(element LVDS_COMP 1
+			(pin LVDS_COMP input)
+			(conn LVDS_COMP LVDS_COMP <== DIFFINBUF O_B)
+		)
+		(element LVDS_TRUE 1
+			(pin LVDS_TRUE input)
+			(conn LVDS_TRUE LVDS_TRUE <== DIFFINBUF O)
+		)
+		(element DIFFINBUF 4 # BEL
+			(pin DIFF_IN_N input)
+			(pin DIFF_IN_P input)
+			(pin O output)
+			(pin O_B output)
+			(conn DIFFINBUF DIFF_IN_N <== PAD_RES_1 PAD_RES_1)
+			(conn DIFFINBUF DIFF_IN_P <== PAD_RES_0 PAD_RES_0)
+			(conn DIFFINBUF O ==> LVDS_TRUE LVDS_TRUE)
+			(conn DIFFINBUF O_B ==> LVDS_COMP LVDS_COMP)
+		)
+	)

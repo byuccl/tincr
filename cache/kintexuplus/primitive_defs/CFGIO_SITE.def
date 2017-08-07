@@ -1,0 +1,4 @@
+	(primitive_def CFGIO_SITE 0 1 #SBS
+		(element CFGIO_I 0 # BEL
+		)
+	)

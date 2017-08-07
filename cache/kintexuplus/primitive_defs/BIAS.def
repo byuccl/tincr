@@ -1,0 +1,4 @@
+	(primitive_def BIAS 0 1 #SBS
+		(element BIAS 0 # BEL
+		)
+	)
