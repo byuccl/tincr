@@ -45,7 +45,7 @@ proc ::tincr::write_xdlrc { args } {
     
     # set a flag if the XDLRC is for series7 devices
     set family [get_property ARCHITECTURE [get_parts $part]]
-    set is_series7 [expr {[string first "7" $family]] != -1 || $family=="zynq"}]
+    set is_series7 [expr {[string first "7" $family] != -1 || $family=="zynq"}]
     
     tincr::run_in_temporary_project -part $part {
         # Declare a semaphore to restrict the number of concurrent processes to "max_processes"
