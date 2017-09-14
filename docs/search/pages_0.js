@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['the_20tincr_20design_20suite',['The Tincr Design Suite',['../index.html',1,'']]]
+  ['deprecated_20list',['Deprecated List',['../deprecated.html',1,'']]]
 ];

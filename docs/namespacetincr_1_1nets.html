@@ -156,6 +156,8 @@ Functions</h2></td></tr>
 <tr class="separator:a5f80172647016324f6558d70626354e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9fd1cc412766478a65bffe61226d7ad9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetincr_1_1nets.html#a9fd1cc412766478a65bffe61226d7ad9">get_site_pins_of_net</a> net</td></tr>
 <tr class="separator:a9fd1cc412766478a65bffe61226d7ad9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acad3b75c78cfed184fefb61bc3d97032"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetincr_1_1nets.html#acad3b75c78cfed184fefb61bc3d97032">get_site_pins_hierarchical</a> net</td></tr>
+<tr class="separator:acad3b75c78cfed184fefb61bc3d97032"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a88941d6e31af4d8573263d3932586c4b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetincr_1_1nets.html#a88941d6e31af4d8573263d3932586c4b">get_static_source_wires</a> net</td></tr>
 <tr class="separator:a88941d6e31af4d8573263d3932586c4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -713,6 +715,35 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="acad3b75c78cfed184fefb61bc3d97032"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acad3b75c78cfed184fefb61bc3d97032">&#9670;&nbsp;</a></span>get_site_pins_hierarchical()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">tincr::nets::get_site_pins_hierarchical</td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">net &#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td></td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Returns a list of Site Pin objects that the specified net is connected to. If the net is connected to macro primitive pins, the site pins connected to the corresponding internal nets are also returned.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">net</td><td>Top-level net object (i.e. not an internal macro net) </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="a9fd1cc412766478a65bffe61226d7ad9"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9fd1cc412766478a65bffe61226d7ad9">&#9670;&nbsp;</a></span>get_site_pins_of_net()</h2>
 
@@ -732,8 +763,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Gets the site pins connected to the specified net. The TCL call</p><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;get_site_pins -of $net</div></div><!-- fragment --><p> cannot be used because there is a bug in Vivado with alternate site type site pins. When a site is switched to an alternate type, the site pins are not updated in the TCL interface, but they may have changed. This function identifies these pins, and returns the correct site pins in this scenario.</p>
-<dl class="params"><dt>Parameters</dt><dd>
+<p>Gets the site pins connected to the specified net for SERIES7 devices. The TCL call</p><div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;get_site_pins -of $net</div></div><!-- fragment --><p> cannot be used because there is a bug in Vivado with alternate site type site pins. When a site is switched to an alternate type, the site pins are not updated in the TCL interface, but they may have changed. This function identifies these pins, and returns the correct site pins in this scenario. NOTE: for ultrascale devices and later, use the default function [get_site_pins -of $net] </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">net</td><td>TCL net object </td></tr>
   </table>
@@ -1269,7 +1299,7 @@ Functions</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jan 11 2017 20:30:30 for Tincr by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Thu Sep 14 2017 15:48:40 for Tincr by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.13
 </small></address>

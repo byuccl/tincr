@@ -6,5 +6,7 @@ var searchData=
   ['connect_5fpin',['connect_pin',['../namespacetincr_1_1nets.html#af798766f3785a13522b40dbaa04cc098',1,'tincr::nets']]],
   ['connect_5fport',['connect_port',['../namespacetincr_1_1nets.html#af01596da37a155b5f105c5a037b53d00',1,'tincr::nets']]],
   ['copy',['copy',['../namespacetincr_1_1nets.html#a22c0dec9e01889232a3956213cf56b89',1,'tincr::nets']]],
-  ['create_5fxml_5fcell_5flibrary',['create_xml_cell_library',['../namespacetincr.html#a739722cb6e92872d5bffd4f5608a1329',1,'tincr']]]
+  ['create_5fxml_5fcell_5flibrary',['create_xml_cell_library',['../namespacetincr.html#a739722cb6e92872d5bffd4f5608a1329',1,'tincr']]],
+  ['create_5fxml_5fdevice_5finfo',['create_xml_device_info',['../namespacetincr.html#a143c0ea2702381b43a7c6517682c3acf',1,'tincr']]],
+  ['create_5fxml_5ffamily_5finfo',['create_xml_family_info',['../namespacetincr.html#a8bf55477169aeb0677ca479fbc8665e1',1,'tincr']]]
 ];
