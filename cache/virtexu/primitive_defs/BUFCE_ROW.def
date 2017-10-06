@@ -1,0 +1,63 @@
+	(primitive_def BUFCE_ROW 7 11
+		(pin CE_PRE_OPTINV CE_PRE_OPTINV input)
+		(pin CLK_IN CLK_IN input)
+		(pin OPT_DELAY_TEST0 OPT_DELAY_TEST0 input)
+		(pin OPT_DELAY_TEST1 OPT_DELAY_TEST1 input)
+		(pin OPT_DELAY_TEST2 OPT_DELAY_TEST2 input)
+		(pin CLK_OUT CLK_OUT output)
+		(pin CLK_OUT_OPT_DLY CLK_OUT_OPT_DLY output)
+		(element CE_PRE_OPTINV 1
+			(pin CE_PRE_OPTINV output)
+			(conn CE_PRE_OPTINV CE_PRE_OPTINV ==> CEINV CE_PREINV)
+		)
+		(element CLK_IN 1
+			(pin CLK_IN output)
+			(conn CLK_IN CLK_IN ==> GCLK_TEST_DELAY I)
+		)
+		(element OPT_DELAY_TEST0 1
+			(pin OPT_DELAY_TEST0 output)
+		)
+		(element OPT_DELAY_TEST1 1
+			(pin OPT_DELAY_TEST1 output)
+		)
+		(element OPT_DELAY_TEST2 1
+			(pin OPT_DELAY_TEST2 output)
+		)
+		(element CLK_OUT 1
+			(pin CLK_OUT input)
+			(conn CLK_OUT CLK_OUT <== BUFCE O)
+		)
+		(element CLK_OUT_OPT_DLY 1
+			(pin CLK_OUT_OPT_DLY input)
+			(conn CLK_OUT_OPT_DLY CLK_OUT_OPT_DLY <== GCLK_TEST_DELAY O)
+		)
+		(element CEINV 2
+			(pin CE output)
+			(pin CE_PREINV input)
+			(cfg CE_PREINV)
+			(conn CEINV CE ==> BUFCE CE)
+			(conn CEINV CE_PREINV <== CE_PRE_OPTINV CE_PRE_OPTINV)
+		)
+		(element IINV 2
+			(pin I output)
+			(pin I_PREINV input)
+			(cfg I_PREINV)
+			(conn IINV I ==> BUFCE I)
+			(conn IINV I_PREINV <== GCLK_TEST_DELAY O)
+		)
+		(element BUFCE 3 # BEL
+			(pin CE input)
+			(pin I input)
+			(pin O output)
+			(conn BUFCE CE <== CEINV CE)
+			(conn BUFCE I <== IINV I)
+			(conn BUFCE O ==> CLK_OUT CLK_OUT)
+		)
+		(element GCLK_TEST_DELAY 2 # BEL
+			(pin I input)
+			(pin O output)
+			(conn GCLK_TEST_DELAY I <== CLK_IN CLK_IN)
+			(conn GCLK_TEST_DELAY O ==> IINV I_PREINV)
+			(conn GCLK_TEST_DELAY O ==> CLK_OUT_OPT_DLY CLK_OUT_OPT_DLY)
+		)
+	)
