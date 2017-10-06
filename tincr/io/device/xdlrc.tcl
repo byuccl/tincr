@@ -19,7 +19,7 @@ namespace eval ::tincr:: {
 }
 
 proc ::tincr::write_xdlrc { args } {
-    # Set defaults for incoming agruments
+    # Set defaults for incoming arguments
     set brief 0
     set primitive_defs 0
     set part [expr {[catch {current_design}] ? "xc7k70tfbg484" : [get_property PART [current_design]]}]
@@ -156,11 +156,19 @@ proc ::tincr::write_xdlrc { args } {
             if {$is_series7 == 0} {
                 lappend site_types "VCC" "GND"
             }
-            
-            puts $outfile "(primitive_defs [llength $site_types]"
+                
+            # Sort site_types alphabetically into sorted_site_types
+            set lst {}
+            dict for {site_type instance} $site_types {
+                # append list elements onto lst
+                lappend lst [list $site_type $instance]
+            }           
+            set sorted_site_types [concat {*}[lsort -dictionary $lst]]
+
+            puts $outfile "(primitive_defs [dict size $sorted_site_types]"
             
             # Append primitive definitions
-            foreach site_type [lsort $site_types] {
+            dict for {site_type instance} $sorted_site_types {
                 set prim_def_file [file join [::tincr::cache::directory_path dict.site_type.src_bel.src_pin.snk_bel.snk_pins] "$site_type.def"]
                 
                 #throw an error if a site type doesn't have a corresponding definition
@@ -177,7 +185,7 @@ proc ::tincr::write_xdlrc { args } {
             }
             
             puts $outfile ")"
-        }
+        } 
         
         puts $outfile "# **************************************************************************"
         puts $outfile "# *                                                                        *"
