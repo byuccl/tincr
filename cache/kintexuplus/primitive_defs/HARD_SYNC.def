@@ -1,0 +1,36 @@
+	(primitive_def HARD_SYNC 4 6 #SBS
+		(pin CLK CLK input)
+		(pin DIN DIN input)
+		(pin SR SR input)
+		(pin DOUT DOUT output)
+		(element CLK 1
+			(pin CLK output)
+			(conn CLK CLK ==> SYN_OPTINV_CLK CLK_PREINV)
+		)
+		(element DIN 1
+			(pin DIN output)
+			(conn DIN DIN ==> SYN_UNIT DIN)
+		)
+		(element SR 1
+			(pin SR output)
+		)
+		(element DOUT 1
+			(pin DOUT input)
+			(conn DOUT DOUT <== SYN_UNIT DOUT)
+		)
+		(element SYN_OPTINV_CLK 2
+			(pin CLK output)
+			(pin CLK_PREINV input)
+			(cfg CLK_PREINV)
+			(conn SYN_OPTINV_CLK CLK ==> SYN_UNIT CLK)
+			(conn SYN_OPTINV_CLK CLK_PREINV <== CLK CLK)
+		)
+		(element SYN_UNIT 3 # BEL
+			(pin CLK input)
+			(pin DIN input)
+			(pin DOUT output)
+			(conn SYN_UNIT CLK <== SYN_OPTINV_CLK CLK)
+			(conn SYN_UNIT DIN <== DIN DIN)
+			(conn SYN_UNIT DOUT ==> DOUT DOUT)
+		)
+	)

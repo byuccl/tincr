@@ -1,0 +1,4 @@
+	(primitive_def HDIO_VREF 0 1 #SBS
+		(element VREF 0 # BEL
+		)
+	)
