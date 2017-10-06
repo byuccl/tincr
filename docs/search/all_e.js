@@ -1,10 +1,12 @@
 var searchData=
 [
+  ['read_5ftcp',['read_tcp',['../namespacetincr.html#a83fbb6a6735072b1d2588720c80af19a',1,'tincr']]],
   ['recurse_5fpips',['recurse_pips',['../namespacetincr_1_1nets.html#a0ed349663449af6ec040eeee7ef30311',1,'tincr::nets']]],
   ['recurse_5froute',['recurse_route',['../namespacetincr_1_1nets.html#a1fe400d3a58708cd37c26a3767919019',1,'tincr::nets']]],
   ['remove',['remove',['../namespacetincr_1_1pins.html#a0188214f7e32d08d343721a1dd3a85c2',1,'tincr::pins']]],
   ['remove_5froute_5fthrough',['remove_route_through',['../namespacetincr_1_1bels.html#a67cf4070ce067dd034888e8701acee09',1,'tincr::bels']]],
   ['remove_5froute_5fthroughs',['remove_route_throughs',['../namespacetincr_1_1designs.html#a79f905b860c6b9a19d2547606d075202',1,'tincr::designs']]],
+  ['remove_5fspeedgrade',['remove_speedgrade',['../namespacetincr.html#aefe4510a976af195c83aafcdaf5f8d11',1,'tincr']]],
   ['rename',['rename',['../namespacetincr_1_1cells.html#a7de4efffc8dd022e67be40b465a55a40',1,'tincr::cells::rename()'],['../namespacetincr_1_1nets.html#aaf5c31ff5142bf8c70f7bac620679c98',1,'tincr::nets::rename()'],['../namespacetincr_1_1pins.html#a4a53adb6c238319074006ea81dabdab4',1,'tincr::pins::rename()'],['../namespacetincr_1_1ports.html#a714e0681eac88cc0146a1be83da3ee4d',1,'tincr::ports::rename()']]],
   ['replace_5fsource',['replace_source',['../namespacetincr_1_1nets.html#a36a33931c689932679c4b09d1f9b9505',1,'tincr::nets']]],
   ['report_5fcell_5fplacement_5finfo',['report_cell_placement_info',['../namespacetincr.html#a76c10caf341f02147cfd4d3bd9f92b0f',1,'tincr']]],

@@ -8,5 +8,6 @@ var searchData=
   ['is_5fplaced',['is_placed',['../namespacetincr_1_1cells.html#ad4b0af9dfd60a1c82d55ecce4d670c13',1,'tincr::cells']]],
   ['is_5fplacement_5flegal',['is_placement_legal',['../namespacetincr_1_1cells.html#a804ec17c8d32bd2ef8f50357b3aab3fb',1,'tincr::cells']]],
   ['is_5froute_5fthrough',['is_route_through',['../namespacetincr_1_1bels.html#a17afc6c60b2c83aebc034c17fb24a68b',1,'tincr::bels::is_route_through()'],['../namespacetincr_1_1pips.html#a3632b7b312bed3bb43f59289bda06eb2',1,'tincr::pips::is_route_through()']]],
+  ['is_5fseries7',['is_series7',['../namespacetincr_1_1parts.html#a6617afaab4cf630395d3bb59b1f3ad7d',1,'tincr::parts']]],
   ['iterate',['iterate',['../namespacetincr_1_1bels.html#ac4c4f09b20ffbae487f958582130ec3d',1,'tincr::bels::iterate()'],['../namespacetincr_1_1sites.html#a656e73a295942ddb967e1ee3362f75cd',1,'tincr::sites::iterate()'],['../namespacetincr_1_1tiles.html#a817b78b4f4d77fd7bd6bab437d122b4f',1,'tincr::tiles::iterate()']]]
 ];
