@@ -154,7 +154,8 @@ proc ::tincr::write_xdlrc { args } {
             
             # For ultrascale devices add power/ground source sites that aren't explicitly represented in Vivado
             if {$is_series7 == 0} {
-                lappend site_types "VCC" "GND"
+                dict lappend site_types "VCC" "NULL"
+                dict lappend site_types "GND" "NULL"
             }
                 
             # Sort site_types alphabetically into sorted_site_types
