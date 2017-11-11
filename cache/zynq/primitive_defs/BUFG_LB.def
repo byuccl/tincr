@@ -1,0 +1,21 @@
+	(primitive_def BUFG_LB 2 4
+		(pin CLKIN CLKIN input)
+		(pin CLKOUT CLKOUT output)
+		(element CLKOUT 1
+			(pin CLKOUT input)
+			(conn CLKOUT CLKOUT <== BUFG_LB CLKOUT)
+		)
+		(element BUFG_LB 2 # BEL
+			(pin CLKIN input)
+			(pin CLKOUT output)
+			(conn BUFG_LB CLKOUT ==> CLKOUT CLKOUT)
+			(conn BUFG_LB CLKIN <== CLKIN CLKIN)
+		)
+		(element CLKIN 1
+			(pin CLKIN output)
+			(conn CLKIN CLKIN ==> BUFG_LB CLKIN)
+		)
+		(element GCLK_TEST_ENABLE 0
+			(cfg FALSE TRUE)
+		)
+	)

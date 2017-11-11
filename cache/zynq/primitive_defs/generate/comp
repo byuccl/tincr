@@ -1,0 +1,17 @@
+#!/bin/csh -f
+
+echo "Comparing $1 with $2"
+
+cd ext$2
+ls -1 > list
+cd ../ext$1
+ls -1 > list
+    
+
+foreach i (*)
+	diff $i ../ext$2/$i
+end
+   
+cd ..
+
+    

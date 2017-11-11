@@ -1,0 +1,65 @@
+xdl -report -pips -all_conns xa7z010clg400-1I xa7z010clg400-1I_ise_full.xdlrc
+mkdir ext1
+extractAll.py xa7z010clg400-1I_ise_full.xdlrc ext1
+rm xa7z010clg400-1I_ise_full.xdlrc
+
+xdl -report -pips -all_conns xa7z020clg400-1I xa7z020clg400-1I_ise_full.xdlrc
+mkdir ext2
+extractAll.py xa7z020clg400-1I_ise_full.xdlrc ext2
+rm xa7z020clg400-1I_ise_full.xdlrc
+
+xdl -report -pips -all_conns xq7z020cl400-1Q xq7z020cl400-1Q_ise_full.xdlrc
+mkdir ext3
+extractAll.py xq7z020cl400-1Q_ise_full.xdlrc ext3
+rm xq7z020cl400-1Q_ise_full.xdlrc
+
+xdl -report -pips -all_conns xq7z045rf676-2I xq7z045rf676-2I_ise_full.xdlrc
+mkdir ext4
+extractAll.py xq7z045rf676-2I_ise_full.xdlrc ext4
+rm xq7z045rf676-2I_ise_full.xdlrc
+
+xdl -report -pips -all_conns xc7z010clg400-1 xc7z010clg400-1_ise_full.xdlrc
+mkdir ext5
+extractAll.py xc7z010clg400-1_ise_full.xdlrc ext5
+rm xc7z010clg400-1_ise_full.xdlrc
+
+xdl -report -pips -all_conns xc7z020clg400-2 xc7z020clg400-2_ise_full.xdlrc
+mkdir ext6
+extractAll.py xc7z020clg400-2_ise_full.xdlrc ext6
+rm xc7z020clg400-2_ise_full.xdlrc
+
+xdl -report -pips -all_conns xc7z030fbg676-3 xc7z030fbg676-3_ise_full.xdlrc
+mkdir ext7
+extractAll.py xc7z030fbg676-3_ise_full.xdlrc ext7
+rm xc7z030fbg676-3_ise_full.xdlrc
+
+xdl -report -pips -all_conns xc7z045fbg676-3 xc7z045fbg676-3_ise_full.xdlrc
+mkdir ext8
+extractAll.py xc7z045fbg676-3_ise_full.xdlrc ext8
+rm xc7z045fbg676-3_ise_full.xdlrc
+
+xdl -report -pips -all_conns xc7z100ffg900-2 xc7z100ffg900-2_ise_full.xdlrc
+mkdir ext9
+extractAll.py xc7z100ffg900-2_ise_full.xdlr ext9
+rm xc7z100ffg900-2_ise_full.xdlrc
+
+xdl -report -pips -all_conns xq7z030rf676-2I xq7z030rf676-2I_ise_full.xdlrc
+mkdir ext10
+extractAll.py xq7z030rf676-2I_ise_full.xdlrc ext10
+rm xq7z030rf676-2I_ise_full.xdlrc
+
+xdl -report -pips -all_conns xa7z010clg225-1I xa7z010clg225-1I_ise_full.xdlrc
+mkdir ext11
+extractAll.py xa7z010clg225-1I_ise_full.xdlrc ext11
+rm xa7z010clg225-1I_ise_full.xdlrc
+
+xdl -report -pips -all_conns xa7z010clg484-1I xa7z010clg484-1I_ise_full.xdlrc
+mkdir ext12
+extractAll.py xa7z010clg484-1I_ise_full.xdlrc ext12
+rm xa7z010clg484-1I_ise_full.xdlrc
+
+xdl -report -pips -all_conns xq7z030rb484-2I xq7z030rb484-2I_ise_full.xdlrc
+mkdir ext13
+extractAll.py xq7z030rb484-2I_ise_full.xdlrc ext13
+rm xq7z030rb484-2I_ise_full.xdlrc
+

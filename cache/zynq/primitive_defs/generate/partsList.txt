@@ -1,0 +1,940 @@
+Release 14.7 - PartGen P.20131013 (nt64)
+Copyright (c) 1995-2013 Xilinx, Inc.  All rights reserved.
+xa7a100t		SPEEDS:		-2I    -1I    -1Q
+        csg324
+        fgg484
+        ftg256
+xa2c32a		SPEEDS:		-6    -7
+        VQ44
+xa2c64a		SPEEDS:		-7    -8
+        VQ44
+        VQ100
+xa2c128		SPEEDS:		-7    -8
+        VQ100
+        CP132
+xa2c256		SPEEDS:		-7    -8
+        VQ100
+        TQ144
+xa2c384		SPEEDS:		-10    -11
+        TQ144
+xc7a100t		SPEEDS:		-3    -2    -1    -2L
+        csg324
+        fgg484
+        fgg676
+        ftg256
+xc7a200t		SPEEDS:		-3    -2    -1    -2L
+        fbg484
+        fbg676
+        ffg1156
+        sbg484
+xc7a100tl		SPEEDS:		-2L
+        csg324
+        fgg484
+        fgg676
+        ftg256
+xc7a200tl		SPEEDS:		-2L
+        fbg484
+        fbg676
+        ffg1156
+        sbg484
+xa3s50		SPEEDS:		-4    -4Q    (Minimum speed data available)
+        vqg100
+        pqg208
+xa3s200		SPEEDS:		-4    -4Q    (Minimum speed data available)
+        pqg208
+        ftg256
+        vqg100
+        tqg144
+xa3s400		SPEEDS:		-4    -4Q    (Minimum speed data available)
+        pqg208
+        ftg256
+        fgg456
+xa3s1000		SPEEDS:		-4    -4Q    (Minimum speed data available)
+        ftg256
+        fgg456
+xa3s1500		SPEEDS:		-4    (Minimum speed data available)
+        fgg456
+        fgg676
+xa3s200a		SPEEDS:		-4    -4Q    (Minimum speed data available)
+        ftg256
+xa3s400a		SPEEDS:		-4    -4Q    (Minimum speed data available)
+        ftg256
+        fgg400
+xa3s700a		SPEEDS:		-4    -4Q    (Minimum speed data available)
+        fgg400
+        fgg484
+xa3s1400a		SPEEDS:		-4    -4Q    (Minimum speed data available)
+        fgg484
+xa3sd1800a		SPEEDS:		-4    -4Q    (Minimum speed data available)
+        csg484
+        fgg676
+xa3sd3400a		SPEEDS:		-4    (Minimum speed data available)
+        csg484
+        fgg676
+xa3s100e		SPEEDS:		-4    -4Q    (Minimum speed data available)
+        vqg100
+        cpg132
+        tqg144
+xa3s250e		SPEEDS:		-4    -4Q    (Minimum speed data available)
+        cpg132
+        ftg256
+        vqg100
+        tqg144
+        pqg208
+xa3s500e		SPEEDS:		-4    -4Q    (Minimum speed data available)
+        cpg132
+        ftg256
+        pqg208
+xa3s1200e		SPEEDS:		-4    -4Q    (Minimum speed data available)
+        fgg400
+        ftg256
+xa3s1600e		SPEEDS:		-4    -4Q    (Minimum speed data available)
+        fgg400
+        fgg484
+xa6slx4		SPEEDS:		-3    -2    -3Q    -2Q
+        csg225
+xa6slx9		SPEEDS:		-3    -2    -3Q    -2Q
+        csg225
+        ftg256
+        csg324
+xa6slx16		SPEEDS:		-3    -2    -3Q    -2Q
+        csg225
+        ftg256
+        csg324
+xa6slx25		SPEEDS:		-3    -2    -3Q    -2Q
+        fgg484
+        ftg256
+        csg324
+xa6slx25t		SPEEDS:		-3    -2    -3Q    -2Q
+        fgg484
+        csg324
+xa6slx45		SPEEDS:		-3    -2    -3Q    -2Q
+        fgg484
+        csg324
+        csg484
+xa6slx45t		SPEEDS:		-3    -2    -3Q    -2Q
+        fgg484
+        csg324
+xa6slx75		SPEEDS:		-3    -2    -3Q    -2Q
+        fgg484
+        csg484
+xa6slx75t		SPEEDS:		-3    -2    -3Q    -2Q
+        fgg484
+xa6slx100		SPEEDS:		-2    -2Q
+        fgg484
+xa7z010		SPEEDS:		-1I    -1Q
+        clg400
+        clg225
+xa7z020		SPEEDS:		-1I    -1Q
+        clg400
+        clg484
+xc7k70t		SPEEDS:		-3    -2    -1    -2L
+        fbg676
+        fbg484
+xc7k160t		SPEEDS:		-3    -2    -1    -2L
+        fbg676
+        ffg676
+        fbg484
+xc7k325t		SPEEDS:		-3    -2    -1    -2L
+        fbg676
+        fbg900
+        ffg676
+        ffg900
+xc7k355t		SPEEDS:		-3    -2    -1    -2L
+        ffg901
+xc7k410t		SPEEDS:		-3    -2    -1    -2L
+        fbg676
+        fbg900
+        ffg676
+        ffg900
+xc7k420t		SPEEDS:		-3    -2    -1    -2L
+        ffg901
+        ffg1156
+xc7k480t		SPEEDS:		-3    -2    -1    -2L
+        ffg901
+        ffg1156
+xc7k70tl		SPEEDS:		-2L
+        fbg676
+        fbg484
+xc7k160tl		SPEEDS:		-2L
+        fbg676
+        ffg676
+        fbg484
+xc7k325tl		SPEEDS:		-2L
+        fbg676
+        fbg900
+        ffg676
+        ffg900
+xc7k355tl		SPEEDS:		-2L
+        ffg901
+xc7k410tl		SPEEDS:		-2L
+        fbg676
+        fbg900
+        ffg676
+        ffg900
+xc7k420tl		SPEEDS:		-2L
+        ffg901
+        ffg1156
+xc7k480tl		SPEEDS:		-2L
+        ffg901
+        ffg1156
+xq7a100t		SPEEDS:		-2I    -1I    -1M
+        cs324
+        fg484
+xq7a200t		SPEEDS:		-2I    -1I    -1M
+        rb484
+        rb676
+        rs484
+xq7k325t		SPEEDS:		-2I    -1I    -1M    -2L
+        rf676
+        rf900
+xq7k410t		SPEEDS:		-2I    -1I    -1M    -2L
+        rf676
+        rf900
+xq7k325tl		SPEEDS:		-2L
+        rf676
+        rf900
+xq7k410tl		SPEEDS:		-2L
+        rf676
+        rf900
+xqr4vsx55		SPEEDS:		-10    (Minimum speed data available)
+        cf1140
+xqr4vfx60		SPEEDS:		-10    (Minimum speed data available)
+        cf1144
+xqr4vfx140		SPEEDS:		-10    (Minimum speed data available)
+        cf1509
+xqr4vlx200		SPEEDS:		-10    (Minimum speed data available)
+        cf1509
+xq6slx75		SPEEDS:		-2
+        cs484
+        csg484
+        fg484
+xq6slx75t		SPEEDS:		-3    -2    -2Q
+        cs484
+        csg484	-3    -2
+        fg484
+        fg676
+        fgg676	-3    -2
+xq6slx150		SPEEDS:		-2    -2Q
+        cs484
+        csg484	-2
+        fg484
+xq6slx150t		SPEEDS:		-3    -2    -2Q
+        cs484
+        csg484	-3    -2
+        fg484
+        fg676
+        fgg676	-3    -2
+xq6slx75l		SPEEDS:		-1L
+        cs484
+        csg484
+        fg484
+xq6slx150l		SPEEDS:		-1L
+        cs484
+        csg484
+        fg484
+xq4vlx25		SPEEDS:		-10    (Minimum speed data available)
+        ff668
+        sf363
+xq4vlx40		SPEEDS:		-10    -10I    (Minimum speed data available)
+        ff668
+xq4vsx55		SPEEDS:		-10    (Minimum speed data available)
+        ff1148
+xq4vfx60		SPEEDS:		-10    -10I    (Minimum speed data available)
+        ef672
+xq4vlx60		SPEEDS:		-10    (Minimum speed data available)
+        ff1148
+        ff668
+        ef668
+xq4vfx100		SPEEDS:		-10I    (Minimum speed data available)
+        ff1152
+xq4vlx100		SPEEDS:		-10I    (Minimum speed data available)
+        ff1148
+xq4vlx160		SPEEDS:		-10I    (Minimum speed data available)
+        ff1148
+xq5vlx30t		SPEEDS:		-2    -1    (Minimum speed data available)
+        ff323
+xq5vsx50t		SPEEDS:		-2    -1    (Minimum speed data available)
+        ef665
+xq5vfx70t		SPEEDS:		-2    -1    -1M    (Minimum speed data available)
+        ef665
+        ef1136
+xq5vlx85		SPEEDS:		-2    -1    (Minimum speed data available)
+        ef676
+xq5vsx95t		SPEEDS:		-2    -1    (Minimum speed data available)
+        ef1136
+xq5vfx100t		SPEEDS:		-2    -1    -1M    (Minimum speed data available)
+        ef1136
+        ef1738
+xq5vlx110		SPEEDS:		-2    -1    (Minimum speed data available)
+        ef676
+        ef1153
+xq5vlx110t		SPEEDS:		-2    -1    (Minimum speed data available)
+        ef1136
+xq5vfx130t		SPEEDS:		-2    -1    (Minimum speed data available)
+        ef1738
+xq5vlx155t		SPEEDS:		-2    -1    (Minimum speed data available)
+        ef1136
+xq5vfx200t		SPEEDS:		-1    (Minimum speed data available)
+        ff1738
+xq5vlx220t		SPEEDS:		-2    -1    (Minimum speed data available)
+        ef1738
+xq5vsx240t		SPEEDS:		-1    (Minimum speed data available)
+        ff1738
+xq5vlx330t		SPEEDS:		-1    (Minimum speed data available)
+        ef1738
+xq6vlx130t		SPEEDS:		-2    -1    -1M
+        rf784
+        rf1156
+        ffg1156	-2    -1
+xq6vlx240t		SPEEDS:		-2    -1    -1M
+        rf784
+        rf1156
+        ffg1156	-2    -1
+        rf1759
+xq6vsx315t		SPEEDS:		-2    -1    -1M
+        rf1156
+        ffg1156	-2    -1
+        rf1759
+xq6vsx475t		SPEEDS:		-1
+        ffg1156
+        rf1156
+        rf1759
+xq6vlx550t		SPEEDS:		-1
+        rf1759
+xq6vlx130tl		SPEEDS:		-1L
+        rf784
+        rf1156
+        ffg1156
+xq6vlx240tl		SPEEDS:		-1L
+        rf784
+        rf1156
+        ffg1156
+        rf1759
+xq6vsx315tl		SPEEDS:		-1L
+        ffg1156
+        rf1156
+        rf1759
+xq6vsx475tl		SPEEDS:		-1L
+        ffg1156
+        rf1156
+        rf1759
+xq6vlx550tl		SPEEDS:		-1L
+        rf1759
+xq7vx330t		SPEEDS:		-2I    -1I    -1M    -2L
+        rf1157
+        rf1761
+xq7vx485t		SPEEDS:		-2I    -1I    -1M    -2L
+        rf1761
+        rf1930
+xq7v585t		SPEEDS:		-2I    -1I    -1M    -2L
+        rf1157
+        rf1761
+xq7vx690t		SPEEDS:		-2I    -1I
+        rf1761
+        rf1930
+        rf1157
+xq7vx980t		SPEEDS:		-2L    -1I
+        rf1930
+xq7z020		SPEEDS:		-2I    -1I    -1Q
+        cl400
+        cl484
+xq7z030		SPEEDS:		-2I    -1I    -1Q
+        rf676
+        rb484
+xq7z045		SPEEDS:		-2I    -1I    -1Q
+        rf676
+xc3s50		SPEEDS:		-5    -4    (Minimum speed data available)
+        pq208
+        tq144
+        vq100
+        cp132
+xc3s200		SPEEDS:		-5    -4    (Minimum speed data available)
+        ft256
+        pq208
+        tq144
+        vq100
+xc3s400		SPEEDS:		-5    -4    (Minimum speed data available)
+        fg320
+        fg456
+        ft256
+        pq208
+        tq144
+xc3s1000		SPEEDS:		-5    -4    (Minimum speed data available)
+        fg320
+        fg456
+        fg676
+        ft256
+xc3s1000l		SPEEDS:		-4    (Minimum speed data available)
+        ft256
+        fg320
+        fg456
+xc3s1500		SPEEDS:		-5    -4    (Minimum speed data available)
+        fg320
+        fg456
+        fg676
+xc3s1500l		SPEEDS:		-4    (Minimum speed data available)
+        fg320
+        fg456
+        fg676
+xc3s2000		SPEEDS:		-5    -4    (Minimum speed data available)
+        fg456
+        fg676
+        fg900
+xc3s4000		SPEEDS:		-5    -4    (Minimum speed data available)
+        fg676
+        fg900
+        fg1156
+xc3s4000l		SPEEDS:		-4    (Minimum speed data available)
+        fg900
+xc3s5000		SPEEDS:		-5    -4    (Minimum speed data available)
+        fg900
+        fg1156
+        fg676
+xc3s50a		SPEEDS:		-5    -4    (Minimum speed data available)
+        tq144
+        ft256
+        vq100
+xc3s50an		SPEEDS:		-5    -4    (Minimum speed data available)
+        tqg144
+        ftg256
+xc3s200a		SPEEDS:		-5    -4    (Minimum speed data available)
+        ft256
+        fg320
+        vq100
+xc3s200an		SPEEDS:		-5    -4    (Minimum speed data available)
+        ftg256
+xc3s400a		SPEEDS:		-5    -4    (Minimum speed data available)
+        ft256
+        fg320
+        fg400
+xc3s400an		SPEEDS:		-5    -4    (Minimum speed data available)
+        fgg400
+        ftg256
+xc3s700a		SPEEDS:		-5    -4    (Minimum speed data available)
+        fg400
+        fg484
+        ft256
+xc3s700an		SPEEDS:		-5    -4    (Minimum speed data available)
+        fgg484
+xc3s1400a		SPEEDS:		-5    -4    (Minimum speed data available)
+        fg484
+        fg676
+        ft256
+xc3s1400an		SPEEDS:		-5    -4    (Minimum speed data available)
+        fgg676
+        fgg484
+xc3sd1800a		SPEEDS:		-5    -4    (Minimum speed data available)
+        cs484
+        fg676
+xc3sd3400a		SPEEDS:		-5    -4    (Minimum speed data available)
+        fg676
+        cs484
+xc3s100e		SPEEDS:		-5    -4    (Minimum speed data available)
+        vq100
+        cp132
+        tq144
+xc3s250e		SPEEDS:		-5    -4    (Minimum speed data available)
+        vq100
+        cp132
+        tq144
+        ft256
+        pq208
+xc3s500e		SPEEDS:		-5    -4    (Minimum speed data available)
+        cp132
+        ft256
+        fg320
+        pq208
+        vq100
+xc3s1200e		SPEEDS:		-5    -4    (Minimum speed data available)
+        ft256
+        fg320
+        fg400
+xc3s1600e		SPEEDS:		-5    -4    (Minimum speed data available)
+        fg320
+        fg400
+        fg484
+xc6slx4		SPEEDS:		-3    -2
+        tqg144
+        cpg196
+        csg225
+xc6slx9		SPEEDS:		-3    -3N    -2
+        csg225
+        csg324
+        tqg144	-3    -2
+        ftg256
+        cpg196	-3    -2
+xc6slx16		SPEEDS:		-3    -3N    -2
+        csg324
+        ftg256
+        csg225
+        cpg196	-3    -2
+xc6slx25		SPEEDS:		-3    -3N    -2
+        csg324
+        fgg484
+        ftg256
+xc6slx25t		SPEEDS:		-3    -4    -3N    -2
+        csg324
+        fgg484
+xc6slx45		SPEEDS:		-3    -3N    -2
+        fgg484
+        csg324
+        fgg676
+        csg484
+xc6slx45t		SPEEDS:		-3    -4    -3N    -2
+        fgg484
+        csg324
+        csg484
+xc6slx75		SPEEDS:		-3    -3N    -2
+        csg484
+        fgg484
+        fgg676
+xc6slx75t		SPEEDS:		-3    -4    -3N    -2
+        fgg676
+        csg484
+        fgg484
+xc6slx100		SPEEDS:		-3    -3N    -2
+        fgg484
+        fgg676
+        csg484
+xc6slx100t		SPEEDS:		-3    -4    -3N    -2
+        fgg484
+        fgg676
+        fgg900
+        csg484
+xc6slx150		SPEEDS:		-3    -3N    -2
+        fgg484
+        fgg676
+        csg484
+        fgg900
+xc6slx150t		SPEEDS:		-3    -4    -3N    -2
+        fgg676
+        fgg484
+        fgg900
+        csg484
+xc6slx4l		SPEEDS:		-1L
+        tqg144
+        cpg196
+        csg225
+xc6slx9l		SPEEDS:		-1L
+        csg225
+        csg324
+        tqg144
+        ftg256
+        cpg196
+xc6slx16l		SPEEDS:		-1L
+        csg324
+        ftg256
+        csg225
+        cpg196
+xc6slx25l		SPEEDS:		-1L
+        csg324
+        fgg484
+        ftg256
+xc6slx45l		SPEEDS:		-1L
+        fgg484
+        csg324
+        fgg676
+        csg484
+xc6slx75l		SPEEDS:		-1L
+        csg484
+        fgg484
+        fgg676
+xc6slx100l		SPEEDS:		-1L
+        fgg484
+        fgg676
+        csg484
+xc6slx150l		SPEEDS:		-1L
+        fgg484
+        fgg676
+        csg484
+        fgg900
+xc4vfx12		SPEEDS:		-12    -11    -10    (Minimum speed data available)
+        sf363
+        ff668
+xc4vlx15		SPEEDS:		-12    -11    -10    (Minimum speed data available)
+        sf363
+        ff668
+        ff676
+xc4vfx20		SPEEDS:		-12    -11    -10    (Minimum speed data available)
+        ff672
+xc4vlx25		SPEEDS:		-12    -11    -10    (Minimum speed data available)
+        sf363
+        ff668
+        ff676
+xc4vsx25		SPEEDS:		-12    -11    -10    (Minimum speed data available)
+        ff668
+xc4vsx35		SPEEDS:		-12    -11    -10    (Minimum speed data available)
+        ff668
+xc4vfx40		SPEEDS:		-12    -11    -10    (Minimum speed data available)
+        ff672
+        ff1152
+xc4vlx40		SPEEDS:		-12    -11    -10    (Minimum speed data available)
+        ff668
+        ff1148
+xc4vsx55		SPEEDS:		-12    -11    -10    (Minimum speed data available)
+        ff1148
+xc4vfx60		SPEEDS:		-12    -11    -10    (Minimum speed data available)
+        ff672
+        ff1152
+xc4vlx60		SPEEDS:		-12    -11    -10    (Minimum speed data available)
+        ff668
+        ff1148
+xc4vlx80		SPEEDS:		-12    -11    -10    (Minimum speed data available)
+        ff1148
+xc4vfx100		SPEEDS:		-12    -11    -10    (Minimum speed data available)
+        ff1152
+        ff1517
+xc4vlx100		SPEEDS:		-12    -11    -10    (Minimum speed data available)
+        ff1148
+        ff1513
+xc4vfx140		SPEEDS:		-11    -10    (Minimum speed data available)
+        ff1517
+xc4vlx160		SPEEDS:		-12    -11    -10    (Minimum speed data available)
+        ff1148
+        ff1513
+xc4vlx200		SPEEDS:		-11    -10    (Minimum speed data available)
+        ff1513
+xc5vlx20t		SPEEDS:		-2    -1    (Minimum speed data available)
+        ff323
+xc5vlx30		SPEEDS:		-3    -2    -1    (Minimum speed data available)
+        ff324
+        ff676
+xc5vfx30t		SPEEDS:		-3    -2    -1    (Minimum speed data available)
+        ff665
+xc5vlx30t		SPEEDS:		-3    -2    -1    (Minimum speed data available)
+        ff323
+        ff665
+xc5vsx35t		SPEEDS:		-3    -2    -1    (Minimum speed data available)
+        ff665
+xc5vlx50		SPEEDS:		-3    -2    -1    (Minimum speed data available)
+        ff324
+        ff676
+        ff1153
+xc5vlx50t		SPEEDS:		-3    -2    -1    (Minimum speed data available)
+        ff1136
+        ff665
+xc5vsx50t		SPEEDS:		-3    -2    -1    (Minimum speed data available)
+        ff1136
+        ff665
+xc5vfx70t		SPEEDS:		-3    -2    -1    (Minimum speed data available)
+        ff1136
+        ff665
+xc5vlx85		SPEEDS:		-3    -2    -1    (Minimum speed data available)
+        ff676
+        ff1153
+xc5vlx85t		SPEEDS:		-3    -2    -1    (Minimum speed data available)
+        ff1136
+xc5vsx95t		SPEEDS:		-2    -1    (Minimum speed data available)
+        ff1136
+xc5vfx100t		SPEEDS:		-3    -2    -1    (Minimum speed data available)
+        ff1738
+        ff1136
+xc5vlx110		SPEEDS:		-3    -2    -1    (Minimum speed data available)
+        ff676
+        ff1153
+        ff1760
+xc5vlx110t		SPEEDS:		-3    -2    -1    (Minimum speed data available)
+        ff1136
+        ff1738
+xc5vfx130t		SPEEDS:		-3    -2    -1    (Minimum speed data available)
+        ff1738
+xc5vtx150t		SPEEDS:		-2    -1    (Minimum speed data available)
+        ff1156
+        ff1759
+xc5vlx155		SPEEDS:		-3    -2    -1    (Minimum speed data available)
+        ff1153
+        ff1760
+xc5vlx155t		SPEEDS:		-3    -2    -1    (Minimum speed data available)
+        ff1136
+        ff1738
+xc5vfx200t		SPEEDS:		-2    -1    (Minimum speed data available)
+        ff1738
+xc5vlx220		SPEEDS:		-2    -1    (Minimum speed data available)
+        ff1760
+xc5vlx220t		SPEEDS:		-2    -1    (Minimum speed data available)
+        ff1738
+xc5vsx240t		SPEEDS:		-2    -1    (Minimum speed data available)
+        ff1738
+xc5vtx240t		SPEEDS:		-2    -1    (Minimum speed data available)
+        ff1759
+xc5vlx330		SPEEDS:		-2    -1    (Minimum speed data available)
+        ff1760
+xc5vlx330t		SPEEDS:		-2    -1    (Minimum speed data available)
+        ff1738
+xc6vcx75t		SPEEDS:		-2    -1
+        ff484
+        ff784
+xc6vlx75t		SPEEDS:		-3    -2    -1
+        ff484
+        ff784
+xc6vcx130t		SPEEDS:		-2    -1
+        ff484
+        ff784
+        ff1156
+xc6vlx130t		SPEEDS:		-3    -2    -1
+        ff484
+        ff784
+        ff1156
+xc6vcx195t		SPEEDS:		-2    -1
+        ff784
+        ff1156
+xc6vlx195t		SPEEDS:		-3    -2    -1
+        ff784
+        ff1156
+xc6vcx240t		SPEEDS:		-2    -1
+        ff784
+        ff1156
+xc6vlx240t		SPEEDS:		-3    -2    -1
+        ff784
+        ff1156
+        ff1759
+xc6vhx250t		SPEEDS:		-3    -2    -1
+        ff1154
+xc6vhx255t		SPEEDS:		-3    -2    -1
+        ff1155
+        ff1923
+xc6vsx315t		SPEEDS:		-3    -2    -1
+        ff1156
+        ff1759
+xc6vlx365t		SPEEDS:		-3    -2    -1
+        ff1156
+        ff1759
+xc6vhx380t		SPEEDS:		-3    -2    -1
+        ff1155
+        ff1154
+        ff1923
+        ff1924
+xc6vsx475t		SPEEDS:		-2    -1
+        ff1156
+        ff1759
+xc6vlx550t		SPEEDS:		-2    -1
+        ff1759
+        ff1760
+xc6vhx565t		SPEEDS:		-2    -1
+        ff1923
+        ff1924
+xc6vlx760		SPEEDS:		-2    -1
+        ff1760
+xc6vlx75tl		SPEEDS:		-1L
+        ff484
+        ff784
+xc6vlx130tl		SPEEDS:		-1L
+        ff484
+        ff784
+        ff1156
+xc6vlx195tl		SPEEDS:		-1L
+        ff784
+        ff1156
+xc6vlx240tl		SPEEDS:		-1L
+        ff784
+        ff1156
+        ff1759
+xc6vsx315tl		SPEEDS:		-1L
+        ff1156
+        ff1759
+xc6vlx365tl		SPEEDS:		-1L
+        ff1156
+        ff1759
+xc6vsx475tl		SPEEDS:		-1L
+        ff1156
+        ff1759
+xc6vlx550tl		SPEEDS:		-1L
+        ff1759
+        ff1760
+xc6vlx760l		SPEEDS:		-1L
+        ff1760
+xc7vx330t		SPEEDS:		-3    -2    -1    -2L
+        ffg1157
+        ffg1761
+xc7vx415t		SPEEDS:		-3    -2    -1    -2L
+        ffg1157
+        ffg1158
+        ffg1927
+xc7vx485t		SPEEDS:		-3    -2    -1    -2L
+        ffg1157
+        ffg1158
+        ffg1761
+        ffg1927
+        ffg1930
+xc7vx550t		SPEEDS:		-3    -2    -1    -2L
+        ffg1158
+        ffg1927
+xc7vh580t		SPEEDS:		-2    -1    -2G    -2L
+        hcg1155
+        hcg1931
+        hcg1932
+xc7v585t		SPEEDS:		-3    -2    -1    -2L
+        ffg1157
+        ffg1761
+xc7vx690t		SPEEDS:		-3    -2    -1    -2L
+        ffg1157
+        ffg1158
+        ffg1761
+        ffg1926
+        ffg1927
+        ffg1930
+xc7vh870t		SPEEDS:		-2    -1    -2G    -2L
+        hcg1931
+        hcg1932
+xc7vx980t		SPEEDS:		-2    -1    -2L
+        ffg1926
+        ffg1928
+        ffg1930
+xc7vx1140t		SPEEDS:		-2    -1    -2G    -2L
+        flg1930
+        flg1928
+        flg1926
+xc7v2000t		SPEEDS:		-2    -1    -2G    -2L
+        flg1925
+        fhg1761
+xa9536xl		SPEEDS:		-15
+        VQ44
+xa9572xl		SPEEDS:		-15
+        VQ44
+        VQ64
+        TQ100
+xa95144xl		SPEEDS:		-15
+        CS144
+xc2c32		SPEEDS:		-3    -4    -6
+        PC44
+        VQ44
+        CP56
+        DI44
+xc2c32a		SPEEDS:		-4    -6
+        QFG32
+        PC44
+        VQ44
+        CP56
+        DI44
+        CV64
+xc2c64		SPEEDS:		-5    -7
+        PC44
+        VQ44
+        CP56
+        VQ100
+        DI81
+xc2c64a		SPEEDS:		-5    -7
+        PC44
+        VQ44
+        QFG48
+        CP56
+        CV64
+        VQ100
+        DI81
+xc2c128		SPEEDS:		-6    -7
+        VQ100
+        CV100
+        CP132
+        TQ144
+        DI126
+xc2c256		SPEEDS:		-6    -7
+        VQ100
+        CP132
+        TQ144
+        PQ208
+        FT256
+        DI222
+xc2c384		SPEEDS:		-7    -10
+        TQ144
+        PQ208
+        FT256
+        FG324
+        DI288
+xc2c512		SPEEDS:		-7    -10
+        PQ208
+        FT256
+        FG324
+        DI324
+xc9536		SPEEDS:		-5    -7    -10    -15
+        PC44
+        VQ44
+        CS48
+xc9572		SPEEDS:		-7    -10    -15
+        PC44
+        PC84
+        PQ100
+        TQ100
+xc95108		SPEEDS:		-7    -10    -15    -20
+        PC84
+        PQ100
+        TQ100
+        PQ160
+xc95144		SPEEDS:		-7    -10    -15
+        PQ100
+        TQ100
+        PQ160
+xc95216		SPEEDS:		-10    -15    -20
+        PQ160
+        HQ208
+        BG352
+xc95288		SPEEDS:		-10    -15    -20
+        HQ208
+        BG352
+xc9536xl		SPEEDS:		-5    -7    -10
+        PC44
+        VQ44
+        CS48
+        VQ64
+xc9572xl		SPEEDS:		-5    -7    -10
+        PC44
+        VQ44
+        CS48
+        VQ64
+        TQ100
+xc95144xl		SPEEDS:		-5    -7    -10
+        TQ100
+        TQ144
+        CS144
+xc95288xl		SPEEDS:		-6    -7    -10
+        TQ144
+        PQ208
+        CS280
+        BG256
+        FG256
+xcr3032xl		SPEEDS:		-5    -7    -10
+        PC44
+        VQ44
+        CS48
+xcr3064xl		SPEEDS:		-6    -7    -10
+        PC44
+        VQ44
+        CS48
+        CP56
+        VQ100
+xcr3128xl		SPEEDS:		-6    -7    -10
+        VQ100
+        CS144
+        TQ144
+xcr3256xl		SPEEDS:		-7    -10    -12
+        TQ144
+        PQ208
+        FT256
+        CS280
+xcr3384xl		SPEEDS:		-7    -10    -12
+        TQ144
+        PQ208
+        FT256
+        FG324
+xcr3512xl		SPEEDS:		-7    -10    -12
+        PQ208
+        FT256
+        FG324
+xc7z010		SPEEDS:		-3    -2    -1
+        clg400
+        clg225
+xc7z020		SPEEDS:		-3    -2    -1
+        clg400
+        clg484
+xc7z030		SPEEDS:		-3    -2    -1
+        fbg676
+        ffg676
+        fbg484
+        sbg485
+xc7z045		SPEEDS:		-3    -2    -1
+        fbg676
+        ffg676
+        ffg900
+xc7z100		SPEEDS:		-2    -1
+        ffg900
+        ffg1156
