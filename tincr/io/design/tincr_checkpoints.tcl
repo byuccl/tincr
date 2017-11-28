@@ -71,7 +71,7 @@ proc ::tincr::write_rscp {args} {
     } else {
         set ::tincr::verbose 1
     }
-	       
+       
     ::tincr::print_verbose "Writing RapidSmith2 checkpoint to $filename..."
 
     # generate the design info file
@@ -180,6 +180,24 @@ proc ::tincr::read_tcp {args} {
             set diff_time [::tincr::format_time [expr $end_time - $start_time] s]
             ::tincr::print_verbose "Done routing...($diff_time seconds)"
         }
+    }
+	
+    # Complete the route for nets with an OOC source port.
+    # The same warning/bug described above occurs when trying to specify the ROUTE string of a net
+    # that is a hierarchical port (placed or unplaced port with no driver).
+    # Work around is also to have Vivado route these nets for us.
+    if {$link_mode=="out_of_context"} {
+	set diff_time 0
+	set hier_nets [get_nets -of [get_ports] -filter {ROUTE_STATUS == HIERPORT} -quiet]
+	    
+	if {[llength $hier_nets] > 0 } {
+	    ::tincr::print_verbose "Routing [llength $hier_nets] hierarchical port nets..."		    	    
+	    set start_time [clock microseconds]
+	    route_design -quiet -nets $hier_nets
+	    set end_time [clock microseconds]
+	    set diff_time [::tincr::format_time [expr $end_time - $start_time] s]
+	    ::tincr::print_verbose "Done routing hierarchical port nets...($diff_time seconds)"
+	}
     }
     
     ::tincr::print_verbose "Unlocking the design..."
