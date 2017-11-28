@@ -182,7 +182,7 @@ proc ::tincr::read_tcp {args} {
         }
     }
 	
-    # Complete the route for nets with an OOC source port.
+    # Complete the route for nets with a hierarchical source port.
     # The same warning/bug described above occurs when trying to specify the ROUTE string of a net
     # that is a hierarchical port (placed or unplaced port with no driver).
     # Work around is also to have Vivado route these nets for us.
