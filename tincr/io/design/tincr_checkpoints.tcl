@@ -49,16 +49,19 @@ proc ::tincr::write_tcp {filename} {
 #   <a href="https://github.com/byuccl/RapidSmith2/tree/master/doc">https://github.com/byuccl/RapidSmith2/tree/master/doc</a>
 #   and Thomas Townsend's Masters Thesis.
 #
-#   USAGE: tincr::write_rscp [-quiet] [-ooc] filename.rscp
+#   USAGE: tincr::write_rscp [-quiet] [-ooc] [-part partName] filename.rscp
 #
 # @params args Argument list as defined above. The flag "-quiet" 
 #   can be used to suppress console output. The flag "-ooc" needs to be 
-#   set for designs implemented "out-of-context". The filename parameter is the name
-#   for the generated RSCP.
+#   set for designs implemented "out-of-context". The "-part partName"  
+#   option is used as the part identifier in the design.info if specified.
+#   The filename parameter is the name for the generated RSCP.
 proc ::tincr::write_rscp {args} {
     set quiet 0
     set ooc 0
-    ::tincr::parse_args {} {quiet ooc} {} {filename} $args
+    set partName ""
+	
+    ::tincr::parse_args {partName} {quiet ooc} {} {filename} $args
     set filename [::tincr::add_extension ".rscp" $filename]
     file mkdir $filename
 
@@ -68,11 +71,11 @@ proc ::tincr::write_rscp {args} {
     } else {
         set ::tincr::verbose 1
     }
-        
+	       
     ::tincr::print_verbose "Writing RapidSmith2 checkpoint to $filename..."
 
     # generate the design info file
-    write_design_info $ooc "${filename}/design.info"
+    write_design_info $ooc -part $partName "${filename}/design.info"
     
     # generate the EDIF
     set start_time [clock clicks -microseconds]
@@ -228,17 +231,24 @@ proc ::tincr::sort_cells_for_export { cells } {
 #   USAGE: tincr::write_design_info [ooc] filename
 #
 # @param args Argument list shown in the usage statement above. The optional parameter
-#       "ooc" is used to output the mode of the design. The filename parameter is the 
-#       name for the generated design.info.
+#       "ooc" is used to output the mode of the design. The "-part partName"  
+#   option is used as the part identifier in the design.info if specified.
+#   The filename parameter is the name for the generated design.info.
 proc ::tincr::write_design_info {args} {
     set ooc 0
-    ::tincr::parse_args {} {} {ooc} {filename} $args
+    set partName ""
+    ::tincr::parse_args {partName} {} {ooc} {filename} $args
 
     set filename [::tincr::add_extension ".info" $filename]
 
     set outfile [open $filename w]
+	
+    # if no partName is specified, get the part from the design
+    if {$partName == ""} {
+	set partName "[get_property PART [current_design]]"
+    }
 
-    puts $outfile "part=[get_property PART [current_design]]"
+    puts $outfile "part=$partName"
     
     if {$ooc != 0} {
         puts $outfile "mode=out_of_context"
