@@ -147,29 +147,20 @@ proc ::tincr::write_xdlrc { args } {
         # Newline
         puts "\rPercent complete: 100%"
         
-        set site_types [::tincr::sites unique]
+        set site_types [::tincr::sites get_types]
     
         if {$primitive_defs} {
             # Primitive Definitions
             
             # For ultrascale devices add power/ground source sites that aren't explicitly represented in Vivado
             if {$is_series7 == 0} {
-                dict lappend site_types "VCC" "NULL"
-                dict lappend site_types "GND" "NULL"
+		lappend site_types "VCC" "GND"
             }
                 
-            # Sort site_types alphabetically into sorted_site_types
-            set lst {}
-            dict for {site_type instance} $site_types {
-                # append list elements onto lst
-                lappend lst [list $site_type $instance]
-            }           
-            set sorted_site_types [concat {*}[lsort -dictionary $lst]]
-
-            puts $outfile "(primitive_defs [dict size $sorted_site_types]"
+	    puts $outfile "(primitive_defs [llength $site_types]"
             
             # Append primitive definitions
-            dict for {site_type instance} $sorted_site_types {
+	    foreach site_type $site_types {
                 set prim_def_file [file join [::tincr::cache::directory_path dict.site_type.src_bel.src_pin.snk_bel.snk_pins] "$site_type.def"]
                 
                 #throw an error if a site type doesn't have a corresponding definition
