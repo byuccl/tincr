@@ -154,13 +154,13 @@ proc ::tincr::write_xdlrc { args } {
             
             # For ultrascale devices add power/ground source sites that aren't explicitly represented in Vivado
             if {$is_series7 == 0} {
-		lappend site_types "VCC" "GND"
+                lappend site_types "VCC" "GND"
             }
                 
 	    puts $outfile "(primitive_defs [llength $site_types]"
             
             # Append primitive definitions
-	    foreach site_type $site_types {
+            foreach site_type $site_types {
                 set prim_def_file [file join [::tincr::cache::directory_path dict.site_type.src_bel.src_pin.snk_bel.snk_pins] "$site_type.def"]
                 
                 #throw an error if a site type doesn't have a corresponding definition
