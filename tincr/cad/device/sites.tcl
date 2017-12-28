@@ -383,6 +383,7 @@ proc ::tincr::sites::get_routing_muxes { site } {
 # @param site The <CODE>site</CODE> object.
 # @param info What information to get about the site. Valid values include "tile", "x", or "y".
 # @return The requested information about the site.
+#TODO: Fix this. Doesn't actually suppport "tile"...
 proc ::tincr::sites::get_info { site {info site} } {
     if {[regexp {([A-Z0-9]+)_X([0-9]+)Y([0-9]+)} $site matched type x y]} {
         return [subst $[subst $info]]

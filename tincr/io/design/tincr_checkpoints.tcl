@@ -465,7 +465,13 @@ proc ::tincr::write_macros { {filename macros.xml } } {
     puts $xml "<root>"
     puts $xml "  <macros>"
     
+    # I'm assuming the "PRIMITIVE_COUNT > 1" part of this is here due to the assumption that a macro will have more
+    # than one primitive inside of it. I think this assumption is broken when dealing with RMs...
     set macro_cells [get_cells -filter {PRIMITIVE_LEVEL==MACRO || (PRIMITIVE_COUNT > 1 && PARENT=="")} -quiet]
+	
+    #set macro_cells [get_cells -hierarchical -quiet]
+	
+    #set macro_cells [get_cells -filter {PRIMITIVE_LEVEL==MACRO || (PRIMITIVE_COUNT > 0 && PARENT=="")} -quiet]
     set macros_to_write [list]
     set macros_in_design [list]
     
