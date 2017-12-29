@@ -738,7 +738,7 @@ proc write_site_pips { site_list channel } {
 
 ## Searches through the used sites of the design, identifies LUT BELs that are being
 #   used as either a routethrough or static source (always outputs 1 or 0), and writes
-#   identifies these BELs in the routing export file.
+#   these BELs to the routing export file.
 #
 # @param site_list List of <b>used</b> sites in the design
 # @param channel Output file handle
