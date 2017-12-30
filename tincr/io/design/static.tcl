@@ -6,7 +6,7 @@ package require tincr.cad.util 0.0
 
 namespace eval ::tincr:: {
     namespace export \
-	get_used_resources \
+	write_static_resources \
 	get_tile_pips \
 	get_site_routethroughs \
 	write_static_and_routethrough_luts
@@ -129,19 +129,25 @@ proc write_static_and_routethrough_luts { tiles channel } {
     ::tincr::print_list -header "LUT_RTS" -channel $channel $routethrough_luts
 }
 
+## Prints the static resources for every reconfigurable region (pblock)
+# in a static design.
 ## Searches through a reconfigurable region (a pblock) and writes used resources
-# (PIPs, static and routethrough LUTs, and site routethroughs) to the PR static export file.
-#
+# (PIPs, static and routethrough LUTs, and site routethroughs) to the PR static export file
+# @param static_dcp path to a DCP checkpoint of a routed static design
 # @param pblock the pblock that defines a reconfigurable region
 #TODO: Verbose/quiet options
 #TODO: Remove duplicate logic (don't get all nets more than once, etc.)
-proc ::tincr::get_used_resources { pblock } {
+proc ::tincr::write_static_resources { static_dcp pblock filename } {
     set ::tincr::verbose 1
+
+    open_checkpoint $static_dcp
+	
+    set pblock [get_pblocks $pblock]
+	
     # create the static file
-    set filename "pr_static"
     set filename [::tincr::add_extension ".rsc" $filename]
     set channel_out [open $filename w]
-	
+    
     # For now, I will assume the user will define the pblock properly in the first place and that 
     # the partial device file will have the same boundaries as the pblock.
     set tile_range [split [get_property GRID_RANGES $pblock] ":"]
@@ -180,6 +186,8 @@ proc ::tincr::get_used_resources { pblock } {
     # 3. Get site rouethroughs
     set diff_time [tincr::report_runtime "get_site_routethroughs [subst -novariables {$tiles $channel_out}]" s]
     ::tincr::print_verbose "Found site route-throughs...($diff_time seconds)"
-
+	
     close $channel_out
 }
+
+

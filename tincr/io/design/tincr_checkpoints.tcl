@@ -49,19 +49,23 @@ proc ::tincr::write_tcp {filename} {
 #   <a href="https://github.com/byuccl/RapidSmith2/tree/master/doc">https://github.com/byuccl/RapidSmith2/tree/master/doc</a>
 #   and Thomas Townsend's Masters Thesis.
 #
-#   USAGE: tincr::write_rscp [-quiet] [-ooc] [-part partName] filename.rscp
+#   USAGE: tincr::write_rscp [-quiet] [-ooc] [-part partName] [-static staticDCP.dcp] [-pblock pblock] filename.rscp
 #
 # @params args Argument list as defined above. The flag "-quiet" 
 #   can be used to suppress console output. The flag "-ooc" needs to be 
 #   set for designs implemented "out-of-context". The "-part partName"  
 #   option is used as the part identifier in the design.info if specified.
+#   The "-static staticDCP.dcp" option needs to be used if the resources that
+#   a static design uses (in a PR flow) need to be saved as part of the RSCP.
 #   The filename parameter is the name for the generated RSCP.
 proc ::tincr::write_rscp {args} {
     set quiet 0
     set ooc 0
     set partName ""
+    set staticDCP ""
+    set pblock ""
 	
-    ::tincr::parse_args {partName} {quiet ooc} {} {filename} $args
+    ::tincr::parse_args {partName staticDCP pblock} {quiet ooc} {} {filename} $args
     set filename [::tincr::add_extension ".rscp" $filename]
     file mkdir $filename
 
@@ -107,6 +111,16 @@ proc ::tincr::write_rscp {args} {
     set end_time [clock clicks -microseconds]
     ::tincr::print_verbose "Routing Done...([::tincr::format_time [expr $end_time -$start_time] s]s)"
     
+    # Write static used resources information
+    if {$staticDCP != "" && $pblock != ""} {
+	#TODO: Pass the pblock directly (get it as an arg to the main procedure).
+	# There's no need to have more than one pblock's used resources in this file.
+	set start_time [clock clicks -microseconds]
+	::tincr::write_static_resources $staticDCP $pblock "${filename}/static_resources.rsc"
+	set end_time [clock clicks -microseconds]
+	::tincr::print_verbose "Static Used Resources Done...([::tincr::format_time [expr $end_time -$start_time] s]s)"
+    }
+     
     ::tincr::print_verbose "Successfully Created RapidSmith2 Checkpoint!"
     set ::tincr::verbose $old_verbose
 }
