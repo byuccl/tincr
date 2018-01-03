@@ -57,6 +57,8 @@ proc ::tincr::write_tcp {filename} {
 #   option is used as the part identifier in the design.info if specified.
 #   The "-static staticDCP.dcp" option needs to be used if the resources that
 #   a static design uses (in a PR flow) need to be saved as part of the RSCP.
+#   The "-pblock pblock" option should also be used in this case. The "pblock"
+#   specifies the name of the pblock that should be searched for used resources.
 #   The filename parameter is the name for the generated RSCP.
 proc ::tincr::write_rscp {args} {
     set quiet 0
@@ -181,17 +183,14 @@ proc ::tincr::read_tcp {args} {
     # if the source is a port. It will give the error "ERROR: [Designutils 20-949] No driver found on net clock_N[0]"
     # work around is to have Vivado route these nets for us ...
     # TODO: add another part to the filter that says the nets are not routed
+    # TODO: Don't do this if the TCP is a pre-route TCP?
     set diff_time 0
     if {$link_mode=="default"} {
         set differential_nets [get_nets -of [get_ports] -filter {ROUTE_STATUS != INTRASITE} -quiet]
         
         if {[llength $differential_nets] > 0 } {
             ::tincr::print_verbose "Routing [llength $differential_nets] differential pair nets..."
-            # format_time does not work for this route design command, so I have to do it manually here
-            set start_time [clock microseconds]
-            route_design -quiet -nets $differential_nets
-            set end_time [clock microseconds]
-            set diff_time [::tincr::format_time [expr $end_time - $start_time] s]
+            set diff_time [tincr::report_runtime "route_design -quiet -nets [subst -novariables {$differential_nets}]" s]
             ::tincr::print_verbose "Done routing...($diff_time seconds)"
         }
     }
@@ -206,10 +205,7 @@ proc ::tincr::read_tcp {args} {
 	    
 	if {[llength $hier_nets] > 0 } {
 	    ::tincr::print_verbose "Routing [llength $hier_nets] hierarchical port nets..."		    	    
-	    set start_time [clock microseconds]
-	    route_design -quiet -nets $hier_nets
-	    set end_time [clock microseconds]
-	    set diff_time [::tincr::format_time [expr $end_time - $start_time] s]
+            set diff_time [tincr::report_runtime "route_design -quiet -nets [subst -novariables {$hier_nets}]" s]
 	    ::tincr::print_verbose "Done routing hierarchical port nets...($diff_time seconds)"
 	}
     }
