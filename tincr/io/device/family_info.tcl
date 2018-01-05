@@ -43,15 +43,6 @@ namespace eval ::tincr:: {
 #       <compatible_type>HPIOB</compatible_type>
 #     </compatible_types>
 
-## Helper function to return the suffix of a split string. For example,
-#   the following call to this function [suffix a/b/c/d "/"] will return "d".
-#
-# @param string String to split
-# @param token Token to split the specified string on
-proc suffix { string token } {
-	return [lindex [split $string $token] end]
-} 
-
 ## Returns a list of routing muxes in the specified site
 #
 # @param site Site object
@@ -179,7 +170,7 @@ proc process_site {site type is_alt compatible_list fileout vsrt_bels_to_add } {
     puts $fileout "      <bels>"
     foreach bel [get_bels -of $site] {
         
-        set bel_name [suffix $bel "/"]
+        set bel_name [tincr::suffix $bel "/"]
         set bel_type [get_property TYPE $bel]
         
         # print the name, type, and routethroughs for the bel
@@ -361,7 +352,7 @@ proc print_inout_pin_corrections {inout_correction_map fileout} {
         foreach pin $inout_pins {
             puts $fileout "        <pin_direction>"
             puts $fileout "          <element>$bel</element>"
-            puts $fileout "          <pin>[suffix $pin "/"]</pin>"
+            puts $fileout "          <pin>[tincr::suffix $pin "/"]</pin>"
             puts $fileout "          <direction>inout</direction>"
             puts $fileout "        </pin_direction>"
         }
