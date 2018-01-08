@@ -276,25 +276,25 @@ proc ::tincr::sites::has_alternate_types { site } {
 proc ::tincr::sites::get_alternate_types { site } {
     return [get_property ALTERNATE_SITE_TYPES $site]
 }
+
 #TODO Combine this proc with the previous one.
-## Get a list of all site types in the current device or for a set of <CODE>site</CODE> objects. This returned list will be a subset of the list of all possible site types returned by the Vivado command: list_property_value SITE_TYPE -class site.
+## Get a list of all site types (including alternate only types) in the current device or for a set of <CODE>site</CODE> objects. This returned list will be a subset of the list of all possible site types returned by the Vivado command: list_property_value SITE_TYPE -class site.
 # @param sites The Tcl list of <CODE>site</CODE> objects as a set. If empty, all sites in the device will be used.
-# @return A sorted list of all site types present in the sites provide or the current device. This is presented as a list of strings.
+# @return A sorted list of all site types present in the sites provided or the current device. This is presented as a list of strings.
 proc ::tincr::sites::get_types { {sites ""} } {
     set results [list]
     
-    if {$sites != ""} {
-        if {[llength $sites] == 1} {
-            set sites [list $sites]
-        }
-        foreach site $sites {
-            set results [struct::set union $results [get_property SITE_TYPE $site] [get_property ALTERNATE_SITE_TYPES $site]]
-        }
-    } else {
-        set results [lsort [list_property_value -class site SITE_TYPE]]
+    if {$sites == ""} {
+        set sites [get_sites]
     }
-    
-    return $results
+    if {[llength $sites] == 1} {
+        set sites [list $sites]
+    }
+    foreach site $sites {
+        set results [struct::set union $results [get_property SITE_TYPE $site] [get_property ALTERNATE_SITE_TYPES $site]]
+    }
+
+    return [lsort $results]
 }
 
 ## Get a site's type. This will return the current type of a site instanced by an alternate type.
