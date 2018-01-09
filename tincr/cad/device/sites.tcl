@@ -282,8 +282,9 @@ proc ::tincr::sites::get_alternate_types { site } {
 # @param sites The Tcl list of <CODE>site</CODE> objects as a set. If empty, all sites in the device will be used.
 # @return A sorted list of all site types present in the sites provided or the current device. This is presented as a list of strings.
 proc ::tincr::sites::get_types { {sites ""} } {
-    set results [list]
-    
+    set primary_types [list]
+    set alt_types [list]
+
     if {$sites == ""} {
         set sites [get_sites]
     }
@@ -291,10 +292,18 @@ proc ::tincr::sites::get_types { {sites ""} } {
         set sites [list $sites]
     }
     foreach site $sites {
-        set results [struct::set union $results [get_property SITE_TYPE $site] [get_property ALTERNATE_SITE_TYPES $site]]
+        set primary_types [struct::set union $primary_types [get_property SITE_TYPE $site] ]
+        set alt_types [struct::set union $alt_types [get_property ALTERNATE_SITE_TYPES $site] ]
     }
 
-    return [lsort $results]
+    # NOTE: Alternate-only IOBs are not actually alternate types (at least in Artix7)
+    set iob_index [lsearch $alt_types "*IOB*"]
+    while {$iob_index != -1} {
+	tincr::lremove alt_types $iob_index
+	set iob_index [lsearch $alt_types "*IOB*"]
+    }
+
+    return [lsort [struct::set union $primary_types $alt_types] ]
 }
 
 ## Get a site's type. This will return the current type of a site instanced by an alternate type.
