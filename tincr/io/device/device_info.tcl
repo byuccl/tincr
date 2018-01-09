@@ -38,6 +38,9 @@ proc ::tincr::create_xml_device_info { directory partname } {
     # create the output file in the form "device_info_modifiedpartname.xml" 
     # where the partname has been stripped of speedgrade and dash characters 
     set partname_no_speedgrade [tincr::remove_speedgrade $partname] 
+    if {$partname_no_speedgrade == ""} {
+        set partname_no_speedgrade $partname
+    }
     
     set dash_index [string first "-" $partname_no_speedgrade]
     if {$dash_index != -1} {
