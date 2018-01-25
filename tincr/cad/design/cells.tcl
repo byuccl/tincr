@@ -42,7 +42,9 @@ namespace eval ::tincr::cells {
         set_lut_eqn \
         get_default_value \
         reset_configuration \
-        get_configurable_properties
+        get_configurable_properties \
+        create_nondefault_pin_mappings \
+        write_nondefault_pin_mappings
     namespace ensemble create
 }
 
@@ -487,4 +489,135 @@ proc tincr::cells::get_configurable_properties {cell} {
     }
     
     return $config_properties
+}
+
+proc sortDictByKeys { d } {
+    set newd [dict create]
+    set keys [lsort [dict keys $d]]
+    foreach k $keys {
+        dict set newd $k [dict get $d $k]
+    }
+    return $newd
+}
+
+## Returns a dictionary of pin mappings for a cell to be placed onto a specified bel
+# @param cell Library cell instance
+# @param bel Bel object to place the cell on
+# @return a dictionary of pin mappings
+proc get_pin_mappings { cell bel } {
+    
+    set new_mappings [dict create]
+    
+    # place the cell and then attach a net to all of the pins
+    place_cell $cell $bel
+    
+    set tmp_net [create_net tmp]
+    # attach_nets $cell
+    
+    foreach pin [get_pins -of $cell] {
+    
+        # This will return a list of 0 or more belpins this cellpin is mapped to
+        set mapped_bel_pins [get_bel_pins -of $pin -quiet]
+        
+        # Not sure what this is doing here?  Clearly is to handle no mapped belpins
+        # It would seem that connecting a net to a pin can sometimes help?
+        if {[llength $mapped_bel_pins] == 0} {
+            #puts "Unconnected Net found!"
+            connect_net -net $tmp_net -objects $pin
+            set mapped_bel_pins [get_bel_pins -of $pin -quiet]
+            disconnect_net -objects $pin
+        }
+        
+        # If this cell pin is mapped to 0 bel pins, mark it with a no-connect (nc)
+        if {![llength $mapped_bel_pins]} {
+            set mapped_bel_pins "nc"
+        }
+        # Add all the mappings to the dictionary
+        # It may be a one-to-many mapping so need to prepare a list
+        set mbp [list]
+        foreach m $mapped_bel_pins {
+            lappend mbp [lindex [split $m /] end]
+        }
+        dict set new_mappings [lindex [split $pin /] end] $mbp
+        #puts "Setting [lindex [split $pin /] end] $mbp"
+    }
+
+    
+    # Clean up
+    unplace_cell $cell
+    remove_net $tmp_net
+    set new_mappings [sortDictByKeys $new_mappings]
+    return $new_mappings
+}
+
+## Returns a dictionary of pin mappings for a cell to be placed onto a specified bel, after applying some non-default properties
+# @param cell Library cell instance
+# @param bel Bel object to place the cell on
+# @param config_dict A dictionary containing propertyName/propertyValue pairs for properties to change
+# @return a dictionary of pin mappings
+proc tincr::cells::create_nondefault_pin_mappings { cell bel config_dict } {
+    set config_dict [sortDictByKeys $config_dict]
+    dict for {k v} $config_dict {
+        puts "$k:$v"
+    }
+    
+    # attach_nets $cell
+            
+    set pin_map_list [list]
+
+    # Apply property changes 
+    dict for {prop val} $config_dict {
+      #puts "Processing: $prop $val"
+      set_property $prop $val $cell
+    }
+
+    # Place cell onto bel and record pin mappings
+    set pin_map [get_pin_mappings $cell $bel]
+
+    # Reset the properties to their original values to return cell to how it was
+    set props [dict keys $config_dict]
+    tincr::reset_configuration $cell $props
+
+    return $pin_map
+}
+
+#  <cell type="FIFO18E1" bel="FIFO18E1" design="fifo1" instance="FIFO18E1_inst_9" hash="FIFO18E1 FIFO18E1 9 FIFO18 ">
+
+## Write a set of pin mappings to an xml file
+# @param cell Library cell instance
+# @param bel Bel object to place the cell on
+# @param pin_map Map containing cellPin/belPin mappings for the specific cell/bel combination
+# @param config_dict A dictionary containing propertyName/propertyValue pairs for properties which these mappings correspond to
+proc tincr::cells::write_nondefault_pin_mappings { cell bel pin_map config_dict xml_out_name} {
+    set config_dict [sortDictByKeys $config_dict]
+
+    set xml_out [open $xml_out_name w]
+
+    puts $xml_out "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+    puts $xml_out "<cells>"
+    
+    set celltype [lindex [split [get_property PRIMITIVE_TYPE $cell] .] end]
+    set beltype [lindex [split [get_property NAME $bel] /] end]
+    set hash "$celltype $beltype [dict values $config_dict]"
+    puts $xml_out "  <cell type=\"$celltype\" bel=\"$beltype\" hash=\"$hash\">"
+    puts $xml_out "    <properties>"
+    dict for {prop val} $config_dict {
+        puts $xml_out "      <property key=\"$prop\" val=\"$val\" />"
+    }
+    puts $xml_out "    </properties>"
+    
+    puts $xml_out "    <pins>"
+
+    # The cellpin->belpin mapping may be a one-to-many, need to output multiple records for each
+    # Also, in the case of multiple mappings, want them in sorted order
+    dict for {cp bp} $pin_map {
+        foreach bp2 [lsort $bp] {
+            puts $xml_out "          <pin cellPin=\"$cp\" belPin=\"$bp2\" />"
+        }
+    }
+    puts $xml_out "    </pins>"
+    puts $xml_out "  </cell>"
+    puts $xml_out "</cells>"
+    
+    close $xml_out
 }
