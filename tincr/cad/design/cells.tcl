@@ -612,7 +612,7 @@ proc tincr::cells::write_nondefault_pin_mappings { cell bel pin_map config_dict 
     # Also, in the case of multiple mappings, want them in sorted order
     dict for {cp bp} $pin_map {
         foreach bp2 [lsort $bp] {
-            puts $xml_out "          <pin cellPin=\"$cp\" belPin=\"$bp2\" />"
+            puts $xml_out "      <pin cellPin=\"$cp\" belPin=\"$bp2\" />"
         }
     }
     puts $xml_out "    </pins>"
