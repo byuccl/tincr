@@ -557,9 +557,9 @@ proc get_pin_mappings { cell bel } {
 # @return a dictionary of pin mappings
 proc tincr::cells::create_nondefault_pin_mappings { cell bel config_dict } {
     set config_dict [sortDictByKeys $config_dict]
-    dict for {k v} $config_dict {
-        puts "$k:$v"
-    }
+#    dict for {k v} $config_dict {
+#        puts "$k:$v"
+#    }
     
     # attach_nets $cell
             
