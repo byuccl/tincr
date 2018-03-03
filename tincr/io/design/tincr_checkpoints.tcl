@@ -171,8 +171,14 @@ proc ::tincr::read_tcp {args} {
     ::tincr::print_verbose "Reading netlist and constraint files..."
     set edif_runtime [report_runtime "read_edif $q ${filename}/netlist.edf" s]
     set import_fileset [create_fileset -constrset xdc_constraints]
+	
+	# Add all xdc files to the fileset (including extra ones a user may have added)
     add_files -fileset $import_fileset [glob ${filename}/*.xdc]
-    ::tincr::print_verbose "Netlist and constraints added successfully. ($edif_runtime seconds)"
+	
+	# Remove the ooc routing XDC from the fileset as it should not be applied yet
+	remove_files -fileset $import_fileset "oocRouting.xdc"
+	
+	::tincr::print_verbose "Netlist and constraints added successfully. ($edif_runtime seconds)"
 
     ::tincr::print_verbose "Linking design (this may take awhile)..."
     set link_runtime [report_runtime "link_design $q -mode $link_mode -constrset $import_fileset -part $part" s]
@@ -199,20 +205,20 @@ proc ::tincr::read_tcp {args} {
     # The same warning/bug described above occurs when trying to specify the ROUTE string of a net
     # that is a hierarchical port (placed or unplaced port with no driver).
     # Work around is also to have Vivado route these nets for us.
-    if {$link_mode=="out_of_context"} {
-	set diff_time 0
-	set hier_nets [get_nets -of [get_ports] -filter {ROUTE_STATUS == HIERPORT} -quiet]
+ #   if {$link_mode=="out_of_context"} {
+#	set diff_time 0
+#	set hier_nets [get_nets -of [get_ports] -filter {ROUTE_STATUS == HIERPORT} -quiet]
 	    
-	if {[llength $hier_nets] > 0 } {
-	    ::tincr::print_verbose "Routing [llength $hier_nets] hierarchical port nets..."		    	    
-            set diff_time [tincr::report_runtime "route_design -quiet -nets [subst -novariables {$hier_nets}]" s]
-	    ::tincr::print_verbose "Done routing hierarchical port nets...($diff_time seconds)"
-	}
-    }
+	#if {[llength $hier_nets] > 0 } {
+	#    ::tincr::print_verbose "Routing [llength $hier_nets] hierarchical port nets..."		    	    
+ #           set diff_time [tincr::report_runtime "route_design -quiet -nets [subst -novariables {$hier_nets}]" s]
+#	    ::tincr::print_verbose "Done routing hierarchical port nets...($diff_time seconds)"
+#	}
+  #  }
     
     ::tincr::print_verbose "Unlocking the design..."
     lock_design $q -level placement -unlock
-
+	
     set total_runtime [expr { $edif_runtime + $link_runtime + $diff_time} ]
     # unlock the design at the end of the import process...do we need to do this?
     ::tincr::print_verbose "Design importation complete. ($total_runtime seconds)"
