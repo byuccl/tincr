@@ -130,12 +130,26 @@ proc write_static_and_routethrough_luts { tiles channel } {
     ::tincr::print_list -header "LUT_RTS" -channel $channel $routethrough_luts
 }
 
+#TODO: This code doesn't handle VCC/GND nets properly yet.
 proc ::tincr::get_static_routes { nets channel } {	
 	foreach net $nets {
-	    set port [get_pins -filter { HD.ASSIGNED_PPLOCS !=  "" } -of_objects [get_nets $net]]
-		set port [string replace $port 0 [string first "/" $port]]
+	
+		if {$net == "const0" || $net == "const1"} {
+		    continue
+		}
 		
-		set route_string "STATIC_RT $port $net "
+	
+		# Get the name(s) of the port(s)
+		# If the net connects to more than one partition pin, there will be multiple associated ports
+	    set ports [get_pins -filter { HD.ASSIGNED_PPLOCS !=  "" } -of_objects [get_nets $net]]
+		
+		# There is almost definitely a better way to do this part.
+		set portNames ""
+		foreach port $ports {
+			set portNames "$portNames [string replace $port 0 [string first "/" $port]]"
+		}
+		
+		set route_string "STATIC_RT $net $portNames "
 		
 		# Split report_route_status by lines
 		set lines [split [report_route_status -of_objects $net -return_string] "\n"]
@@ -168,15 +182,18 @@ proc ::tincr::get_static_routes { nets channel } {
 				set line [string trimleft $line " \}*\[\]"]
 			}
 			
-		   # puts "new line: $line"
+			# Check if the first character is an opening curly brace
+			set comparison [string compare -length 1 $line "\{"]
+			if {$comparison == 0} {
+				set line "\{ [string range $line 1 end]"
+			}
 			
 			append route_string "$line "
 		}
 		#puts $route_string
 		::tincr::print $channel $route_string
 		#lappend static_routes $route_string
-	
-		
+			
 	}
 }
 
