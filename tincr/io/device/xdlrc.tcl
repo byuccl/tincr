@@ -259,7 +259,7 @@ proc ::tincr::write_xdlrc_tile { tile outfile brief} {
                 } elseif {[get_property IS_OUTPUT $site_pin]} {
                     set direction "output"
                 } else {
-                    set direction "inout"
+                    set direction "bidir"
                 }
 
                 set pin_name [tincr::site_pins get_info $site_pin name]
