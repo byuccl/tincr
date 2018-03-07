@@ -258,15 +258,17 @@ proc ::tincr::write_xdlrc_tile { tile outfile brief} {
                     set direction "input"
                 } elseif {[get_property IS_OUTPUT $site_pin]} {
                     set direction "output"
+                } else {
+                    set direction "inout"
                 }
-    
+
                 set pin_name [tincr::site_pins get_info $site_pin name]
     
                 set site_pin_wire "NULL"
                 set site_pin_node [get_nodes -quiet -of_object $site_pin]
-    
+
                 set wire_name "NULL"
-    
+
                 #This means that the pin is on an edge tile, and has no node - it still has a wire though
                 if {$site_pin_node == "" } {
                     # When the pin has no node, it isn't possible to find what wire it connects to. Since the wire doesn't go anywhere, we can just create a fake one.
@@ -276,7 +278,8 @@ proc ::tincr::write_xdlrc_tile { tile outfile brief} {
                 } else {
                     if {[get_property IS_INPUT $site_pin]} {
                         set site_pin_wire [get_wires -of_object $site_pin_node -filter IS_INPUT_PIN]
-                    } elseif {[get_property IS_OUTPUT $site_pin]} {
+                    } else {
+                        # If it's an output pin or an INOUT pin
                         set site_pin_wire [get_wires -of_object $site_pin_node -filter IS_OUTPUT_PIN]
                     }
                     set wire_name [::tincr::wires get_info $site_pin_wire name]
@@ -292,7 +295,7 @@ proc ::tincr::write_xdlrc_tile { tile outfile brief} {
     
         incr num_pins [get_property NUM_PINS $site]
     }
-    
+
     # print GND and VCC primitive sites for ultrascale devices and later
     set unique_tile_num "[get_property TILE_X $tile][get_property TILE_Y $tile]"
     set gnd_count_local 0
