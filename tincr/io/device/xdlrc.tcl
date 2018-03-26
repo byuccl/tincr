@@ -258,7 +258,7 @@ proc ::tincr::write_xdlrc_tile { tile outfile brief} {
                     set direction "input"
                 } elseif {[get_property IS_OUTPUT $site_pin]} {
                     set direction "output"
-                } else {
+                } elseif {[get_property DIRECTION $site_pin] == "INOUT"} {
                     set direction "bidir"
                 }
 
@@ -278,9 +278,10 @@ proc ::tincr::write_xdlrc_tile { tile outfile brief} {
                 } else {
                     if {[get_property IS_INPUT $site_pin]} {
                         set site_pin_wire [get_wires -of_object $site_pin_node -filter IS_INPUT_PIN]
-                    } else {
-                        # If it's an output pin or an INOUT pin
+                    } elseif {[get_property IS_OUTPUT $site_pin]} {
                         set site_pin_wire [get_wires -of_object $site_pin_node -filter IS_OUTPUT_PIN]
+                    } elseif {[get_property DIRECTION $site_pin] == "INOUT"} {
+                        set site_pin_wire [get_wires -of_object $site_pin_node -filter { IS_INPUT_PIN == "TRUE" && IS_OUTPUT_PIN == "TRUE" }]
                     }
                     set wire_name [::tincr::wires get_info $site_pin_wire name]
                 }
