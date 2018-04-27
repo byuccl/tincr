@@ -1,0 +1,39 @@
+	(primitive_def DNA_PORT 5 6
+		(pin CLK CLK input)
+		(pin DIN DIN input)
+		(pin DOUT DOUT output)
+		(pin READ READ input)
+		(pin SHIFT SHIFT input)
+		(element CLK 1
+			(pin CLK output)
+			(conn CLK CLK ==> DNA_PORT CLK)
+		)
+		(element DIN 1
+			(pin DIN output)
+			(conn DIN DIN ==> DNA_PORT DIN)
+		)
+		(element DOUT 1
+			(pin DOUT input)
+			(conn DOUT DOUT <== DNA_PORT DOUT)
+		)
+		(element READ 1
+			(pin READ output)
+			(conn READ READ ==> DNA_PORT READ)
+		)
+		(element SHIFT 1
+			(pin SHIFT output)
+			(conn SHIFT SHIFT ==> DNA_PORT SHIFT)
+		)
+		(element DNA_PORT 5 # BEL
+			(pin CLK input)
+			(pin DIN input)
+			(pin DOUT output)
+			(pin READ input)
+			(pin SHIFT input)
+			(conn DNA_PORT DOUT ==> DOUT DOUT)
+			(conn DNA_PORT CLK <== CLK CLK)
+			(conn DNA_PORT DIN <== DIN DIN)
+			(conn DNA_PORT READ <== READ READ)
+			(conn DNA_PORT SHIFT <== SHIFT SHIFT)
+		)
+	)

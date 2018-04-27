@@ -24,6 +24,8 @@ namespace eval ::tincr::designs {
         clear \
         diff \
         get_route_throughs \
+		get_routed_tilelength \
+		get_critical_delay \
         edif \
         get_buses \
         get_design_buses \
@@ -396,6 +398,22 @@ proc ::tincr::designs::get_route_throughs {} {
     }
     
     return $route_throughs
+}
+
+## Get the routed wire-length in terms of tiles that nets traverse
+proc ::tincr::designs::get_routed_tilelength {} {
+    set tile_length 0
+
+    foreach net [get_nets] {
+	    incr tile_length [::tincr::nets::get_num_tiles $net]
+    }
+    
+    return $tile_length
+}
+
+proc ::tincr::designs::get_critical_delay {} {
+    # Use "report_property [get_timing_paths]" to see other delays of interest
+    return [get_property DATAPATH_DELAY [get_timing_paths -nworst 1]]
 }
 
 ## Write this design to an electronic design interchange format (EDIF) file.

@@ -1,0 +1,35 @@
+	(primitive_def IOPAD 1 5
+		(pin IO IO input)
+		(element BUFBIDI 2 # BEL
+			(pin INOUT0 input)
+			(pin INOUT1 input)
+			(conn BUFBIDI INOUT0 ==> PULL PAD)
+			(conn BUFBIDI INOUT0 ==> PAD PAD)
+			(conn BUFBIDI INOUT1 ==> IO IO)
+			(conn BUFBIDI INOUT0 <== PULL PAD)
+			(conn BUFBIDI INOUT0 <== PAD PAD)
+			(conn BUFBIDI INOUT1 <== IO IO)
+		)
+		(element IO 1
+			(pin IO input)
+			(conn IO IO ==> BUFBIDI INOUT1)
+			(conn IO IO <== BUFBIDI INOUT1)
+		)
+		(element PULL 1 # BEL
+			(pin PAD input)
+			(conn PULL PAD ==> BUFBIDI INOUT0)
+			(conn PULL PAD ==> PAD PAD)
+			(conn PULL PAD <== BUFBIDI INOUT0)
+			(conn PULL PAD <== PAD PAD)
+		)
+		(element PULLTYPE 0
+			(cfg PULLUP)
+		)
+		(element PAD 1 # BEL
+			(pin PAD input)
+			(conn PAD PAD ==> BUFBIDI INOUT0)
+			(conn PAD PAD ==> PULL PAD)
+			(conn PAD PAD <== BUFBIDI INOUT0)
+			(conn PAD PAD <== PULL PAD)
+		)
+	)
