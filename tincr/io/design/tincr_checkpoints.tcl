@@ -127,13 +127,39 @@ proc ::tincr::write_rscp {args} {
     set ::tincr::verbose $old_verbose
 }
 
+
+proc ::tincr::merge_rm_static {rm_tcp rm_dcp static_dcp} {
+    #TODO: Get RM, RP names, etc. from design.info
+	set rp0_name "reconfig_alu"
+	#set rm0_name "add"
+	
+	
+	# Open static design
+	open_checkpoint $static_dcp
+
+	# Assign RM block to RP
+	read_checkpoint -cell ${rp0_name} $rm_dcp
+	
+	# "Remove" the partition pins from the design. If this is not done, Vivado will report 
+	# that the nets aren't routed to their partition pins (even though they really are).
+	reset_property HD.PARTPIN_LOCS [get_pins -filter {HD.ASSIGNED_PPLOCS != ""}]
+	
+	# Once the partition pins are removed, apply the partition pin routes. Vivado will consider 
+	# these nets to be fully routed since it no longer has a concept of partition pins in the design.
+	read_xdc ${rm_tcp}/partpin_routing.xdc
+	
+	
+
+
+}
+
 ## Parses a TCP design representation and creates an equivalent design in Vivado. 
 #   The TCP format is extensively documented in the RapidSmith2 tech report at
 #   <a href="https://github.com/byuccl/RapidSmith2/tree/master/doc">https://github.com/byuccl/RapidSmith2/tree/master/doc</a>
 #   and Thomas Townsend's Masters thesis. The required rules to follow when formatting TCP is also
 #   found in TT's Masters thesis published at BYU.
 #
-#   USAGE: tincr::read_tcp [-quiet] [-verbose] [-ooc] filename
+#   USAGE: tincr::read_tcp [-quiet] [-verbose] [-ooc] [-static staticDCP.dcp] filename
 #   
 #   @param args Argument list shown in the usage statement above. The "-quiet " flag
 #       can be used to suppress console output. The "-verbose" flag can be used to print
@@ -144,7 +170,9 @@ proc ::tincr::read_tcp {args} {
     set quiet 0
     set verbose 0
     set ooc 0
-    ::tincr::parse_args {} {quiet verbose ooc} {} {filename} $args
+	set static_dcp ""
+	
+    ::tincr::parse_args {static_dcp} {quiet verbose ooc} {} {filename} $args
     
     set q "-quiet"
     set ::tincr::verbose 1
@@ -157,7 +185,8 @@ proc ::tincr::read_tcp {args} {
     }
     
     # Set the link mode to "out_of_context" or "default" based on the command arguments
-    if {$ooc} {
+	# If a static_dcp is specified, ooc mode is implied.
+    if {$ooc || ($static_dcp != "")} {
         set link_mode "out_of_context"
     } else {
         set link_mode "default"
@@ -175,8 +204,10 @@ proc ::tincr::read_tcp {args} {
 	# Add all xdc files to the fileset (including extra ones a user may have added)
     add_files -fileset $import_fileset [glob ${filename}/*.xdc]
 	
-	# Remove the ooc routing XDC from the fileset as it should not be applied yet
-	remove_files -fileset $import_fileset "oocRouting.xdc"
+	if {$static_dcp != ""} {
+	    # Remove the partition pin routing XDC from the fileset as it should not be applied yet
+	    remove_files -fileset $import_fileset "partpin_routing.xdc"
+	}
 	
 	::tincr::print_verbose "Netlist and constraints added successfully. ($edif_runtime seconds)"
 
@@ -200,24 +231,27 @@ proc ::tincr::read_tcp {args} {
             ::tincr::print_verbose "Done routing...($diff_time seconds)"
         }
     }
-	
-    # Complete the route for nets with a hierarchical source port.
-    # The same warning/bug described above occurs when trying to specify the ROUTE string of a net
-    # that is a hierarchical port (placed or unplaced port with no driver).
-    # Work around is also to have Vivado route these nets for us.
- #   if {$link_mode=="out_of_context"} {
-#	set diff_time 0
-#	set hier_nets [get_nets -of [get_ports] -filter {ROUTE_STATUS == HIERPORT} -quiet]
-	    
-	#if {[llength $hier_nets] > 0 } {
-	#    ::tincr::print_verbose "Routing [llength $hier_nets] hierarchical port nets..."		    	    
- #           set diff_time [tincr::report_runtime "route_design -quiet -nets [subst -novariables {$hier_nets}]" s]
-#	    ::tincr::print_verbose "Done routing hierarchical port nets...($diff_time seconds)"
-#	}
-  #  }
-    
+	   
     ::tincr::print_verbose "Unlocking the design..."
     lock_design $q -level placement -unlock
+	
+	if {$static_dcp != ""} {
+	    # Save the RM dcp in preparation for merging it with the static design.
+	    # TODO: Parameterize
+	    write_checkpoint rm_add.dcp -force
+		close_project
+	
+	    # Merge the RM and the static designs
+	    tincr::merge_rm_static $filename "rm_add.dcp" $static_dcp 
+	
+	    # "Remove" the partition pins from the design. If this is not done, Vivado will report 
+	    # that the nets aren't routed to their partition pins (even though they really are).
+	
+	    # Once the partition pins are removed, apply the partition pin routes. Vivado will consider 
+	    # these nets to be fully routed since it no longer has a concept of partition pins in the design.
+	}
+	
+
 	
     set total_runtime [expr { $edif_runtime + $link_runtime + $diff_time} ]
     # unlock the design at the end of the import process...do we need to do this?
