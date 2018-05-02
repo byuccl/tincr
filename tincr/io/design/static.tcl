@@ -10,7 +10,8 @@ namespace eval ::tincr:: {
     get_tile_pips \
     get_site_routethroughs \
     write_static_and_routethrough_luts \
-    get_static_routes
+    get_static_routes \
+	write_part_pins
 }
 
 ## Identifies <b>used</b> site routethroughs present in a list of tiles 
@@ -53,6 +54,26 @@ proc ::tincr::get_site_routethroughs { tiles channel } {
     # print the site routethroughs to the pr static file
     ::tincr::print_list -header "SITE_RTS" -channel $channel $site_rts
 }
+
+## Finds all out-of-context ports in a design and adds them to the static_resources.rsc file. 
+#   This only occurs for designs implemented in out-of-context mode. Out-of-context ports
+#   are those that aren't mapped to PAD BELs, but are partially routed to a specific
+#   wire in the device. The device wire represents the start/end wire of nets connected
+#   to the port.
+#
+# @param channel File handle to write the ooc ports to
+proc ::tincr::write_part_pins {channel} {
+    # for OOC checkpoints with hierarchical ports, print the starting wires for each port
+    # TODO: could change this to have a token of "OOC_PORTS" with a list of ports all on one line, but his is oke for now
+    foreach part_pin [get_pins -filter HD.ASSIGNED_PPLOCS!="" -quiet] {
+	     set name_start [incr [string last "/" $part_pin]]
+	     set pin_name [string range $part_pin $name_start end]
+		 set direction [get_property DIRECTION [get_pins $part_pin]]
+		 # Change the direction to be from the perspective of the RM (OOC) design
+		 set direction [expr {$direction eq "IN" ? "OUT" : "IN"}] 
+         puts $channel "OOC_PORT $pin_name [string map {" " "/"} [get_property HD.ASSIGNED_PPLOCS $part_pin]] $direction" 
+    }
+} 
 
 ## Searches through the given list of tiles, identifies used PIPs, and
 # writes these used PIPs to the PR static export file.
@@ -130,6 +151,7 @@ proc write_static_and_routethrough_luts { tiles channel } {
     ::tincr::print_list -header "LUT_RTS" -channel $channel $routethrough_luts
 }
 
+##
 #TODO: This code doesn't handle VCC/GND nets properly yet.
 proc ::tincr::get_static_routes { nets channel } {	
 	foreach net $nets {
@@ -260,6 +282,9 @@ proc ::tincr::write_static_resources { static_dcp pblock filename } {
     set diff_time [tincr::report_runtime "get_static_routes [subst -novariables {$static_nets $channel_out}]" s]
 	::tincr::print_verbose "Found static portions of nets...($diff_time seconds)"
     
+	# 5. Get partition pins (OOC ports)
+	set diff_time [tincr::report_runtime "write_part_pins [subst -novariables {$channel_out}]" s]
+	::tincr::print_verbose "Wrote partition pins...($diff_time seconds)"
     
     close_project
     close $channel_out

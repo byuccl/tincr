@@ -845,6 +845,7 @@ proc write_ooc_ports {channel} {
     if {[get_property IS_BLOCK [current_design]]} {
         # TODO: could change this to have a token of "OOC_PORTS" with a list of ports all on one line, but his is oke for now
         foreach ooc_port [get_ports -filter HD.ASSIGNED_PPLOCS!="" -quiet] {
+		     #TODO: Remove the hierarchical part of it? i.e. alu_reconfig/a -> a
              puts $channel "OOC_PORT $ooc_port [string map {" " "/"} [get_property HD.ASSIGNED_PPLOCS $ooc_port]]" 
         }
     }
