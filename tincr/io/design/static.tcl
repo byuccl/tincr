@@ -66,7 +66,8 @@ proc ::tincr::write_part_pins {channel} {
     # for OOC checkpoints with hierarchical ports, print the starting wires for each port
     # TODO: could change this to have a token of "OOC_PORTS" with a list of ports all on one line, but his is oke for now
     foreach part_pin [get_pins -filter HD.ASSIGNED_PPLOCS!="" -quiet] {
-	     set name_start [incr [string last "/" $part_pin]]
+	     set name_start [string last "/" $part_pin]
+	     incr name_start		 
 	     set pin_name [string range $part_pin $name_start end]
 		 set direction [get_property DIRECTION [get_pins $part_pin]]
 		 # Change the direction to be from the perspective of the RM (OOC) design
