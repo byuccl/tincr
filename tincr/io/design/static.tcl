@@ -65,14 +65,24 @@ proc ::tincr::get_site_routethroughs { tiles channel } {
 proc ::tincr::write_part_pins {channel} {
     # for OOC checkpoints with hierarchical ports, print the starting wires for each port
     # TODO: could change this to have a token of "OOC_PORTS" with a list of ports all on one line, but his is oke for now
+	
+	#TODO: Should I change the placement.rsc to also use nodes instead of wires?
     foreach part_pin [get_pins -filter HD.ASSIGNED_PPLOCS!="" -quiet] {
 	     set name_start [string last "/" $part_pin]
 	     incr name_start		 
 	     set pin_name [string range $part_pin $name_start end]
 		 set direction [get_property DIRECTION [get_pins $part_pin]]
+		 
 		 # Change the direction to be from the perspective of the RM (OOC) design
 		 set direction [expr {$direction eq "IN" ? "OUT" : "IN"}] 
-         puts $channel "OOC_PORT $pin_name [string map {" " "/"} [get_property HD.ASSIGNED_PPLOCS $part_pin]] $direction" 
+		 
+		 # Get the partition pin's wire
+		 set wire_name [string map {" " "/"} [get_property HD.ASSIGNED_PPLOCS $part_pin]]
+		 
+		 # Use the wire to get the partition pin's node
+		 set node [get_nodes -of_object [get_wires $wire_name]]
+		 
+         puts $channel "OOC_PORT $pin_name $node $direction" 
     }
 } 
 
@@ -157,7 +167,7 @@ proc write_static_and_routethrough_luts { tiles channel } {
 proc ::tincr::get_static_routes { nets channel } {	
 	foreach net $nets {
 	
-		if {$net == "const0" || $net == "const1"} {
+		if { ($net eq "<const0>") || ($net eq "<const1>") || ($net eq "const0") || ($net eq "const1")} {
 		    continue
 		}
 		
