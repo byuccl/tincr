@@ -7,6 +7,7 @@ package require tincr.cad.util 0.0
 namespace eval ::tincr:: {
     namespace export \
         write_tcp \
+        read_rm_tcp \
         read_tcp \
         write_design_info \
         write_placement_xdc \
@@ -63,11 +64,11 @@ proc ::tincr::write_tcp {filename} {
 proc ::tincr::write_rscp {args} {
     set quiet 0
     #set ooc 0
-	set mode ""
+    set mode ""
     set partName ""
     set staticDCP ""
     set pblock ""
-	
+    
     ::tincr::parse_args {mode partName staticDCP pblock} {quiet} {} {filename} $args
     set filename [::tincr::add_extension ".rscp" $filename]
     file mkdir $filename
@@ -116,46 +117,69 @@ proc ::tincr::write_rscp {args} {
     
     # Write static used resources information
     if {$staticDCP != "" && $pblock != ""} {
-	#TODO: Pass the pblock directly (get it as an arg to the main procedure).
-	# There's no need to have more than one pblock's used resources in this file.
-	set start_time [clock clicks -microseconds]
-	::tincr::write_static_resources $staticDCP $pblock "${filename}/static_resources.rsc"
-	set end_time [clock clicks -microseconds]
-	::tincr::print_verbose "Static Used Resources Done...([::tincr::format_time [expr $end_time -$start_time] s]s)"
+    #TODO: Pass the pblock directly (get it as an arg to the main procedure).
+    # There's no need to have more than one pblock's used resources in this file.
+    set start_time [clock clicks -microseconds]
+    ::tincr::write_static_resources $staticDCP $pblock "${filename}/static_resources.rsc"
+    set end_time [clock clicks -microseconds]
+    ::tincr::print_verbose "Static Used Resources Done...([::tincr::format_time [expr $end_time -$start_time] s]s)"
     }
      
     ::tincr::print_verbose "Successfully Created RapidSmith2 Checkpoint!"
     set ::tincr::verbose $old_verbose
 }
 
+## Reads a RM (reconfigurable module) TCP design into a corresponding static DCP design in Vivado.
+#
+# USAGE: tincr::read_rm_tcp [-quiet] [-verbose] [-static staticDCP.dcp] [-rp_name rp_name] filename
+#   
+#   @param args Argument list shown in the usage statement above. The "-quiet " flag
+#       can be used to suppress console output. The "-verbose" flag can be used to print
+#       all messages to the console. This is useful for printing error messages.
+#
+proc ::tincr::read_rm_tcp {args} {
+    set quiet 0
+    set verbose 0
+    set static_dcp ""
+    set rp_name ""
 
-proc ::tincr::merge_rm_static {rm_tcp rm_dcp static_dcp rp_name} {
-    #TODO: Get RM, RP names, etc. from design.info
-	#set rp0_name "reconfig_alu"
-	#set rm0_name "add"
-	
-	
-	# Open static design
-	open_checkpoint $static_dcp
+    ::tincr::parse_args {static_dcp rp_name} {quiet verbose} {} {filename} $args
+    
+    set q "-quiet"
+    set ::tincr::verbose 1
 
-	# Assign RM block to RP
-	# Use quiet to prevent "WARNING: [Vivado 12-4420] Skip HD.PARTPIN_LOCS assignment on port <port>. 
-	# It already has PartPinLoc assigned as <assignment>.
-	# Not sure of a better solution for this.
-	read_checkpoint -cell ${rp_name} $rm_dcp -quiet
-	
-	# "Remove" the partition pins from the design. If this is not done, Vivado will report 
-	# that the nets aren't routed to their partition pins (even though they really are).
-	#reset_property HD.PARTPIN_LOCS [get_pins -filter {HD.ASSIGNED_PPLOCS != ""}]
-	
-	# Once the partition pins are removed, apply the partition pin routes. Vivado will consider 
-	# these nets to be fully routed since it no longer has a concept of partition pins in the design.
-	read_xdc ${rm_tcp}/partpin_routing.xdc
-	
-	
+    # quiet has priority over verbose if both are specified
+    if {$quiet} {
+        set ::tincr::verbose 0     
+    } elseif {$verbose} {
+        set q "-verbose"
+    }
+    
+    # TODO: Ensure that staticDCP and rp_name are specified.
+    # TODO: Throw errors if all necessary files are not found.
+    # TODO: Apply user constraints.
+      
+    # Open static design
+    open_checkpoint $static_dcp
 
-
+    # Update the RP blackbox with the RM netlist
+    set edif_runtime [report_runtime "update_design -cells $rp_name -from_file ${filename}/netlist.edf" s]
+    
+    # Place and route the RM
+    set place_runtime [report_runtime "read_xdc -cells $rp_name ${filename}/placement.xdc" s]
+    set route_runtime [report_runtime "read_xdc -cells $rp_name ${filename}/routing.xdc" s]
+    
+    # Route the partition pin nets
+    set partpin_runtime [report_runtime "read_xdc ${filename}/partpin_routing.xdc" s]
+    
+    ::tincr::print_verbose "Unlocking the design..."
+    lock_design $q -level placement -unlock
+       
+    set total_runtime [expr { $edif_runtime + $place_runtime + $route_runtime + $partpin_runtime} ]
+    ::tincr::print_verbose "RM design importation complete. ($total_runtime seconds)"    
 }
+
+
 
 ## Parses a TCP design representation and creates an equivalent design in Vivado. 
 #   The TCP format is extensively documented in the RapidSmith2 tech report at
@@ -163,7 +187,7 @@ proc ::tincr::merge_rm_static {rm_tcp rm_dcp static_dcp rp_name} {
 #   and Thomas Townsend's Masters thesis. The required rules to follow when formatting TCP is also
 #   found in TT's Masters thesis published at BYU.
 #
-#   USAGE: tincr::read_tcp [-quiet] [-verbose] [-ooc] [-static staticDCP.dcp] [-rp_name rp_name] filename
+#   USAGE: tincr::read_tcp [-quiet] [-verbose] [-ooc] filename
 #   
 #   @param args Argument list shown in the usage statement above. The "-quiet " flag
 #       can be used to suppress console output. The "-verbose" flag can be used to print
@@ -174,8 +198,8 @@ proc ::tincr::read_tcp {args} {
     set quiet 0
     set verbose 0
     set ooc 0
-	set static_dcp ""
-	set rp_name ""
+    set static_dcp ""
+    set rp_name ""
 
     ::tincr::parse_args {static_dcp rp_name} {quiet verbose ooc} {} {filename} $args
     
@@ -190,13 +214,13 @@ proc ::tincr::read_tcp {args} {
     }
     
     # Set the link mode to "out_of_context" or "default" based on the command arguments
-	# If a static_dcp is specified, ooc mode is implied.
+    # If a static_dcp is specified, ooc mode is implied.
     if {$ooc || ($static_dcp != "")} {
         set link_mode "out_of_context"
     } else {
         set link_mode "default"
     }
-
+    
     set filename [::tincr::add_extension ".tcp" $filename]
 
     ::tincr::print_verbose "Parsing device information file..." 
@@ -205,21 +229,15 @@ proc ::tincr::read_tcp {args} {
     ::tincr::print_verbose "Reading netlist and constraint files..."
     set edif_runtime [report_runtime "read_edif $q ${filename}/netlist.edf" s]
     set import_fileset [create_fileset -constrset xdc_constraints]
-	
-	# Add all xdc files to the fileset (including extra ones a user may have added)
+  
+    # Add all xdc files to the fileset (including extra ones a user may have added)
     add_files -fileset $import_fileset [glob ${filename}/*.xdc]
-	
-	if {$static_dcp != ""} {
-	    # Remove the partition pin routing XDC from the fileset as it should not be applied yet
-	    remove_files -fileset $import_fileset "partpin_routing.xdc"
-	}
-	
-	::tincr::print_verbose "Netlist and constraints added successfully. ($edif_runtime seconds)"
-
+        
+    ::tincr::print_verbose "Netlist and constraints added successfully. ($edif_runtime seconds)"
     ::tincr::print_verbose "Linking design (this may take awhile)..."
     set link_runtime [report_runtime "link_design $q -mode $link_mode -constrset $import_fileset -part $part" s]
     ::tincr::print_verbose "Design linked successfully. ($link_runtime seconds)"
-    
+        
     # complete the route for differential pair nets
     # there is a bug in Vivado where you can't specify the ROUTE string of a net
     # if the source is a port. It will give the error "ERROR: [Designutils 20-949] No driver found on net clock_N[0]"
@@ -235,34 +253,13 @@ proc ::tincr::read_tcp {args} {
             set diff_time [tincr::report_runtime "route_design -quiet -nets [subst -novariables {$differential_nets}]" s]
             ::tincr::print_verbose "Done routing...($diff_time seconds)"
         }
-    }
-	   
+    }       
+  
+    # unlock the design at the end of the import process...do we need to do this?
     ::tincr::print_verbose "Unlocking the design..."
     lock_design $q -level placement -unlock
-	
-	if {$static_dcp != ""} {
-	    # Save the RM dcp in preparation for merging it with the static design.
-	    # TODO: Parameterize. HIGH PRIORITY
-		# TODO: Better naming for rm_dcp
-		#TODO: Remove all "HD.PARTPIN_LOCS" properties? So I don't get the warnings?
-		#set rp_name "reconfig_carryAdd8"
-	    write_checkpoint rm_0.dcp -force
-		close_project
-	
-	    # Merge the RM and the static designs
-	    tincr::merge_rm_static $filename "rm_0.dcp" $static_dcp $rp_name 
-	
-	    # "Remove" the partition pins from the design. If this is not done, Vivado will report 
-	    # that the nets aren't routed to their partition pins (even though they really are).
-	
-	    # Once the partition pins are removed, apply the partition pin routes. Vivado will consider 
-	    # these nets to be fully routed since it no longer has a concept of partition pins in the design.
-	}
-	
 
-	
     set total_runtime [expr { $edif_runtime + $link_runtime + $diff_time} ]
-    # unlock the design at the end of the import process...do we need to do this?
     ::tincr::print_verbose "Design importation complete. ($total_runtime seconds)"
 }
 
@@ -279,7 +276,7 @@ proc ::tincr::sort_cells_for_export { cells } {
     set ff_5 [list]
 
     # TODO: Eventually, we may have to look through all of the cells
-    #		(internal cells of macros) to support macros.
+    #       (internal cells of macros) to support macros.
     foreach cell $cells {
         if {[cells is_placed $cell]} {
             set group [get_property PRIMITIVE_GROUP $cell]
@@ -311,17 +308,17 @@ proc ::tincr::sort_cells_for_export { cells } {
 #   option is used as the part identifier in the design.info if specified.
 #   The filename parameter is the name for the generated design.info.
 proc ::tincr::write_design_info {args} {
-	set mode ""
+    set mode ""
     set partName ""
     ::tincr::parse_args {mode partName} {} {} {filename} $args
 
     set filename [::tincr::add_extension ".info" $filename]
 
     set outfile [open $filename w]
-	
+    
     # if no partName is specified, get the part from the design
     if {$partName == ""} {
-	    set partName "[get_property PART [current_design]]"
+        set partName "[get_property PART [current_design]]"
     }
 
     puts $outfile "part=$partName"
@@ -329,8 +326,8 @@ proc ::tincr::write_design_info {args} {
     if { ($mode eq "ooc") || ($mode eq "out_of_context") } {
         puts $outfile "mode=out_of_context"
     } elseif { ($mode eq "rm") || ($mode eq "reconfig_module") } {
-	    puts $outfile "mode=reconfig_module"
-	} else {
+        puts $outfile "mode=reconfig_module"
+    } else {
         puts $outfile "mode=regular"
     }
     
@@ -528,9 +525,9 @@ proc ::tincr::write_macros { {filename macros.xml } } {
     # I'm assuming the "PRIMITIVE_COUNT > 1" part of this is here due to the assumption that a macro will have more
     # than one primitive inside of it. I think this assumption is broken when dealing with RMs...
     set macro_cells [get_cells -filter {PRIMITIVE_LEVEL==MACRO || (PRIMITIVE_COUNT > 1 && PARENT=="")} -quiet]
-	
+    
     #set macro_cells [get_cells -hierarchical -quiet]
-	
+    
     #set macro_cells [get_cells -filter {PRIMITIVE_LEVEL==MACRO || (PRIMITIVE_COUNT > 0 && PARENT=="")} -quiet]
     set macros_to_write [list]
     set macros_in_design [list]
@@ -620,7 +617,7 @@ proc ::tincr::write_placement_rs2 { {filename placement.rsc} }  {
         set bel_toks [split [get_property BEL $cell] "."]
         
         # NOTE: We have to do this, because the SITE_TYPE property of sites are not updated correctly
-        #	   when you place cells there. BUFG is an example
+        #      when you place cells there. BUFG is an example
         set sitetype [lindex $bel_toks 0]
         set bel [lindex $bel_toks end]
         set tile [get_tile -of $site]
@@ -725,11 +722,9 @@ proc ::tincr::get_internal_macro_nets {macro} {
 #       is a list of internal macro nets so the routing information for these nets can be exported.
 proc ::tincr::write_routing_rs2 {args} {
     set global_logic 0
-	puts "parse da args"
     ::tincr::parse_args {} {global_logic} {} {filename internal_net_map} $args
 
     # create the routing file
-	puts "make da routing file"
     set filename [::tincr::add_extension ".rsc" $filename]
     set channel_out [open $filename w]
 
@@ -744,17 +739,15 @@ proc ::tincr::write_routing_rs2 {args} {
     write_static_and_routethrough_luts $used_sites $channel_out
     
     # write out-of-context hierarchical ports to the file
-	
-	# TODO: Don't do this for partial reconfig mode?
-	puts "write ooc ports"
+    
+    # TODO: Don't do this for partial reconfig mode?
     write_ooc_ports $channel_out
-	puts "wrote ooc ports"
     
     # select which nets to export (do not get the hierarchical nets)
     if {$global_logic} {
-    	set nets [get_nets -quiet]
+        set nets [get_nets -quiet]
     } else {
-    	set nets [get_nets -quiet -filter {TYPE != POWER && TYPE != GROUND}]
+        set nets [get_nets -quiet -filter {TYPE != POWER && TYPE != GROUND}]
     }
     
     # Add internal hierarchical nets to the list of nets whose routing information should be printed 
@@ -861,7 +854,7 @@ proc write_ooc_ports {channel} {
     if {[get_property IS_BLOCK [current_design]]} {
         # TODO: could change this to have a token of "OOC_PORTS" with a list of ports all on one line, but his is oke for now
         foreach ooc_port [get_ports -filter HD.ASSIGNED_PPLOCS!="" -quiet] {
-		     #TODO: Remove the hierarchical part of it? i.e. alu_reconfig/a -> a
+             #TODO: Remove the hierarchical part of it? i.e. alu_reconfig/a -> a
              puts $channel "OOC_PORT $ooc_port [string map {" " "/"} [get_property HD.ASSIGNED_PPLOCS $ooc_port]]" 
         }
     }
