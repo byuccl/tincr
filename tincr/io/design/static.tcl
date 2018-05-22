@@ -6,12 +6,7 @@ package require tincr.cad.util 0.0
 
 namespace eval ::tincr:: {
     namespace export \
-    write_static_resources \
-    get_tile_pips \
-    get_site_routethroughs \
-    write_static_and_routethrough_luts \
-    get_static_routes \
-	write_part_pins
+    write_static_resources 
 }
 
 ## Identifies <b>used</b> site routethroughs present in a list of tiles 
@@ -20,7 +15,7 @@ namespace eval ::tincr:: {
 #
 # @param tiles List of tiles in the reconfigurable region (pblock)
 # @param channel Output file handle
-proc ::tincr::get_site_routethroughs { tiles channel } {
+proc get_rp_site_routethroughs { tiles channel } {
     set site_rts [list]
     set nets [get_nets -hierarchical]
 
@@ -62,7 +57,7 @@ proc ::tincr::get_site_routethroughs { tiles channel } {
 #   to the port.
 #
 # @param channel File handle to write the ooc ports to
-proc ::tincr::write_part_pins {channel} {
+proc write_part_pins {channel} {
     # for OOC checkpoints with hierarchical ports, print the starting wires for each port
     # TODO: could change this to have a token of "OOC_PORTS" with a list of ports all on one line, but his is oke for now
 	
@@ -91,7 +86,7 @@ proc ::tincr::write_part_pins {channel} {
 #
 # @param tiles List of possible tiles with used PIPs (in a reconfigurable region)
 # @param channel Output file handle
-proc ::tincr::get_used_pips { tiles channel } {
+proc get_used_rp_pips { tiles channel } {
     set used_pips [list]
     set nets [get_nets -hierarchical]
 
@@ -120,7 +115,7 @@ proc ::tincr::get_used_pips { tiles channel } {
 #
 # @param site_list List of <b>used</b> sites in the reconfigurable region.
 # @param channel Output file handle
-proc write_static_and_routethrough_luts { tiles channel } {
+proc get_rp_static_and_routethrough_luts { tiles channel } {
     set vcc_sources [list]
     set gnd_sources [list]
     set routethrough_luts [list]
@@ -164,7 +159,7 @@ proc write_static_and_routethrough_luts { tiles channel } {
 
 ##
 #TODO: This code doesn't handle VCC/GND nets properly yet.
-proc ::tincr::get_static_routes { nets channel } {	
+proc get_static_routes { nets channel } {	
 	foreach net $nets {
 	
 		if { ($net eq "<const0>") || ($net eq "<const1>") || ($net eq "const0") || ($net eq "const1")} {
@@ -273,19 +268,19 @@ proc ::tincr::write_static_resources { static_dcp pblock filename } {
     # are possible types.
     # QUESTION: Is this a complete list of possible tile types with switchboxes?
     set pip_tiles [get_tiles -filter "(ROW >= $min_row && ROW <= $max_row && COLUMN <= $max_col && COLUMN >= $min_col) && (TILE_TYPE == INT_L || TILE_TYPE == INT_R || TILE_TYPE == CLBLM_L || TILE_TYPE == CLBLM_R || TILE_TYPE == CLBLL_L || TILE_TYPE == CLBLL_R) "] 
-    set diff_time [tincr::report_runtime "get_used_pips [subst -novariables {$pip_tiles $channel_out}]" s]
+    set diff_time [tincr::report_runtime "get_used_rp_pips [subst -novariables {$pip_tiles $channel_out}]" s]
     ::tincr::print_verbose "Found used PIPs...($diff_time seconds)"
     
     # 2. Get static and routethrough LUT BELs.
     # Get used sites within the reconfigurable region.
-    # TODO: Don't duplicate the write_static_and_routethrough_luts process.
+    # TODO: Don't duplicate the get_rp_static_and_routethrough_luts process.
     set tiles [get_tiles -filter "(ROW >= $min_row && ROW <= $max_row && COLUMN <= $max_col && COLUMN >= $min_col)"] 
     set site_list [get_sites -quiet -filter IS_USED -of_objects $tiles] 
-    set diff_time [tincr::report_runtime "write_static_and_routethrough_luts [subst -novariables {$site_list $channel_out}]" s]
+    set diff_time [tincr::report_runtime "get_rp_static_and_routethrough_luts [subst -novariables {$site_list $channel_out}]" s]
     ::tincr::print_verbose "Found static & route-through LUTs...($diff_time seconds)"
 
     # 3. Get site rouethroughs
-    set diff_time [tincr::report_runtime "get_site_routethroughs [subst -novariables {$tiles $channel_out}]" s]
+    set diff_time [tincr::report_runtime "get_rp_site_routethroughs [subst -novariables {$tiles $channel_out}]" s]
     ::tincr::print_verbose "Found site route-throughs...($diff_time seconds)"
     
     # 4. Get complete static routes

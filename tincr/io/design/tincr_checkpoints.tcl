@@ -117,12 +117,12 @@ proc ::tincr::write_rscp {args} {
     
     # Write static used resources information
     if {$staticDCP != "" && $pblock != ""} {
-    #TODO: Pass the pblock directly (get it as an arg to the main procedure).
-    # There's no need to have more than one pblock's used resources in this file.
-    set start_time [clock clicks -microseconds]
-    ::tincr::write_static_resources $staticDCP $pblock "${filename}/static_resources.rsc"
-    set end_time [clock clicks -microseconds]
-    ::tincr::print_verbose "Static Used Resources Done...([::tincr::format_time [expr $end_time -$start_time] s]s)"
+        #TODO: Pass the pblock directly (get it as an arg to the main procedure).
+        # There's no need to have more than one pblock's used resources in this file.
+        set start_time [clock clicks -microseconds]
+        ::tincr::write_static_resources $staticDCP $pblock "${filename}/static_resources.rsc"
+        set end_time [clock clicks -microseconds]
+        ::tincr::print_verbose "Static Used Resources Done...([::tincr::format_time [expr $end_time -$start_time] s]s)"
     }
      
     ::tincr::print_verbose "Successfully Created RapidSmith2 Checkpoint!"
@@ -157,13 +157,15 @@ proc ::tincr::read_rm_tcp {args} {
     
     # TODO: Ensure that staticDCP and rp_name are specified.
     # TODO: Throw errors if all necessary files are not found.
-    # TODO: Apply user constraints.
       
     # Open static design
     open_checkpoint $static_dcp
 
+    
+    # Should I lock_design -level routing before I update_design? Seems like Xilinx might do this.
+    lock_design -level routing
     # Update the RP blackbox with the RM netlist
-    set edif_runtime [report_runtime "update_design -cells $rp_name -from_file ${filename}/netlist.edf" s]
+    set edif_runtime [report_runtime "update_design -verbose -cells $rp_name -from_file ${filename}/netlist.edf" s]
     
     # Place and route the RM
     set place_runtime [report_runtime "read_xdc -cells $rp_name ${filename}/placement.xdc" s]
@@ -171,6 +173,13 @@ proc ::tincr::read_rm_tcp {args} {
     
     # Route the partition pin nets
     set partpin_runtime [report_runtime "read_xdc ${filename}/partpin_routing.xdc" s]
+    
+    # TODO: Apply all other user constraints.
+    
+    # TODO: Also apply the static constraints again. For some reason, Vivado needs the port constraints set again, otherwise
+    # it will throw "ERROR: [DRC 23-20] Rule violation (UCIO-1) Unconstrained Logical Port", complaining that the ports aren'take
+    # constrained, even if they were already constrained in the static design.
+    
     
     ::tincr::print_verbose "Unlocking the design..."
     lock_design $q -level placement -unlock
