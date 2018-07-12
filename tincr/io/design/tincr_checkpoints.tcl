@@ -835,7 +835,7 @@ proc write_net_routing { net_list channel } {
             if {$gnd_net == ""} {
                 set gnd_net $net
             } 
-        } elseif {$status == "INTRASITE"} {
+        } elseif {($status == "INTRASITE") && ([get_property PIN_COUNT $net] != 0)} {
             # mark nets as intrasite in the output routing file
             puts $channel "INTRASITE [get_property NAME $net]"
         } else { ; # regular nets
