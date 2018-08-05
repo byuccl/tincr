@@ -16,6 +16,7 @@ namespace eval ::tincr:: {
 # @param tiles List of tiles in the reconfigurable region (pblock)
 # @param channel Output file handle
 proc get_rp_site_routethroughs { tiles channel } {
+    #TODO: Speed this procedure up. It is slow right now.
     set site_rts [list]
     set nets [get_nets -hierarchical]
 
@@ -58,14 +59,9 @@ proc get_rp_site_routethroughs { tiles channel } {
 #
 # @param channel File handle to write the ooc ports to
 proc write_part_pins {channel} {
-    # for OOC checkpoints with hierarchical ports, print the starting wires for each port
-    # TODO: could change this to have a token of "OOC_PORTS" with a list of ports all on one line, but his is oke for now
-	
 	#TODO: Should I change the placement.rsc to also use nodes instead of wires?
     foreach part_pin [get_pins -filter HD.ASSIGNED_PPLOCS!="" -quiet] {
-	     set name_start [string last "/" $part_pin]
-	     incr name_start		 
-	     set pin_name [string range $part_pin $name_start end]
+	     set pin_name [get_property REF_PIN_NAME [get_pins $part_pin]]
 		 set direction [get_property DIRECTION [get_pins $part_pin]]
 		 
 		 # Change the direction to be from the perspective of the RM (OOC) design
@@ -77,9 +73,18 @@ proc write_part_pins {channel} {
 		 # Use the wire to get the partition pin's node
 		 set node [get_nodes -of_object [get_wires $wire_name]]
 		 
-         puts $channel "OOC_PORT $pin_name $node $direction" 
+         puts $channel "PART_PIN $pin_name $node $direction" 
     }
 } 
+
+proc write_static_part_pins { rp_cell channel } {
+    # The direction filter may be overkill
+    # Assuming any pins in this lists will be VCC or GND part pins coming into the RP. Maybe do some checking here.
+    set vcc_part_pins [get_property REF_PIN_NAME [get_pins -filter "(PARENT_CELL == [get_property NAME $rp_cell] && HD.ASSIGNED_PPLOCS == \"\" && DIRECTION == \"IN\")" -of_objects [get_nets <const1>]]]
+    set gnd_part_pins [get_property REF_PIN_NAME [get_pins -filter "(PARENT_CELL == [get_property NAME $rp_cell] && HD.ASSIGNED_PPLOCS == \"\" && DIRECTION == \"IN\")" -of_objects [get_nets <const0>]]]
+    ::tincr::print_list -header "VCC_PART_PINS" -channel $channel $vcc_part_pins
+    ::tincr::print_list -header "GND_PART_PINS" -channel $channel $gnd_part_pins
+}
 
 ## Searches through the given list of tiles, identifies used PIPs, and
 # writes these used PIPs to the PR static export file.
@@ -233,6 +238,7 @@ proc get_static_routes { nets channel } {
 # @param pblock the pblock that defines a reconfigurable region
 #TODO: Verbose/quiet options
 #TODO: Remove duplicate logic (don't get all nets more than once, etc.)
+#TODO: Instead of passing the pblock, just pass the name of the RP cell. Then get the pblock from the cell.
 proc ::tincr::write_static_resources { static_dcp pblock filename } {
     set ::tincr::verbose 1
 
@@ -289,8 +295,10 @@ proc ::tincr::write_static_resources { static_dcp pblock filename } {
 	::tincr::print_verbose "Found static portions of nets...($diff_time seconds)"
     
 	# 5. Get partition pins (OOC ports)
+    set rp_cell [get_cells -of_objects $pblock]
 	set diff_time [tincr::report_runtime "write_part_pins [subst -novariables {$channel_out}]" s]
-	::tincr::print_verbose "Wrote partition pins...($diff_time seconds)"
+	set diff_time [tincr::report_runtime "write_static_part_pins [subst -novariables {$rp_cell $channel_out}]" s]
+	::tincr::print_verbose "Wrote partition pins...($diff_time seconds)"    
     
     close_project
     close $channel_out
