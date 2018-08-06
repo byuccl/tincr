@@ -80,8 +80,25 @@ proc write_part_pins {channel} {
 proc write_static_part_pins { rp_cell channel } {
     # The direction filter may be overkill
     # Assuming any pins in this lists will be VCC or GND part pins coming into the RP. Maybe do some checking here.
-    set vcc_part_pins [get_property REF_PIN_NAME [get_pins -filter "(PARENT_CELL == [get_property NAME $rp_cell] && HD.ASSIGNED_PPLOCS == \"\" && DIRECTION == \"IN\")" -of_objects [get_nets <const1>]]]
-    set gnd_part_pins [get_property REF_PIN_NAME [get_pins -filter "(PARENT_CELL == [get_property NAME $rp_cell] && HD.ASSIGNED_PPLOCS == \"\" && DIRECTION == \"IN\")" -of_objects [get_nets <const0>]]]
+    set vcc_part_pins [list]
+    set gnd_part_pins [list]
+    
+    # Get the vcc part pins
+    set vcc_pins [get_pins -quiet -filter "(PARENT_CELL == [get_property NAME $rp_cell] && HD.ASSIGNED_PPLOCS == \"\" && DIRECTION == \"IN\")" -of_objects [get_nets <const1>]]
+    
+    if {[llength $vcc_pins] != 0} {
+        # Add the names of the partition pins (from the RM's perspective) to the list
+        set vcc_part_pins [get_property REF_PIN_NAME $vcc_pins]
+    }
+    
+    # Get the gnd part pins
+    set gnd_pins [get_pins -quiet -filter "(PARENT_CELL == [get_property NAME $rp_cell] && HD.ASSIGNED_PPLOCS == \"\" && DIRECTION == \"IN\")" -of_objects [get_nets <const0>]]
+    
+    if {[llength $vcc_pins] != 0} {
+        # Add the names of the partition pins (from the RM's perspective) to the list
+        set gnd_part_pins [get_property REF_PIN_NAME $gnd_pins]
+    }
+    
     ::tincr::print_list -header "VCC_PART_PINS" -channel $channel $vcc_part_pins
     ::tincr::print_list -header "GND_PART_PINS" -channel $channel $gnd_part_pins
 }
