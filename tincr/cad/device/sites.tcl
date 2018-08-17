@@ -190,13 +190,21 @@ proc ::tincr::sites::iterate { args } {
 #           A list with two elements: <br>
 #           (1) The first element is a dictionary that maps a site type to a site location <br>
 #           (2) A set of site types that are only alternate site types <br>
-proc ::tincr::sites::unique { {include_alternate_only_sites 0} } {
+proc ::tincr::sites::unique { {include_alternate_only_sites 0} {hierarchical_cell ""} } {
     set default_sites [dict create]
     set alternates [dict create]
     set global_site_map [dict create]
     set alternate_index [dict create]
     
-    foreach site [get_sites] {
+    if {$hierarchical_cell != ""} {
+        set sites [get_sites -of_objects [get_cells $hierarchical_cell]]
+    } else {
+        set sites [get_sites]
+    }
+    
+    
+    
+    foreach site $sites {
         
         set default_site_type [get_property SITE_TYPE $site]
         

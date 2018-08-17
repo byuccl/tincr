@@ -7,6 +7,7 @@ package require tincr.cad.util 0.0
 namespace eval ::tincr:: {
     namespace export \
         create_xml_cell_library \
+        create_partial_cell_library \
         test_cell_library \
         write_macro_xml
 }
@@ -986,6 +987,97 @@ proc ::tincr::print_rapidSmith_license {outfile} {
     puts $outfile " ~ Tools. It can be found at doc/LICENSE.GPL3.TXT. You may" 
     puts $outfile " ~ also get a copy of the license at <http://www.gnu.org/licenses/>."
     puts $outfile " ~ -->"
+}
+
+proc ::tincr::create_partial_cell_library { {part xc7a100t-csg324-3} {filename ""} {hierarchical_cell ""} {threshold 100}} {
+    global config_threshold
+    set config_threshold $threshold
+    
+    # create a valid filename if one is not specified
+    if {$filename == ""} {
+        set filename "cellLibrary_[get_parts $part].xml"
+    } else { ; # add the xml extension if not specified
+        set filename [::tincr::add_extension ".xml" $filename]
+    }
+    
+    set xml_out [open $filename w]
+    
+    set cur_part [get_parts $part]
+    
+    # suppress clock placement warnings for ultrascale 
+    set_msg_config -id {Constraints 18-4434} -suppress -quiet
+    
+    # Find all of the supported library cells in the current part
+    puts "\nFinding all of the supported cells in the current part..."
+    set supported_lib_cells [::tincr::get_supported_leaf_libcells]
+
+    # Generate a map of lib_cells -> sites that instances of this cell can be placed on
+    puts "Getting a handle to each unique primitive site..."
+    set unique_sites [tincr::sites::unique 1 $hierarchical_cell]
+    set site_map [lindex $unique_sites 0]
+    set alternate_only_sites [lindex $unique_sites 1]
+
+    puts "Finding all valid site placements for each supported cell...\n"
+    set family [get_property ARCHITECTURE $cur_part]
+    set is_series7 [tincr::parts::is_series7]
+    set cell_to_sitetype_map [create_cell_to_site_map $supported_lib_cells $site_map $alternate_only_sites $is_series7]
+ 
+    # Write the cell library xml file header
+    puts $xml_out {<?xml version="1.0" encoding="UTF-8"?>}
+    print_rapidSmith_license $xml_out
+    puts $xml_out "<root>"
+    
+    # Add the family tag to the xml file  
+    puts $xml_out "  <family>[string toupper [get_property FAMILY [get_parts -of [get_design]]]]</family>"
+    
+    puts $xml_out "  <cells>"
+
+    # Create the xml for each valid library cell
+    dict for {lib_cell_name site_type_list} $cell_to_sitetype_map {
+        set lib_cell [get_lib_cells $lib_cell_name -quiet]
+        set cell_instance [create_cell -reference $lib_cell "[string tolower $lib_cell_name]_tmp" -quiet]
+
+        puts "Processing: $lib_cell_name"
+
+        puts $xml_out "    <cell>"
+        
+        write_tag_xml $cell_instance $xml_out
+        write_property_xml $lib_cell $xml_out 
+        write_pin_xml $cell_instance $xml_out
+        
+        puts "Sitenames = $site_type_list\n"
+        
+        write_bel_placement_xml $cell_instance $site_type_list $site_map $alternate_only_sites $xml_out
+        
+        puts $xml_out "    </cell>"
+        remove_cell $cell_instance -quiet
+    }
+    
+    create_port_xml $site_map $xml_out
+    
+    puts $xml_out "  </cells>"
+    
+    # Create the xml for each macro cell supported in the device
+    puts "Creating macro definitions..."
+    set supported_macros [tincr::get_supported_macro_cells]
+    
+    if {[llength $supported_macros] > 0} {
+        puts $xml_out "  <macros>"
+        foreach macro_lib_cell $supported_macros {
+            set macro_cell [create_cell -reference $macro_lib_cell "tmp" -quiet]
+            tincr::write_macro_xml $macro_cell $xml_out
+            remove_cell $macro_cell -quiet
+        }
+
+        puts $xml_out "  </macros>"
+    }
+    puts $xml_out "</root>"
+
+    close $xml_out
+    close_design -quiet
+
+    puts "CellLibrary \"$filename\" created successfully!"
+    close_project -quiet
 }
 
 ## Creates a cell library XML file that can be used by RapidSmith version 2.0. This function
