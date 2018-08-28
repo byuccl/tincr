@@ -173,11 +173,7 @@ proc ::tincr::read_tcp {args} {
         
         if {[llength $differential_nets] > 0 } {
             ::tincr::print_verbose "Routing [llength $differential_nets] differential pair nets..."
-            # format_time does not work for this route design command, so I have to do it manually here
-            set start_time [clock microseconds]
-            route_design -quiet -nets $differential_nets
-            set end_time [clock microseconds]
-            set diff_time [::tincr::format_time [expr $end_time - $start_time] s]
+            set diff_time [tincr::report_runtime "route_design -quiet -nets [subst -novariables {$differential_nets}]" s]
             ::tincr::print_verbose "Done routing...($diff_time seconds)"
         }
     }
@@ -187,17 +183,14 @@ proc ::tincr::read_tcp {args} {
     # that is a hierarchical port (placed or unplaced port with no driver).
     # Work around is also to have Vivado route these nets for us.
     if {$link_mode=="out_of_context"} {
-	set diff_time 0
-	set hier_nets [get_nets -of [get_ports] -filter {ROUTE_STATUS == HIERPORT} -quiet]
+        set diff_time 0
+        set hier_nets [get_nets -of [get_ports] -filter {ROUTE_STATUS == HIERPORT} -quiet]
 	    
-	if {[llength $hier_nets] > 0 } {
-	    ::tincr::print_verbose "Routing [llength $hier_nets] hierarchical port nets..."		    	    
-	    set start_time [clock microseconds]
-	    route_design -quiet -nets $hier_nets
-	    set end_time [clock microseconds]
-	    set diff_time [::tincr::format_time [expr $end_time - $start_time] s]
-	    ::tincr::print_verbose "Done routing hierarchical port nets...($diff_time seconds)"
-	}
+        if {[llength $hier_nets] > 0 } {
+	        ::tincr::print_verbose "Routing [llength $hier_nets] hierarchical port nets..."		    	    
+	        set diff_time [tincr::report_runtime "route_design -quiet -nets [subst -novariables {$hier_nets}]" s]
+	        ::tincr::print_verbose "Done routing hierarchical port nets...($diff_time seconds)"
+	    }
     }
     
     ::tincr::print_verbose "Unlocking the design..."

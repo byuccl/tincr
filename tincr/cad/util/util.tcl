@@ -1576,6 +1576,9 @@ proc ::tincr::print_object_properties { obj } {
 proc ::tincr::remove_speedgrade { partname } {
     set partname_no_speedgrade ""
     regexp {^(x[a-z0-9]+(?:-[a-z0-9]+)?)-.+} $partname -> partname_no_speedgrade
+    if {$partname_no_speedgrade == ""} {
+        set partname_no_speedgrade $partname
+    }
     return $partname_no_speedgrade
 }
 
