@@ -22,7 +22,10 @@ namespace eval ::tincr::designs {
 	summary \
 	clear \
 	diff \
+    get_stats \
 	get_route_throughs \
+    get_routed_tilelength \
+    get_critical_delay \
 	edif \
 	get_buses \
 	get_design_buses \
@@ -395,6 +398,75 @@ proc ::tincr::designs::get_route_throughs {} {
     }
 
     return $route_throughs
+}
+
+proc ::tincr::designs::get_stats {} {
+    set vcc_sources [list]
+    set gnd_sources [list]
+    set routethrough_luts [list]
+    set MAX_CONFIG_SIZE 20
+
+    foreach bel [get_bels -quiet -of [get_sites -of_objects [get_pblocks]] -filter {TYPE =~ *LUT* && !IS_USED}] {
+        
+        set config [get_property CONFIG.EQN $bel]
+        
+        # skip long config strings...they cannot be static sources or routethroughs
+        if { [string length $config] > $MAX_CONFIG_SIZE } {
+            continue
+        }
+        
+        if { [regexp {(O[5,6])=(?:\(A6\+~A6\)\*)?\(?1\)? ?} $config -> pin] } { ; # VCC source
+            lappend vcc_sources "[get_property NAME $bel]/$pin"
+        } elseif { [regexp {(O[5,6])=(?:\(A6\+~A6\)\*)?\(?0\)? ?} $config -> pin] } { ; # GND source
+            lappend gnd_sources "[get_property NAME $bel]/$pin"
+        } elseif { [regexp {(O[5,6])=(?:\(A6\+~A6\)\*)?\(+(A[1-6])\)+ ?} $config -> outpin inpin] } { ; # LUT routethrough
+            lappend routethrough_luts "$bel/$inpin/$outpin"
+        }
+    }
+    
+    set numVccSources [llength $vcc_sources]
+    set numGndSources [llength $gnd_sources]
+    set numRouteThru [llength $routethrough_luts]
+
+
+    puts "Slice: [llength [get_sites -of_objects [get_pblocks] -filter { IS_USED == "TRUE" && (SITE_TYPE == "SLICEL" || SITE_TYPE == "SLICEM") } ]]"
+    puts "SLICEL: [llength [get_sites -of_objects [get_pblocks] -filter { IS_USED == "TRUE" && SITE_TYPE == "SLICEL" } ]]"
+    puts "SLICEM: [llength [get_sites -of_objects [get_pblocks] -filter { IS_USED == "TRUE" && SITE_TYPE == "SLICEM" } ]]"
+    
+    
+    set lut5bels [llength [get_bels -of_objects [get_cells -hierarchical -filter { PRIMITIVE_TYPE =~ LUT.*.* && PRIMITIVE_TYPE != LUT.others.LUT6 && PARENT =~  "rp_top" }]]]
+    set lut6bels [llength [get_bels -of_objects [get_cells -hierarchical -filter { PRIMITIVE_TYPE == LUT.others.LUT6 && PARENT =~  "rp_top" }]]]
+    set logicLuts [expr {$lut5bels + $lut6bels + $lut6bels + $numVccSources + $numGndSources + $numRouteThru}]
+    
+    set mem_luts [llength [get_bels -quiet -filter { IS_USED == "TRUE" && (TYPE ==  "LUT_OR_MEM6" || TYPE == "CLB")}  -of_objects [get_cells -quiet -hierarchical -filter { PARENT =~  "rp_top" && PRIMITIVE_TYPE == DMEM.dram.RAMD64E}]] ]
+    set mem_luts [expr {$mem_luts + $mem_luts}]
+    
+    puts "LUTs: [expr {$logicLuts + $mem_luts}]"   
+    puts "Logic LUTs: $logicLuts"
+    puts "Mem LUTs: $mem_luts"
+    
+    puts "FFs: [llength [get_bels -of_objects [get_sites -of_objects [get_pblocks]] -filter { (TYPE == "FF_INIT" || TYPE == "REG_INIT") && IS_USED == "TRUE" }]]"
+    puts "F7: [llength [get_bels -of_objects [get_sites -of_objects [get_pblocks]] -filter { (NAME =~ "*F7BMUX*" || NAME =~ "*F7AMUX*") && IS_USED == "TRUE" }]]"
+    puts "F8: [llength [get_bels -of_objects [get_sites -of_objects [get_pblocks]] -filter { NAME =~  "*F8MUX*" && IS_USED == "TRUE" }]]"
+    puts "Wirelength (RP): [tincr::designs::get_routed_tilelength [get_nets -of_objects [get_cells rp_top]]]"
+    puts "Wirelength (total): [tincr::designs::get_routed_tilelength [get_nets]]"
+    puts "Crit Delay: [tincr::designs::get_critical_delay]"
+   
+}
+
+
+## Get the routed wire-length in terms of tiles that nets traverse
+proc ::tincr::designs::get_routed_tilelength {nets} {
+    set tile_length 0
+    foreach net $nets {
+	    incr tile_length [::tincr::nets::get_num_tiles $net]
+    }
+    
+    return $tile_length
+}
+proc ::tincr::designs::get_critical_delay {} {
+    # Use "report_property [get_timing_paths]" to see other delays of interest
+    return [get_property -quiet DATAPATH_DELAY [get_timing_paths -nworst 1]]
 }
 
 ## Write this design to an electronic design interchange format (EDIF) file.

@@ -36,6 +36,7 @@ namespace eval ::tincr::nets {
         get_neighbor_nodes \
         get_next_node \
         get_next_node2 \
+        get_num_tiles \
         get_root \
         get_route_throughs \
         get_site_pins_of_net \
@@ -505,6 +506,14 @@ proc ::tincr::nets::get_neighbor_nodes { net node } {
     }
     
     return $net_neighbors
+}
+
+proc ::tincr::nets::get_num_tiles {net} {
+    
+	set tiles [get_tiles -quiet -of_objects [get_nodes -quiet -of_objects [get_nets $net] ]]
+	set num_tiles [llength $tiles]
+	
+    return $num_tiles
 }
 
 ## Get the next node in a routed net.
