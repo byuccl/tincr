@@ -155,7 +155,10 @@ proc ::tincr::read_tcp {args} {
     ::tincr::print_verbose "Reading netlist and constraint files..."
     set edif_runtime [report_runtime "read_edif $q ${filename}/netlist.edf" s]
     set import_fileset [create_fileset -constrset xdc_constraints]
-    add_files -fileset $import_fileset [glob ${filename}/*.xdc]
+    add_files -fileset $import_fileset ${filename}/constraints.xdc 
+    add_files -fileset $import_fileset ${filename}/placement.xdc 
+    add_files -fileset $import_fileset ${filename}/routing.xdc 
+    
     ::tincr::print_verbose "Netlist and constraints added successfully. ($edif_runtime seconds)"
 
     ::tincr::print_verbose "Linking design (this may take awhile)..."
