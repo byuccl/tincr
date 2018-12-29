@@ -94,7 +94,7 @@ proc write_static_part_pins { rp_cell channel } {
     # Get the gnd part pins
     set gnd_pins [get_pins -quiet -filter "(PARENT_CELL == [get_property NAME $rp_cell] && HD.ASSIGNED_PPLOCS == \"\" && DIRECTION == \"IN\")" -of_objects [get_nets <const0>]]
     
-    if {[llength $vcc_pins] != 0} {
+    if {[llength $gnd_pins] != 0} {
         # Add the names of the partition pins (from the RM's perspective) to the list
         set gnd_part_pins [get_property REF_PIN_NAME $gnd_pins]
     }
