@@ -926,7 +926,7 @@ proc ::tincr::read_tcp_ooc_test {filename} {
         return
     }
 
-    set part [get_property PART [get_design]]
+    set part [get_property PART [get_designs]]
 
     foreach tcp $tcp_files {
         link_design -mode out_of_context -part $part -name $tcp
