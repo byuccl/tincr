@@ -235,7 +235,15 @@ proc get_static_routes { nets channel } {
 			# Check if the first character is an opening curly brace
 			set comparison [string compare -length 1 $line "\{"]
 			if {$comparison == 0} {
-				set line "\{ [string range $line 1 end]"
+            	# I'm sure there is a more effieicnt way of doing this
+            	set cut_line [string trimleft $line " \{*\[\]"]
+            	# Now check if the next character is a closing curly brace
+            	set comparison [string compare -length 1 $cut_line "\}"]
+                if {$comparison == 0} {
+                	set line "\{ [string range $cut_line 1 end] \}"
+                } else {
+                	set line "\{ [string range $line 1 end]"
+                }
 			}
 			
 			append route_string "$line "

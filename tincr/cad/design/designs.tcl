@@ -425,25 +425,39 @@ proc ::tincr::designs::get_stats {} {
     }
     
     set numVccSources [llength $vcc_sources]
+    puts "numVccSources $numVccSources"
     set numGndSources [llength $gnd_sources]
+    puts "numGndSources $numGndSources"
     set numRouteThru [llength $routethrough_luts]
+    puts "numRouteThru $numRouteThru"
 
 
     puts "Slice: [llength [get_sites -of_objects [get_pblocks] -filter { IS_USED == "TRUE" && (SITE_TYPE == "SLICEL" || SITE_TYPE == "SLICEM") } ]]"
     puts "SLICEL: [llength [get_sites -of_objects [get_pblocks] -filter { IS_USED == "TRUE" && SITE_TYPE == "SLICEL" } ]]"
     puts "SLICEM: [llength [get_sites -of_objects [get_pblocks] -filter { IS_USED == "TRUE" && SITE_TYPE == "SLICEM" } ]]"
     
+    # A fracturable 6 input LUT which can be treated as two 5 input LUTs sharing the lower five pins.
     
+    # 5LUTs are esentially just the number of non-6LUT cells
     set lut5bels [llength [get_bels -of_objects [get_cells -hierarchical -filter { PRIMITIVE_TYPE =~ LUT.*.* && PRIMITIVE_TYPE != LUT.others.LUT6 && PARENT =~  "rp_top" }]]]
+    
+    # 6LUTs are esentially just the number of 6LUT cells.
     set lut6bels [llength [get_bels -of_objects [get_cells -hierarchical -filter { PRIMITIVE_TYPE == LUT.others.LUT6 && PARENT =~  "rp_top" }]]]
+
+    # This assumes the routethroughs have "-pass" in them. These are inserted by RSVPack.
+    set passthruLuts [llength [get_cells -hierarchical -filter { PRIMITIVE_TYPE == LUT.others.LUT1 && NAME =~  "*-pass*" && PARENT =~  "rp_top"} ] ]
+    puts "passthruLuts $passthruLuts"
+    
     set logicLuts [expr {$lut5bels + $lut6bels + $lut6bels + $numVccSources + $numGndSources + $numRouteThru}]
     
     set mem_luts [llength [get_bels -quiet -filter { IS_USED == "TRUE" && (TYPE ==  "LUT_OR_MEM6" || TYPE == "CLB")}  -of_objects [get_cells -quiet -hierarchical -filter { PARENT =~  "rp_top" && PRIMITIVE_TYPE == DMEM.dram.RAMD64E}]] ]
+    puts "LUT5 BELs: [expr {$lut5bels}]"
+    puts "LUT6 BELs: [expr {$lut6bels + $mem_luts}]"
     set mem_luts [expr {$mem_luts + $mem_luts}]
     
-    puts "LUTs: [expr {$logicLuts + $mem_luts}]"   
-    puts "Logic LUTs: $logicLuts"
-    puts "Mem LUTs: $mem_luts"
+    puts "LUTs (6LUTs counted as 2 5LUTs): [expr {$logicLuts + $mem_luts}]"   
+    puts "Logic LUTs (6LUTs counted as 2 5LUTs): $logicLuts"
+    puts "Mem LUTs (6LUTs counted as 2 5LUTs): $mem_luts"
     
     puts "FFs: [llength [get_bels -of_objects [get_sites -of_objects [get_pblocks]] -filter { (TYPE == "FF_INIT" || TYPE == "REG_INIT") && IS_USED == "TRUE" }]]"
     puts "F7: [llength [get_bels -of_objects [get_sites -of_objects [get_pblocks]] -filter { (NAME =~ "*F7BMUX*" || NAME =~ "*F7AMUX*") && IS_USED == "TRUE" }]]"

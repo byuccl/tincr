@@ -18,6 +18,7 @@ namespace eval ::tincr:: {
         write_routing_rs2 \
         write_rscp \
         write_tcp_for_pblock \
+        implement_rm \
         write_tcp_ooc_test
 }
 
@@ -188,6 +189,94 @@ proc ::tincr::read_rm_tcp {args} {
     ::tincr::print_verbose "RM design importation complete. ($total_runtime seconds)"    
 }
 
+proc synth_rm {device filename} {     
+	if {[glob -nocomplain ${filename}/*.sv] != ""} {
+	    puts "Reading SV files..."
+		set rm_list [glob ${filename}/*.sv]
+        link_design -part $device
+		foreach rm $rm_list {
+		    read_verilog -sv $rm
+		}
+    }
+	
+    if {[glob -nocomplain ${filename}/*.v] != ""} {
+	    puts "Reading Verilog files..."
+		set rm_list [glob ${filename}/*.v]
+        link_design -part $device
+		foreach rm $rm_list {
+		    read_verilog $rm
+		}
+    }
+	
+    if {[glob -nocomplain ${filename}/*.vhd] != ""} {
+	    puts "Reading VHDL files..."
+	    set rm_list [glob ${filename}/*.vhd]
+        link_design -part $device
+		foreach rm $rm_list {
+			read_vhdl $rm
+		}		
+    }    
+	synth_design -mode out_of_context -flatten_hierarchy full -top rp_top -part $device
+	write_checkpoint -force reconfig_module.dcp
+	close_project    
+}
+
+proc ::tincr::implement_rm {args} {
+    set quiet 0
+    set verbose 0
+    set static_dcp ""
+    set rp_name ""
+
+    ::tincr::parse_args {static_dcp rp_name} {quiet verbose} {} {filename} $args
+    
+    set q "-quiet"
+    set ::tincr::verbose 1
+
+    # quiet has priority over verbose if both are specified
+    if {$quiet} {
+        set ::tincr::verbose 0     
+    } elseif {$verbose} {
+        set q "-verbose"
+    }
+    
+    # Synth rm and save dcp
+    set synth_time [report_runtime "synth_rm xc7z020clg400-1 $filename" s]
+
+    # Open static design
+    set static_time [report_runtime "open_checkpoint $static_dcp" s]
+
+    # Set I/O constraints
+    foreach port [get_ports] {
+    set package_pin [get_property PACKAGE_PIN $port]
+    set io_standard [get_property IOSTANDARD $port]
+    set_property -dict "PACKAGE_PIN $package_pin IOSTANDARD $io_standard" $port
+    } 
+    
+    # Lock placement and routing before reading the RM DCP into the RP
+    set lock_time [report_runtime "lock_design -level routing" s]
+    
+    # Update the RP blackbox
+    set read_dcp_runtime [report_runtime "read_checkpoint -cell $rp_name reconfig_module.dcp" s]
+        
+    # Place and route the RM
+    set place_runtime [report_runtime "place_design" s]
+    
+    set route_runtime [report_runtime "route_design" s]
+    
+       
+    set bitgen_runtime [report_runtime "write_bitstream -cell $rp_name -file ${rp_name}.bit -force" s]
+       
+      
+    set total_runtime [expr { $synth_time + $static_time + $lock_time + $read_dcp_runtime + $place_runtime + $route_runtime + $bitgen_runtime} ]
+    ::tincr::print_verbose "Synthesis complete. ($synth_time seconds)"
+    ::tincr::print_verbose "Read static DCP. ($static_time seconds)"
+    ::tincr::print_verbose "Locked placement, routing. ($lock_time seconds)"
+    ::tincr::print_verbose "Read synthesized RM. ($read_dcp_runtime seconds)"
+    ::tincr::print_verbose "Placement complete. ($place_runtime seconds)"
+    ::tincr::print_verbose "Routing complete. ($route_runtime seconds)"
+    ::tincr::print_verbose "Bitgen complete. ($bitgen_runtime seconds)"    
+    ::tincr::print_verbose "RM design importation complete. ($total_runtime seconds)"  
+}
 
 
 ## Parses a TCP design representation and creates an equivalent design in Vivado. 
