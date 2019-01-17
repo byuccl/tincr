@@ -37,7 +37,7 @@ proc ::tincr::parts::get { args } {
 proc ::tincr::parts::is_series7 { {prt ""} } {
 
     if {$prt == ""} {
-        set prt [get_parts -of [get_design]]
+        set prt [get_parts -of [get_designs]]
     }
     
     set family [get_property ARCHITECTURE $prt]
