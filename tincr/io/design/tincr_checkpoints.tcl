@@ -37,7 +37,7 @@ proc ::tincr::write_rscp {args} {
     set quiet 0
     set ooc 0
     set partName ""
-	
+
     ::tincr::parse_args {partName} {quiet ooc} {} {filename} $args
     set filename [::tincr::add_extension ".rscp" $filename]
     file mkdir $filename
@@ -105,18 +105,18 @@ proc ::tincr::read_tcp {args} {
     set quiet 0
     set verbose 0
     set ooc 0
+
     ::tincr::parse_args {} {quiet verbose ooc} {} {filename} $args
-    
     set q "-quiet"
     set ::tincr::verbose 1
-    
+
     # quiet has priority over verbose if both are specified
     if {$quiet} {
         set ::tincr::verbose 0     
     } elseif {$verbose} {
         set q "-verbose"
     }
-    
+
     # Set the link mode to "out_of_context" or "default" based on the command arguments
     if {$ooc} {
         set link_mode "out_of_context"
@@ -134,14 +134,13 @@ proc ::tincr::read_tcp {args} {
     set import_fileset [create_fileset -constrset xdc_constraints]
     add_files -fileset $import_fileset ${filename}/constraints.xdc 
     add_files -fileset $import_fileset ${filename}/placement.xdc 
-    add_files -fileset $import_fileset ${filename}/routing.xdc 
-    
+    add_files -fileset $import_fileset ${filename}/routing.xdc
+
     ::tincr::print_verbose "Netlist and constraints added successfully. ($edif_runtime seconds)"
 
     ::tincr::print_verbose "Linking design (this may take awhile)..."
     set link_runtime [report_runtime "link_design $q -mode $link_mode -constrset $import_fileset -part $part" s]
     ::tincr::print_verbose "Design linked successfully. ($link_runtime seconds)"
-    
     # complete the route for differential pair nets
     # there is a bug in Vivado where you can't specify the ROUTE string of a net
     # if the source is a port. It will give the error "ERROR: [Designutils 20-949] No driver found on net clock_N[0]"
@@ -157,7 +156,7 @@ proc ::tincr::read_tcp {args} {
             ::tincr::print_verbose "Done routing...($diff_time seconds)"
         }
     }
-	
+
     # Complete the route for nets with a hierarchical source port.
     # The same warning/bug described above occurs when trying to specify the ROUTE string of a net
     # that is a hierarchical port (placed or unplaced port with no driver).
@@ -165,14 +164,14 @@ proc ::tincr::read_tcp {args} {
     if {$link_mode=="out_of_context"} {
         set diff_time 0
         set hier_nets [get_nets -of [get_ports] -filter {ROUTE_STATUS == HIERPORT} -quiet]
-	    
+        
         if {[llength $hier_nets] > 0 } {
-	        ::tincr::print_verbose "Routing [llength $hier_nets] hierarchical port nets..."		    	    
-	        set diff_time [tincr::report_runtime "route_design -quiet -nets [subst -novariables {$hier_nets}]" s]
-	        ::tincr::print_verbose "Done routing hierarchical port nets...($diff_time seconds)"
-	    }
+            ::tincr::print_verbose "Routing [llength $hier_nets] hierarchical port nets..."                 
+            set diff_time [tincr::report_runtime "route_design -quiet -nets [subst -novariables {$hier_nets}]" s]
+            ::tincr::print_verbose "Done routing hierarchical port nets...($diff_time seconds)"
+        }
     }
-    
+
     ::tincr::print_verbose "Unlocking the design..."
     lock_design $q -level placement -unlock
 
@@ -194,7 +193,7 @@ proc ::tincr::sort_cells_for_export { cells } {
     set ff_5 [list]
 
     # TODO: Eventually, we may have to look through all of the cells
-    #		(internal cells of macros) to support macros.
+    # (internal cells of macros) to support macros.
     foreach cell $cells {
         if {[cells is_placed $cell]} {
             set group [get_property PRIMITIVE_GROUP $cell]
@@ -233,10 +232,10 @@ proc ::tincr::write_design_info {args} {
     set filename [::tincr::add_extension ".info" $filename]
 
     set outfile [open $filename w]
-	
+    
     # if no partName is specified, get the part from the design
     if {$partName == ""} {
-	set partName "[get_property PART [current_design]]"
+        set partName "[get_property PART [current_design]]"
     }
 
     puts $outfile "part=$partName"
@@ -330,12 +329,13 @@ proc ::tincr::write_macros { {filename macros.xml } } {
     # TODO: need to add existing macros
     foreach macro $macro_cells {
         set ref_name [get_property REF_NAME $macro]
+        
         # find macros whose XML need to be included in the checkpoint
         if {[::struct::set contains $lib_cell_set $ref_name] == 0}  {
             ::struct::set add lib_cell_set $ref_name
             lappend macros_to_write $macro
         }
-        
+    
         # find all macros types in the current design.
         if {[::struct::set contains $macro_set $ref_name] == 0}  {
             ::struct::set add macro_set $ref_name
@@ -343,17 +343,24 @@ proc ::tincr::write_macros { {filename macros.xml } } {
         }
     }
     
-    set internal_net_map [dict create]
-    # write the XML for new macros
-    foreach macro $macros_to_write {
-        set internal_nets [tincr::write_macro_xml $macro $xml]
-        dict set internal_net_map [get_property REF_NAME $macro] $internal_nets
-    }
+    if {[llength $macro_cells] > 0 } {
+        set unique_sites [tincr::sites::unique 1]
+        set site_map [lindex $unique_sites 0]
+        set alternate_only_sites [lindex $unique_sites 1]
+        set is_series7 [tincr::parts::is_series7]
         
-    # Create the map of type -> internal netnames for all macros
-    foreach macro $macros_in_design {
-        if { [dict exists $internal_net_map [get_property REF_NAME $macro]] == 0 } {
-            dict set internal_net_map [get_property REF_NAME $macro] [get_internal_macro_nets $macro]
+        set internal_net_map [dict create]
+        # write the XML for new macros
+        foreach macro $macros_to_write {
+            set internal_nets [tincr::write_macro_xml $macro $site_map $alternate_only_sites $is_series7 $xml]
+            dict set internal_net_map [get_property REF_NAME $macro] $internal_nets
+        }
+                
+        # Create the map of type -> internal netnames for all macros
+        foreach macro $macros_in_design {
+            if { [dict exists $internal_net_map [get_property REF_NAME $macro]] == 0 } {
+                dict set internal_net_map [get_property REF_NAME $macro] [get_internal_macro_nets $macro]
+            }
         }
     }
     
@@ -411,7 +418,7 @@ proc ::tincr::write_placement_rs2 { {filename placement.rsc} }  {
         set bel_toks [split [get_property BEL $cell] "."]
         
         # NOTE: We have to do this, because the SITE_TYPE property of sites are not updated correctly
-        #	   when you place cells there. BUFG is an example
+        #      when you place cells there. BUFG is an example
         set sitetype [lindex $bel_toks 0]
         set bel [lindex $bel_toks end]
         set tile [get_tile -of $site]
@@ -468,6 +475,7 @@ proc ::tincr::write_placement_rs2 { {filename placement.rsc} }  {
 # @param macro Macro cell instance 
 # @return A list of internal macro nets
 proc ::tincr::get_internal_macro_nets {macro} {
+    puts "get internal macro nets"
     set boundary_nets ""
     foreach pin [get_pins -of $macro] {
         set internal_net [get_nets -boundary_type lower -of $pin]
@@ -537,9 +545,9 @@ proc ::tincr::write_routing_rs2 {args} {
     
     # select which nets to export (do not get the hierarchical nets)
     if {$global_logic} {
-    	set nets [get_nets -quiet]
+        set nets [get_nets -quiet]
     } else {
-    	set nets [get_nets -quiet -filter {TYPE != POWER && TYPE != GROUND}]
+        set nets [get_nets -quiet -filter {TYPE != POWER && TYPE != GROUND}]
     }
     
     # Add internal hierarchical nets to the list of nets whose routing information should be printed 
