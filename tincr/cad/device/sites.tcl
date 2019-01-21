@@ -206,6 +206,11 @@ proc ::tincr::sites::unique { {include_alternate_only_sites 0} } {
         if {![dict exists $default_sites $default_site_type]} {
             dict set default_sites $default_site_type $site
         }
+        
+        # Prefer bonded IOBs if they are available.
+        if { [dict exists $default_sites $default_site_type] && [string match {*IOB*} $default_site_type] && [get_property IS_BONDED $site] == 1 } {
+            dict set default_sites $default_site_type $site
+        }
 
         # add all alternate site types to the alternate site map
         foreach alternate_type [get_property ALTERNATE_SITE_TYPES $site] {

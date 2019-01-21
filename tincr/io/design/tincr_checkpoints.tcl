@@ -352,7 +352,8 @@ proc ::tincr::write_macros { {filename macros.xml } } {
         set internal_net_map [dict create]
         # write the XML for new macros
         foreach macro $macros_to_write {
-            set internal_nets [tincr::write_macro_xml $macro $site_map $alternate_only_sites $is_series7 $xml]
+            set macro_lib_cell [get_property REF_NAME $macro]
+            set internal_nets [tincr::write_macro_xml $macro_lib_cell $site_map $alternate_only_sites $is_series7 $xml]
             dict set internal_net_map [get_property REF_NAME $macro] $internal_nets
         }
                 

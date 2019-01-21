@@ -786,13 +786,16 @@ proc write_bel_placement_xml { cell_instance site_type_list site_map alternate_o
 # @param ignore_sitename Set to true, if the algorithm should ignore site names while placing cells
 #
 # @return A dictionary that maps the internal cells of a macro to the bels they can be placed on
-proc create_internal_cell_to_bel_map {macro site_map alternate_site_set {ignore_sitename 0}} {
-    puts "macro is $macro"
-    set macro_lib_cell [get_property REF_NAME $macro]
-    puts "macro lib cell is $macro_lib_cell"
+proc create_internal_cell_to_bel_map {cell_instance site_map alternate_site_set {ignore_sitename 0}} {
+    #puts "macro is $macro"
+    #set macro_lib_cell [get_property REF_NAME $macro]
+    #puts "macro lib cell is $macro_lib_cell"
     set cell_bel_map [dict create]
-    set cell_instance [create_cell -reference $macro_lib_cell tmp -quiet]
+    #set cell_instance [create_cell -reference $macro_lib_cell tmp -quiet]
+    puts "macro cell instance: $cell_instance"
     set internal_cell_list [get_cells $cell_instance/* -filter {PRIMITIVE_COUNT==1 && PRIMITIVE_LEVEL!=MACRO} -quiet]
+    puts "internal cells:"
+    puts "$internal_cell_list"
     
     puts "place lib cell everywhere"
     
@@ -806,7 +809,8 @@ proc create_internal_cell_to_bel_map {macro site_map alternate_site_set {ignore_
             set_property MANUAL_ROUTING $sitename $site 
         }
         
-        if {[catch {[place_cell $cell_instance $site -quiet]} err -quiet] == 0} {
+        puts "try site $site"
+        if {[catch {[place_cell $cell_instance $site]} err] == 0} {
             set beltype [get_property BEL $cell_instance]
             set actual_site_type [lindex [split [get_property BEL $cell_instance] "."] 0]
             
@@ -816,19 +820,24 @@ proc create_internal_cell_to_bel_map {macro site_map alternate_site_set {ignore_
                 # Find what bels the internal cells have been placed on
                 
                 foreach internal_cell $internal_cell_list {
-                    set internal_bel [get_bels -of_objects $internal_cell -quiet]
+                    #set internal_bel [get_bels -of_objects $internal_cell -quiet]
+                    set internal_bel [get_bels -of_objects $internal_cell]
+                    puts "internal bel: $internal_bel"
                     set cell_name [tincr::suffix $internal_cell "/"]
+                    puts "cell name: $cell_name"
                     
                     if {$internal_bel != ""} {
                         if {[dict exists $cell_bel_map $cell_name]} {
                             set bels [dict get $cell_bel_map $cell_name]
                             lappend bels $internal_bel
                             dict set cell_bel_map $cell_name $bels
+                            puts "$cell_bel_map"
                            
                         } else {
                             set bels [list]
                             lappend bels $internal_bel
                             dict set cell_bel_map $cell_name $bels
+                            puts "$cell_bel_map"
                         }
                     }
                 }
@@ -840,37 +849,52 @@ proc create_internal_cell_to_bel_map {macro site_map alternate_site_set {ignore_
             reset_property MANUAL_ROUTING $site
         }
     }
-    remove_cell $cell_instance -quiet
+    #remove_cell $cell_instance -quiet
     return $cell_bel_map
 }
 
 ## Generates an XML cell-specification for the specified Macro cell.
 #
 # @param Macro cell instance
+# @param macro_ref_name the type of macro cell (lib cell)
 # @param outfile XML file handle
-proc ::tincr::write_macro_xml {macro site_map alternate_only_sites is_series7 outfile} {
+proc ::tincr::write_macro_xml {macro_lib_cell site_map alternate_only_sites is_series7 outfile} {
     
     # initialize macro data structures
     #set lib_cell [get_property REF_NAME $macro]
     puts "make internal map"
-    set internal_cell_bel_map [create_internal_cell_to_bel_map $macro $site_map $alternate_only_sites $is_series7]
+    
+    
+    #set macro_lib_cell [get_property REF_NAME $macro]
+    puts "macro lib cell is $macro_lib_cell"
+    #set cell_bel_map [dict create]
+    #set cell_instance [create_cell -reference $macro_lib_cell tmp -quiet]
+    set cell_instance [create_cell -reference $macro_lib_cell tmp]
+    puts "i made a cell: $cell_instance"
+    
+    
+    
+    set internal_cell_bel_map [create_internal_cell_to_bel_map $cell_instance $site_map $alternate_only_sites $is_series7]
+    
+    
     #TODO: Incoporate internal_cell_bel_map into tmp_list
     puts "get tmp list"
-    set tmp_list [get_internal_cells_and_nets $macro]
+    set tmp_list [get_internal_cells_and_nets $cell_instance]
     set macro_nets [lindex $tmp_list 1]
     set boundary_nets [lindex $tmp_list 2]
-    set name_offset [expr {[string length $macro] + 1}]
+    set name_offset [expr {[string length $cell_instance] + 1}]
     puts "print macro info"
     
     puts $outfile "    <macro>"
-    puts $outfile "        <type>[get_property REF_NAME $macro]</type>"
+    puts $outfile "        <type>[get_property REF_NAME $cell_instance]</type>"
     
     # print the macro internal cell information
     puts $outfile "        <cells>"
     dict for {internal bels} $internal_cell_bel_map {
         puts $outfile "            <internal>"
         puts $outfile "                <name>$internal</name>"
-        puts $outfile "                <type>[get_property REF_NAME [get_cells $macro/$internal]]</type>"
+        #puts $outfile "                <type>[get_property REF_NAME [get_cells $macro/$internal]]</type>"
+        puts $outfile "                <type>[get_property REF_NAME [get_cells $cell_instance/$internal]]</type>"
 
         if {[llength $bels] > 0} {
             puts $outfile "                <bels>"
@@ -892,7 +916,7 @@ proc ::tincr::write_macro_xml {macro site_map alternate_only_sites is_series7 ou
  
     # print the macro pin information
     puts $outfile "        <pins>"
-    foreach pin [get_pins -of $macro] {
+    foreach pin [get_pins -of $cell_instance] {
         puts $outfile "            <pin>"
         puts $outfile "                <name>[get_property REF_PIN_NAME $pin]</name>"
     
@@ -961,7 +985,8 @@ proc ::tincr::write_macro_xml {macro site_map alternate_only_sites is_series7 ou
     }
     
     puts $outfile "    </macro>"
-
+    remove_cell $cell_instance -quiet
+    
     return $internal_nets
 }
 
@@ -1169,17 +1194,15 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} {
     puts "supported macros:"
     puts "$supported_macros"
     
-    if {[llength $supported_macros] > 0} {
-        set macro_to_sitetype_map [create_cell_to_site_map $supported_macros $site_map $alternate_only_sites 1 $is_series7]
-    
+    if {[llength $supported_macros] > 0} {   
         puts $xml_out "  <macros>"
-        dict for {macro_cell_name site_type_list} $macro_to_sitetype_map {
+        foreach macro_lib_cell $supported_macros {
             puts "create a tmp macro cell"
-            set macro_cell [create_cell -reference $macro_cell_name "tmp" -quiet]
+            #set macro_cell [create_cell -reference $macro "tmp" -quiet]
             puts "write macro xml"
-            tincr::write_macro_xml $macro_cell_name $site_map $alternate_only_sites $is_series7 $xml_out
+            tincr::write_macro_xml $macro_lib_cell $site_map $alternate_only_sites $is_series7 $xml_out
             puts "wrote macro xml"
-            remove_cell $macro_cell_name -quiet
+            #remove_cell $macro -quiet
         }
 
         puts $xml_out "  </macros>"
