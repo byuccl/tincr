@@ -22,7 +22,7 @@ namespace eval ::tincr:: {
 # @param ignore_sitename Set to true, if the algorithm should ignore site names while placing cells
 #
 # @return A dictionary that maps a cell to all sites it can be placed on
-proc create_cell_to_site_map {lib_cells site_map alternate_site_set {ignore_sitename 0} {macros 0}} {
+proc create_cell_to_site_map {lib_cells site_map alternate_site_set {ignore_sitename 0} } {
     
     set cell_site_map [dict create]
     
@@ -65,12 +65,9 @@ proc create_cell_to_site_map {lib_cells site_map alternate_site_set {ignore_site
         remove_cell $cell_instance -quiet
     }
     
-    if {!$macros} {
-        #VCC and GND cells are not place-able, but we still want to include them in our XML file
-        dict set cell_site_map [get_lib_cells VCC] [list]
-        dict set cell_site_map [get_lib_cells GND] [list]
-    }
-
+	#VCC and GND cells are not place-able, but we still want to include them in our XML file
+	dict set cell_site_map [get_lib_cells VCC] [list]
+	dict set cell_site_map [get_lib_cells GND] [list]
         
     return $cell_site_map
 }
@@ -775,33 +772,21 @@ proc write_bel_placement_xml { cell_instance site_type_list site_map alternate_o
     puts $xml_out "      </bels>"
 }
 
-# This script creates the cellLibrary.xml file needed for RapidSmith2.
-
-## Creates a dictionary that maps a cell object, to all site locations where it
-#   can be validly placed.
+## Creates a dictionary that creates a map from macro bels to maps of inner cells to bels.
 #
-# @param macro_lib_cell 
+# @param cell_instance the macro cell instance to create the map for 
 # @param site_map Dictionary mapping site types, to site locations
 # @param alternate_site_set Set of sites that are only alternate sites
 # @param ignore_sitename Set to true, if the algorithm should ignore site names while placing cells
 #
 # @return A dictionary that maps the internal cells of a macro to the bels they can be placed on
-proc create_internal_cell_to_bel_map {cell_instance site_map alternate_site_set {ignore_sitename 0}} {
-    #puts "macro is $macro"
-    #set macro_lib_cell [get_property REF_NAME $macro]
-    #puts "macro lib cell is $macro_lib_cell"
+proc create_macro_bel_map {cell_instance site_map alternate_site_set {ignore_sitename 0}} {
     set macro_bel_map [dict create]
-    
-    
-    #set cell_instance [create_cell -reference $macro_lib_cell tmp -quiet]
-    puts "macro cell instance: $cell_instance"
+	# TODO: Pass more complete internall_cell_list in
     set internal_cell_list [get_cells $cell_instance/* -filter {PRIMITIVE_COUNT==1 && PRIMITIVE_LEVEL!=MACRO} -quiet]
-    puts "internal cells:"
-    puts "$internal_cell_list"
     
-    puts "place lib cell everywhere"
-    
-    # try to place each macro_lib_cell on each default site
+	# TODO: Use a reduced site list for common macro types (IOBs, LUT RAMs)
+    # Try to place the macro cell on each default site
     dict for {sitename site} $site_map {
         
         # set the manual routing property for a site ONLY IF the site type is an alternate only 
@@ -811,7 +796,6 @@ proc create_internal_cell_to_bel_map {cell_instance site_map alternate_site_set 
             set_property MANUAL_ROUTING $sitename $site 
         }
         
-        puts "try site $site"
         if {[catch {[place_cell $cell_instance $site]} err] == 0} {
             set beltype [get_property BEL $cell_instance]
             set actual_site_type [lindex [split [get_property BEL $cell_instance] "."] 0]
@@ -819,35 +803,18 @@ proc create_internal_cell_to_bel_map {cell_instance site_map alternate_site_set 
             # Need to add a check to verify that the site-type did not implicitly change when
             # the BEL was placed. If it has, then the cell cannot be placed on the site
             if {$sitename == $actual_site_type || $ignore_sitename} {
-                # Find what bels the internal cells have been placed on
-                
                 # Get the name of the BEL the macro cell is "placed" on
                 set macro_bel $site/$beltype
-                
-                if {[dict exists $macro_bel_map $macro_bel]} {
-                    puts " !!!!!!WARNING: UNEXPECTED !!!!!!!!"
-                } 
-               
-               
                 set cell_bel_map [dict create]
-                 
-                
-                
-                
+
+				# Find what bels the internal cells have been placed on
                 foreach internal_cell $internal_cell_list {
                     set internal_bel [get_bels -of_objects $internal_cell]
-                    puts "internal bel: $internal_bel"
-                    set cell_name [tincr::suffix $internal_cell "/"]
-                    puts "cell name: $cell_name"
-                    
+                    set cell_name [tincr::suffix $internal_cell "/"]                    
                     dict set cell_bel_map $cell_name $internal_bel
                 }
-                puts "cell_bel map: $cell_bel_map"
-                
-                
+
                 dict set macro_bel_map $macro_bel $cell_bel_map
-                
-                
                 unplace_cell $macro_bel_map -quiet
             }
         }
@@ -856,12 +823,17 @@ proc create_internal_cell_to_bel_map {cell_instance site_map alternate_site_set 
             reset_property MANUAL_ROUTING $site
         }
     }
-    #remove_cell $cell_instance -quiet
-    puts "macro_bel_map map: $macro_bel_map"
     return $macro_bel_map
 }
 
-# assumes origin_site is the bottom left site
+## Gets the RLOC for a site, given the site and the origin site.
+#  Assumes the origin site has been correctly determined to be
+#  to the bottom left of the other site.
+#
+# @param origin_site the RPM origin site. Must be to the bottom-left. 
+# @param rloc_site the site to get the RLOC for. 
+#
+# @return The RLOC in the form of "X0Y0"
 proc get_rloc {origin_site rloc_site} {
     set origin_x [get_property RPM_X $origin_site]
     set origin_y [get_property RPM_Y $origin_site]
@@ -874,7 +846,12 @@ proc get_rloc {origin_site rloc_site} {
     return "X${rloc_x}Y${rloc_y}"
 }
 
-# Returns the bottom-left site, given a list of BELs for a macro
+## Gets the bottom-left site that should be used as X0Y0 for an RPM or XDC macro.
+#  It is possible that no internal macro cells will be placed on this site.
+#
+# @param internal_bels the internal bels of a macro to get the RPM origin for 
+#
+# @return The bottom-left site that to use as the RPM origin.
 proc get_rpm_origin {internal_bels} {
     set origin_x ""
     set origin_y ""
@@ -892,9 +869,6 @@ proc get_rpm_origin {internal_bels} {
         } 
     }
     
-    puts "origin x: $origin_x"
-    puts "origin y: $origin_y"
-    
     return [get_sites -filter "RPM_X == $origin_x && RPM_Y == $rpm_y"]
 }
 
@@ -904,32 +878,15 @@ proc get_rpm_origin {internal_bels} {
 # @param macro_ref_name the type of macro cell (lib cell)
 # @param outfile XML file handle
 proc ::tincr::write_macro_xml {macro_lib_cell site_map alternate_only_sites is_series7 outfile} {
-    
-    # initialize macro data structures
-    #set lib_cell [get_property REF_NAME $macro]
-    puts "make internal map"
-    
-    
-    #set macro_lib_cell [get_property REF_NAME $macro]
-    puts "macro lib cell is $macro_lib_cell"
-    #set cell_bel_map [dict create]
-    #set cell_instance [create_cell -reference $macro_lib_cell tmp -quiet]
-    set cell_instance [create_cell -reference $macro_lib_cell tmp]
-    puts "i made a cell: $cell_instance"
-    
-    
-    
-    set internal_cell_bel_map [create_internal_cell_to_bel_map $cell_instance $site_map $alternate_only_sites $is_series7]
-    
+    set cell_instance [create_cell -reference $macro_lib_cell tmp]   
+    set internal_cell_bel_map [create_macro_bel_map $cell_instance $site_map $alternate_only_sites $is_series7]
     
     #TODO: Incoporate internal_cell_bel_map into tmp_list
-    puts "get tmp list"
     set tmp_list [get_internal_cells_and_nets $cell_instance]
     set internal_cells [lindex $tmp_list 0]
     set macro_nets [lindex $tmp_list 1]
     set boundary_nets [lindex $tmp_list 2]
     set name_offset [expr {[string length $cell_instance] + 1}]
-    puts "print macro info"
     
     puts $outfile "    <macro>"
     puts $outfile "        <type>[get_property REF_NAME $cell_instance]</type>"
@@ -937,29 +894,21 @@ proc ::tincr::write_macro_xml {macro_lib_cell site_map alternate_only_sites is_s
     # print the macro internal cell information
     puts $outfile "        <cells>"
     foreach internal $internal_cells {
+		set internal_name [string range $internal $name_offset end]
         puts $outfile "            <internal>"
-        
-        set internal_name [string range $internal $name_offset end]
-
         puts $outfile "                <name>$internal_name</name>"
         puts $outfile "                <type>[get_property REF_NAME $internal]</type>"
         puts $outfile "            </internal>"
     }
     puts $outfile "        </cells>"
-    
+	
+	# Print the RPM information
     puts $outfile "        <rpms>"
     dict for {macro_bel internal_cell_map} $internal_cell_bel_map {
+		set origin_site [get_rpm_origin [dict values $internal_cell_map]]
         puts $outfile "            <rpm>"
-        #puts $outfile "              <name>$macro_bel</name>"
-        #puts $outfile "              <type>[tincr::prefix $macro_bel "/"]</type>"
         set macro_site [get_sites [tincr::prefix $macro_bel "/"]]
         puts $outfile "              <type>[tincr::sites::get_type $macro_site]</type>"
-        
-        puts "loop through internal cells"
-        
-        set origin_site [get_rpm_origin [dict values $internal_cell_map]]
-        puts "origin site: $origin_site"
-        
         dict for {internal_cell internal_bel} $internal_cell_map {
             set internal_bel [get_bels $internal_bel]
             set site [get_sites -of_objects $internal_bel]
@@ -967,16 +916,11 @@ proc ::tincr::write_macro_xml {macro_lib_cell site_map alternate_only_sites is_s
             puts $outfile "                <name>$internal_cell</name>"
             puts $outfile "                <bel>"
             puts $outfile "                  <id>"
-            puts "get type"
             puts $outfile "                    <site_type>[tincr::sites::get_type $site]</site_type>"
-            puts "get name"
             puts $outfile "                    <name>[tincr::suffix $internal_bel "/"]</name>"
-            puts "got name"
             puts $outfile "                  </id>"
             puts $outfile "                </bel>"
-            puts "get the rloc"
             puts $outfile "                <rloc>[get_rloc $origin_site $site]</rloc>"
-            puts "got the rloc"
             puts $outfile "              </internal>"
         }       
         puts $outfile "            </rpm>"
