@@ -790,7 +790,9 @@ proc create_internal_cell_to_bel_map {cell_instance site_map alternate_site_set 
     #puts "macro is $macro"
     #set macro_lib_cell [get_property REF_NAME $macro]
     #puts "macro lib cell is $macro_lib_cell"
-    set cell_bel_map [dict create]
+    set macro_bel_map [dict create]
+    
+    
     #set cell_instance [create_cell -reference $macro_lib_cell tmp -quiet]
     puts "macro cell instance: $cell_instance"
     set internal_cell_list [get_cells $cell_instance/* -filter {PRIMITIVE_COUNT==1 && PRIMITIVE_LEVEL!=MACRO} -quiet]
@@ -819,29 +821,34 @@ proc create_internal_cell_to_bel_map {cell_instance site_map alternate_site_set 
             if {$sitename == $actual_site_type || $ignore_sitename} {
                 # Find what bels the internal cells have been placed on
                 
+                # Get the name of the BEL the macro cell is "placed" on
+                set macro_bel $site/$beltype
+                
+                if {[dict exists $macro_bel_map $macro_bel]} {
+                    puts " !!!!!!WARNING: UNEXPECTED !!!!!!!!"
+                } 
+               
+               
+                set cell_bel_map [dict create]
+                 
+                
+                
+                
                 foreach internal_cell $internal_cell_list {
-                    #set internal_bel [get_bels -of_objects $internal_cell -quiet]
                     set internal_bel [get_bels -of_objects $internal_cell]
                     puts "internal bel: $internal_bel"
                     set cell_name [tincr::suffix $internal_cell "/"]
                     puts "cell name: $cell_name"
                     
-                    if {$internal_bel != ""} {
-                        if {[dict exists $cell_bel_map $cell_name]} {
-                            set bels [dict get $cell_bel_map $cell_name]
-                            lappend bels $internal_bel
-                            dict set cell_bel_map $cell_name $bels
-                            puts "$cell_bel_map"
-                           
-                        } else {
-                            set bels [list]
-                            lappend bels $internal_bel
-                            dict set cell_bel_map $cell_name $bels
-                            puts "$cell_bel_map"
-                        }
-                    }
+                    dict set cell_bel_map $cell_name $internal_bel
                 }
-                unplace_cell $cell_instance -quiet
+                puts "cell_bel map: $cell_bel_map"
+                
+                
+                dict set macro_bel_map $macro_bel $cell_bel_map
+                
+                
+                unplace_cell $macro_bel_map -quiet
             }
         }
         
@@ -850,7 +857,45 @@ proc create_internal_cell_to_bel_map {cell_instance site_map alternate_site_set 
         }
     }
     #remove_cell $cell_instance -quiet
-    return $cell_bel_map
+    puts "macro_bel_map map: $macro_bel_map"
+    return $macro_bel_map
+}
+
+# assumes origin_site is the bottom left site
+proc get_rloc {origin_site rloc_site} {
+    set origin_x [get_property RPM_X $origin_site]
+    set origin_y [get_property RPM_Y $origin_site]
+    set site_x [get_property RPM_X $rloc_site]
+    set site_y [get_property RPM_Y $rloc_site]
+    
+    set rloc_x [expr {$site_x - $origin_x}]
+    set rloc_y [expr {$site_y - $origin_y}]
+    
+    return "X${rloc_x}Y${rloc_y}"
+}
+
+# Returns the bottom-left site, given a list of BELs for a macro
+proc get_rpm_origin {internal_bels} {
+    set origin_x ""
+    set origin_y ""
+    
+    foreach bel $internal_bels {
+        set site [get_sites -of_objects [get_bels $bel]]
+        set rpm_x [get_property RPM_X $site]
+        set rpm_y [get_property RPM_Y $site]
+
+        if {$origin_x == "" || $rpm_x < $origin_x} {
+            set origin_x $rpm_x
+        } 
+        if {$origin_y == "" || $rpm_y < $origin_y} {
+            set origin_y $rpm_y
+        } 
+    }
+    
+    puts "origin x: $origin_x"
+    puts "origin y: $origin_y"
+    
+    return [get_sites -filter "RPM_X == $origin_x && RPM_Y == $rpm_y"]
 }
 
 ## Generates an XML cell-specification for the specified Macro cell.
@@ -880,6 +925,7 @@ proc ::tincr::write_macro_xml {macro_lib_cell site_map alternate_only_sites is_s
     #TODO: Incoporate internal_cell_bel_map into tmp_list
     puts "get tmp list"
     set tmp_list [get_internal_cells_and_nets $cell_instance]
+    set internal_cells [lindex $tmp_list 0]
     set macro_nets [lindex $tmp_list 1]
     set boundary_nets [lindex $tmp_list 2]
     set name_offset [expr {[string length $cell_instance] + 1}]
@@ -890,30 +936,53 @@ proc ::tincr::write_macro_xml {macro_lib_cell site_map alternate_only_sites is_s
     
     # print the macro internal cell information
     puts $outfile "        <cells>"
-    dict for {internal bels} $internal_cell_bel_map {
+    foreach internal $internal_cells {
         puts $outfile "            <internal>"
-        puts $outfile "                <name>$internal</name>"
-        #puts $outfile "                <type>[get_property REF_NAME [get_cells $macro/$internal]]</type>"
-        puts $outfile "                <type>[get_property REF_NAME [get_cells $cell_instance/$internal]]</type>"
-
-        if {[llength $bels] > 0} {
-            puts $outfile "                <bels>"
-            foreach bel $bels {
-                puts $outfile "                  <bel>"
-                puts $outfile "                    <id>"
-                puts $outfile "                      <site_type>[tincr::sites::get_type [get_sites -of_objects $bel]]</site_type>"
-                puts $outfile "                      <name>[tincr::suffix $bel "/"]</name>"
-                puts $outfile "                    </id>"
-                puts $outfile "                  </bel>"
-            }
-            puts $outfile "                </bels>"
-        }
         
+        set internal_name [string range $internal $name_offset end]
+
+        puts $outfile "                <name>$internal_name</name>"
+        puts $outfile "                <type>[get_property REF_NAME $internal]</type>"
         puts $outfile "            </internal>"
     }
-    
     puts $outfile "        </cells>"
- 
+    
+    puts $outfile "        <rpms>"
+    dict for {macro_bel internal_cell_map} $internal_cell_bel_map {
+        puts $outfile "            <rpm>"
+        #puts $outfile "              <name>$macro_bel</name>"
+        #puts $outfile "              <type>[tincr::prefix $macro_bel "/"]</type>"
+        set macro_site [get_sites [tincr::prefix $macro_bel "/"]]
+        puts $outfile "              <type>[tincr::sites::get_type $macro_site]</type>"
+        
+        puts "loop through internal cells"
+        
+        set origin_site [get_rpm_origin [dict values $internal_cell_map]]
+        puts "origin site: $origin_site"
+        
+        dict for {internal_cell internal_bel} $internal_cell_map {
+            set internal_bel [get_bels $internal_bel]
+            set site [get_sites -of_objects $internal_bel]
+            puts $outfile "              <internal>"
+            puts $outfile "                <name>$internal_cell</name>"
+            puts $outfile "                <bel>"
+            puts $outfile "                  <id>"
+            puts "get type"
+            puts $outfile "                    <site_type>[tincr::sites::get_type $site]</site_type>"
+            puts "get name"
+            puts $outfile "                    <name>[tincr::suffix $internal_bel "/"]</name>"
+            puts "got name"
+            puts $outfile "                  </id>"
+            puts $outfile "                </bel>"
+            puts "get the rloc"
+            puts $outfile "                <rloc>[get_rloc $origin_site $site]</rloc>"
+            puts "got the rloc"
+            puts $outfile "              </internal>"
+        }       
+        puts $outfile "            </rpm>"
+    }
+    puts $outfile "        </rpms>"
+    
     # print the macro pin information
     puts $outfile "        <pins>"
     foreach pin [get_pins -of $cell_instance] {
