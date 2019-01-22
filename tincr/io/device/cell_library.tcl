@@ -827,8 +827,8 @@ proc create_macro_bel_map {cell_instance site_map alternate_site_set {ignore_sit
 }
 
 ## Gets the RLOC for a site, given the site and the origin site.
-#  Assumes the origin site has been correctly determined to be
-#  to the bottom left of the other site.
+#   Assumes the origin site has been correctly determined to be
+#   to the bottom left of the other site.
 #
 # @param origin_site the RPM origin site. Must be to the bottom-left. 
 # @param rloc_site the site to get the RLOC for. 
@@ -847,7 +847,7 @@ proc get_rloc {origin_site rloc_site} {
 }
 
 ## Gets the bottom-left site that should be used as X0Y0 for an RPM or XDC macro.
-#  It is possible that no internal macro cells will be placed on this site.
+#   It is possible that no internal macro cells will be placed on this site.
 #
 # @param internal_bels the internal bels of a macro to get the RPM origin for 
 #
@@ -1204,18 +1204,11 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} {
     # Create the xml for each macro cell supported in the device
     puts "Creating macro definitions..."
     set supported_macros [tincr::get_supported_macro_cells]
-    puts "supported macros:"
-    puts "$supported_macros"
     
     if {[llength $supported_macros] > 0} {   
         puts $xml_out "  <macros>"
         foreach macro_lib_cell $supported_macros {
-            puts "create a tmp macro cell"
-            #set macro_cell [create_cell -reference $macro "tmp" -quiet]
-            puts "write macro xml"
             tincr::write_macro_xml $macro_lib_cell $site_map $alternate_only_sites $is_series7 $xml_out
-            puts "wrote macro xml"
-            #remove_cell $macro -quiet
         }
 
         puts $xml_out "  </macros>"
