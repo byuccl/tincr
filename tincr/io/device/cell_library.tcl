@@ -867,9 +867,10 @@ proc get_rpm_origin {internal_bels} {
         if {$origin_y == "" || $rpm_y < $origin_y} {
             set origin_y $rpm_y
         } 
+        
     }
     
-    return [get_sites -filter "RPM_X == $origin_x && RPM_Y == $rpm_y"]
+    return [get_sites -filter "RPM_X == $origin_x && RPM_Y == $origin_y"]
 }
 
 ## Generates an XML cell-specification for the specified Macro cell.
