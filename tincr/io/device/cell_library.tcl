@@ -875,8 +875,10 @@ proc get_rpm_origin {internal_bels} {
 
 ## Generates an XML cell-specification for the specified Macro cell.
 #
-# @param Macro cell instance
-# @param macro_ref_name the type of macro cell (lib cell)
+# @param macro_lib_cell a macro lib cell
+# @param site_map Dictionary mapping site types, to site locations
+# @param alternate_site_set Set of sites that are only alternate sites
+# @param is_series7 Set to true for series 7 devices
 # @param outfile XML file handle
 proc ::tincr::write_macro_xml {macro_lib_cell site_map alternate_only_sites is_series7 outfile} {
     set cell_instance [create_cell -reference $macro_lib_cell tmp]       
@@ -1003,14 +1005,18 @@ proc ::tincr::write_macro_xml {macro_lib_cell site_map alternate_only_sites is_s
 }
 
 ## Collects internal information about the specified macro to be used in the function write_macro_xml. 
-#   Specifically, three things are returned in a list object:
+#   Specifically, four things are returned in a list object:
 #   1.) A list of internal LEAF cells of the macro. If other macro primitives exist within the macro,
 #       their corresponding internal cells are included in this list. Only one level of hierarchy
 #       is searched. 
-#   2. 
+#   2.) A map from bels the macro can be placed on to maps of inner cells to bels.
 #   3.) A list of internal macro nets. One level of hierarchy is searched to find these nets 
 #   4.) A list of boundary macro nets (nets that connect to macro cell pins and not leaf cell pins)
 #
+# @param macro the macro cell instance
+# @param site_map Dictionary mapping site types, to site locations
+# @param alternate_only_sites Set of sites that are only alternate sites
+# @param ignore_sitename Set to true, if the algorithm should ignore site names while placing cells
 proc get_internal_cells_and_nets {macro site_map alternate_only_sites {ignore_sitename 0}} { 
     set internal_cell_list [get_cells $macro/* -filter {PRIMITIVE_COUNT==1 && PRIMITIVE_LEVEL!=MACRO} -quiet]
 	set macro_bel_map [dict create]
@@ -1033,6 +1039,14 @@ proc get_internal_cells_and_nets {macro site_map alternate_only_sites {ignore_si
     }
 	
 	# TODO: Use a reduced site list for common macro types (IOBs, LUT RAMs)
+	set macro_lib_cell [get_property REF_NAME $macro]
+	
+	if {[regexp -nocase {RAM[^B].*} $macro_lib_cell]} {
+		set slicem_site [dict get $site_map SLICEM]
+		set site_map [dict create]
+		dict set site_map SLICEM $slicem_site
+	}	
+	
     # Try to place the macro cell on each default site
     dict for {sitename site} $site_map {
         # set the manual routing property for a site ONLY IF the site type is an alternate only 
@@ -1043,7 +1057,6 @@ proc get_internal_cells_and_nets {macro site_map alternate_only_sites {ignore_si
         }
         
         if {[catch {[place_cell $macro $site]} err] == 0} {
-            puts "no catch"
             set beltype [get_property BEL $macro]
             set actual_site_type [lindex [split [get_property BEL $macro] "."] 0]
             
