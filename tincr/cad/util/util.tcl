@@ -56,6 +56,7 @@ namespace eval ::tincr {
         organize_by \
         print_verbose \
         assert \
+        prefix \
         suffix \
         set_tcl_display_limit \
         reset_tcl_display_limit
@@ -1270,6 +1271,16 @@ proc ::tincr::add_extension { args } {
     }
     
     return $filename
+}
+
+## Splits the <code>string</code> by <code>token</code>, and returns the first element in the list.
+#  Helper function used to get the type of Vivado elements. For example, the call
+#  <code>prefix "I/am/a/test" "/"</code> will return the string "I."
+#
+# @param string The string to split 
+# @param token The token to split the string on
+proc ::tincr::prefix { string token } {
+    return [lindex [split $string $token] 0]
 }
 
 ## Splits the <code>string</code> by <code>token</code>, and returns the last element in the list.

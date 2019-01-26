@@ -301,6 +301,47 @@ proc ::tincr::get_pins_to_lock {cell} {
     return $pins_to_lock
 }
 
+## Creates a dictionary that maps a site type to a physical site location for 
+#   the given macro cells. Attempts to find common cases to reduce runtime
+#   and defaults to ::tincr::sites::unique if necessary.
+#
+# @returns 
+#           A list with two elements: <br>
+#           (1) The first element is a dictionary that maps a site type to a site location <br>
+#           (2) A set of site types that are only alternate site types <br>
+proc get_unique_macro_sites {macro_cells} {
+    set default_sites [dict create]
+    set alternate_only_site_set [list]
+    set get_unique_sites 0
+
+    # Find common cases for the macro cells
+    foreach macro $macro_cells {
+        set macro_lib_cell [get_property REF_NAME $macro]
+
+        if {[regexp -nocase {RAM[^B].*} $macro_lib_cell]} {
+            set slicem_sites [get_sites -filter "SITE_TYPE == SLICEM && IS_USED == FALSE"]
+            dict set default_sites "SLICEM" [lindex $slicem_sites 0]
+        } elseif {[string match {*IOB*} $macro_lib_cell]} {
+            set iob_sites [get_sites -filter { SITE_TYPE =~ *IOB* && IS_USED == FALSE } ]
+            foreach iob_site $iob_sites {
+                set default_site_type [get_property SITE_TYPE $iob_site -quiet]
+                if { [dict exists $default_sites $default_site_type] == 0 } {
+                    dict set default_sites $default_site_type $iob_site
+                }
+            }
+        } else {
+            set get_unique_sites 1
+            break
+        }
+    } 
+
+    if {$get_unique_sites} {
+        return [tincr::sites::unique 1]
+    } else {
+        return [list $default_sites $alternate_only_site_set]
+    }
+}
+
 ## Looks for macro cells in the design that aren't in the list of cells returned from
 # the function call "get_lib_cells", and writes the cell library XML for these cells.
 # TODO: add caching to this
@@ -343,17 +384,25 @@ proc ::tincr::write_macros { {filename macros.xml } } {
         }
     }
     
-    set internal_net_map [dict create]
-    # write the XML for new macros
-    foreach macro $macros_to_write {
-        set internal_nets [tincr::write_macro_xml $macro $xml]
-        dict set internal_net_map [get_property REF_NAME $macro] $internal_nets
-    }
-        
-    # Create the map of type -> internal netnames for all macros
-    foreach macro $macros_in_design {
-        if { [dict exists $internal_net_map [get_property REF_NAME $macro]] == 0 } {
-            dict set internal_net_map [get_property REF_NAME $macro] [get_internal_macro_nets $macro]
+    if {[llength $macro_cells] > 0 } {
+        set unique_macro_sites [get_unique_macro_sites $macro_cells]
+        set site_map [lindex $unique_macro_sites 0]
+        set alternate_only_sites [lindex $unique_macro_sites 1]
+        set is_series7 [tincr::parts::is_series7]
+
+        set internal_net_map [dict create]
+        # write the XML for new macros
+        foreach macro $macros_to_write {
+            set macro_lib_cell [get_property REF_NAME $macro]
+            set internal_nets [tincr::write_macro_xml $macro_lib_cell $site_map $alternate_only_sites $is_series7 $xml]
+            dict set internal_net_map [get_property REF_NAME $macro] $internal_nets
+        }
+
+        # Create the map of type -> internal netnames for all macros
+        foreach macro $macros_in_design {
+            if { [dict exists $internal_net_map [get_property REF_NAME $macro]] == 0 } {
+                dict set internal_net_map [get_property REF_NAME $macro] [get_internal_macro_nets $macro]
+            }
         }
     }
     
@@ -395,7 +444,7 @@ proc ::tincr::write_placement_rs2 { {filename placement.rsc} }  {
     }
 
     # write placement information for leaf and internal cells
-    set cells [get_cells -hierarchical -filter {PRIMITIVE_LEVEL!=MACRO && BEL!="" && PRIMITIVE_COUNT==1}]
+    set cells [get_cells -hierarchical -filter {PRIMITIVE_LEVEL!=MACRO && BEL!="" && PRIMITIVE_COUNT==1} -quiet]
 
     # print the placement location and pin-mappings foreach cell in the design
     foreach cell $cells {
