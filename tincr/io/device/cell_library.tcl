@@ -794,7 +794,6 @@ proc get_rpm_origin {internal_bels} {
         if {$origin_y == "" || $rpm_y < $origin_y} {
             set origin_y $rpm_y
         } 
-
     }
 
     return [get_sites -filter "RPM_X == $origin_x && RPM_Y == $origin_y"]
@@ -822,7 +821,7 @@ proc ::tincr::write_macro_xml {macro_lib_cell site_map alternate_only_sites is_s
     # print the macro internal cell information
     puts $outfile "        <cells>"
     foreach internal $internal_cells {
-		set internal_name [string range $internal $name_offset end]
+        set internal_name [string range $internal $name_offset end]
         puts $outfile "            <internal>"
         puts $outfile "                <name>$internal_name</name>"
         puts $outfile "                <type>[get_property REF_NAME $internal]</type>"
@@ -833,7 +832,7 @@ proc ::tincr::write_macro_xml {macro_lib_cell site_map alternate_only_sites is_s
 	# Print the RPM information
     puts $outfile "        <rpms>"
     dict for {macro_bel internal_cell_map} $internal_cell_bel_map {
-		set origin_site [get_rpm_origin [dict values $internal_cell_map]]
+        set origin_site [get_rpm_origin [dict values $internal_cell_map]]
         puts $outfile "            <rpm>"
         set macro_site [get_sites [tincr::prefix $macro_bel "/"]]
         puts $outfile "              <type>[tincr::sites::get_type $macro_site]</type>"
@@ -946,7 +945,7 @@ proc ::tincr::write_macro_xml {macro_lib_cell site_map alternate_only_sites is_s
 # @param ignore_sitename Set to true, if the algorithm should ignore site names while placing cells
 proc get_internal_cells_and_nets {macro site_map alternate_only_sites {ignore_sitename 0}} { 
     set internal_cell_list [get_cells $macro/* -filter {PRIMITIVE_COUNT==1 && PRIMITIVE_LEVEL!=MACRO} -quiet]
-	set macro_bel_map [dict create]
+    set macro_bel_map [dict create]
     set internal_net_list [get_nets $macro/*]
     set boundary_nets ""
     
@@ -964,9 +963,7 @@ proc get_internal_cells_and_nets {macro site_map alternate_only_sites {ignore_si
             ::struct::set add boundary_nets [get_nets -boundary_type lower -of $ipin]
         }
     }
-	
 
-	
     # Try to place the macro cell on each default site
     dict for {sitename site} $site_map {
         # set the manual routing property for a site ONLY IF the site type is an alternate only 
@@ -987,7 +984,7 @@ proc get_internal_cells_and_nets {macro site_map alternate_only_sites {ignore_si
                 set macro_bel $site/$beltype
                 set cell_bel_map [dict create]
 
-				# Find what bels the internal cells have been placed on
+                # Find what bels the internal cells have been placed on
                 foreach internal_cell $internal_cell_list {
                     set internal_bel [get_bels -of_objects $internal_cell]
                     set cell_name [tincr::suffix $internal_cell "/"]                    
