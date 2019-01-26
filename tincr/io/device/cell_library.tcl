@@ -879,14 +879,12 @@ proc get_rpm_origin {internal_bels} {
 # @param macro_ref_name the type of macro cell (lib cell)
 # @param outfile XML file handle
 proc ::tincr::write_macro_xml {macro_lib_cell site_map alternate_only_sites is_series7 outfile} {
-    set cell_instance [create_cell -reference $macro_lib_cell tmp]   
-    set internal_cell_bel_map [create_macro_bel_map $cell_instance $site_map $alternate_only_sites $is_series7]
-    
-    #TODO: Incoporate internal_cell_bel_map into tmp_list
-    set tmp_list [get_internal_cells_and_nets $cell_instance]
+    set cell_instance [create_cell -reference $macro_lib_cell tmp]       
+    set tmp_list [get_internal_cells_and_nets $cell_instance $site_map $alternate_only_sites $is_series7]
     set internal_cells [lindex $tmp_list 0]
-    set macro_nets [lindex $tmp_list 1]
-    set boundary_nets [lindex $tmp_list 2]
+	set internal_cell_bel_map [lindex $tmp_list 1]
+    set macro_nets [lindex $tmp_list 2]
+    set boundary_nets [lindex $tmp_list 3]
     set name_offset [expr {[string length $cell_instance] + 1}]
     
     puts $outfile "    <macro>"
@@ -1009,12 +1007,13 @@ proc ::tincr::write_macro_xml {macro_lib_cell site_map alternate_only_sites is_s
 #   1.) A list of internal LEAF cells of the macro. If other macro primitives exist within the macro,
 #       their corresponding internal cells are included in this list. Only one level of hierarchy
 #       is searched. 
-#   2.) A list of internal macro nets. One level of hierarchy is searched to find these nets 
-#   3.) A list of boundary macro nets (nets that connect to macro cell pins and not leaf cell pins)
+#   2. 
+#   3.) A list of internal macro nets. One level of hierarchy is searched to find these nets 
+#   4.) A list of boundary macro nets (nets that connect to macro cell pins and not leaf cell pins)
 #
-proc get_internal_cells_and_nets {macro} { 
-    
+proc get_internal_cells_and_nets {macro site_map alternate_only_sites {ignore_sitename 0}} { 
     set internal_cell_list [get_cells $macro/* -filter {PRIMITIVE_COUNT==1 && PRIMITIVE_LEVEL!=MACRO} -quiet]
+	set macro_bel_map [dict create]
     set internal_net_list [get_nets $macro/*]
     set boundary_nets ""
     
@@ -1032,12 +1031,51 @@ proc get_internal_cells_and_nets {macro} {
             ::struct::set add boundary_nets [get_nets -boundary_type lower -of $ipin]
         }
     }
+	
+	# TODO: Use a reduced site list for common macro types (IOBs, LUT RAMs)
+    # Try to place the macro cell on each default site
+    dict for {sitename site} $site_map {
+        # set the manual routing property for a site ONLY IF the site type is an alternate only 
+        set is_alternate 0
+        if { [::struct::set contains $alternate_only_sites $sitename] } {
+            set is_alternate 1
+            set_property MANUAL_ROUTING $sitename $site 
+        }
+        
+        if {[catch {[place_cell $macro $site]} err] == 0} {
+            puts "no catch"
+            set beltype [get_property BEL $macro]
+            set actual_site_type [lindex [split [get_property BEL $macro] "."] 0]
+            
+            # Need to add a check to verify that the site-type did not implicitly change when
+            # the BEL was placed. If it has, then the cell cannot be placed on the site
+            if {$sitename == $actual_site_type || $ignore_sitename} {
+                # Get the name of the BEL the macro cell is "placed" on
+                set macro_bel $site/$beltype
+                set cell_bel_map [dict create]
+
+				# Find what bels the internal cells have been placed on
+                foreach internal_cell $internal_cell_list {
+                    set internal_bel [get_bels -of_objects $internal_cell]
+                    set cell_name [tincr::suffix $internal_cell "/"]                    
+                    dict set cell_bel_map $cell_name $internal_bel
+                }
+
+                dict set macro_bel_map $macro_bel $cell_bel_map
+                unplace_cell $macro -quiet
+            }
+        }
+        
+        if {$is_alternate} {
+            reset_property MANUAL_ROUTING $site
+        }
+    }
     
     foreach ipin [get_pins -of $macro] {
         ::struct::set add boundary_nets [get_nets -boundary_type lower -of $ipin -quiet]
     }
     
-    return [list $internal_cell_list $internal_net_list $boundary_nets]
+    return [list $internal_cell_list $macro_bel_map $internal_net_list $boundary_nets]
 }
 
 ## Returns the internal leaf pins that the corresponding external macro
