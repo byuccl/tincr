@@ -27,6 +27,7 @@ namespace eval ::tincr::sites {
         get_types \
         get_type \
         set_type \
+        get_rloc \
         get_routing_muxes \
         get_info \
         compatible_with \
@@ -207,6 +208,11 @@ proc ::tincr::sites::unique { {include_alternate_only_sites 0} } {
             dict set default_sites $default_site_type $site
         }
 
+        # Prefer bonded IOBs if they are available.
+        if { [dict exists $default_sites $default_site_type] && [string match {*IOB*} $default_site_type] && [get_property IS_BONDED $site] == 1 } {
+            dict set default_sites $default_site_type $site
+        }
+
         # add all alternate site types to the alternate site map
         foreach alternate_type [get_property ALTERNATE_SITE_TYPES $site] {
             if {![dict exists $alternates $alternate_type]} {
@@ -360,6 +366,26 @@ proc ::tincr::sites::set_type { sites {type ""} } {
     
     return $sites
 }
+
+## Gets the RLOC for a site, given the site and the origin site.
+#   Assumes the origin site has been correctly determined to be
+#   to the bottom left of the other site.
+#
+# @param origin_site the RPM origin site. Must be to the bottom-left. 
+# @param rloc_site the site to get the RLOC for. 
+#
+# @return The RLOC in the form of "X0Y0"
+proc ::tincr::sites::get_rloc {origin_site rloc_site} {
+    set origin_x [get_property RPM_X $origin_site]
+    set origin_y [get_property RPM_Y $origin_site]
+    set site_x [get_property RPM_X $rloc_site]
+    set site_y [get_property RPM_Y $rloc_site]
+
+    set rloc_x [expr {$site_x - $origin_x}]
+    set rloc_y [expr {$site_y - $origin_y}]
+
+    return "X${rloc_x}Y${rloc_y}"
+} 
 
 # TODO Planned feature: create a "routing mux" Tcl class using this and similar methods to populate it.
 ## Get a list of the routing bels (site muxes) of a site. Unfortunately, site muxes cannot be returned as first-class Tcl objects. No Vivado Tcl command can get handles to the mux objects. In Vivado 2013.2 and earlier, the command internal::get_rbels returns routing bels of a site. The only way to get handles to the routing bels in later versions of Vivado seems to be by clicking on them in the GUI and calling get_selected_objects.
