@@ -384,13 +384,13 @@ proc ::tincr::write_macros { {filename macros.xml } } {
         }
     }
     
+    set internal_net_map [dict create]
     if {[llength $macro_cells] > 0 } {
         set unique_macro_sites [get_unique_macro_sites $macro_cells]
         set site_map [lindex $unique_macro_sites 0]
         set alternate_only_sites [lindex $unique_macro_sites 1]
         set is_series7 [tincr::parts::is_series7]
-
-        set internal_net_map [dict create]
+        
         # write the XML for new macros
         foreach macro $macros_to_write {
             set macro_lib_cell [get_property REF_NAME $macro]
