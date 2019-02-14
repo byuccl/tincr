@@ -58,10 +58,22 @@ namespace eval ::tincr {
         assert \
         suffix \
         set_tcl_display_limit \
-        reset_tcl_display_limit
+        reset_tcl_display_limit \
+        stdout_to_variable
 }
 
 # ================== Files and Other I/O ================== #
+
+proc ::tincr::stdout_to_variable {cmd} {
+    # example: set var [tincr::stdout_to_variable {unplace_cell [get_cells inst_ram_ctrl/gen_generic_sp_ram[2].inst_generic_sp_ram/sp_ram_reg_0_31_0_0__51]}]
+    set tmpFile ".Tincr/tmp/tmp.txt"   
+    uplevel $cmd > $tmpFile
+    set fp [open $tmpFile r]
+    set file_data [read $fp]
+    close $fp
+    file delete -force $tmpFile
+    return $file_data
+}
 
 proc ::tincr::refresh_packages { } {
     puts "Refreshing all Tincr packages:"
