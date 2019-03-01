@@ -17,9 +17,11 @@ namespace eval ::tincr:: {
         write_placement_rs2\
         write_routing_rs2 \
         write_rscp \
+        write_rm_rscp \
         write_tcp_for_pblock \
         implement_rm \
-        write_tcp_ooc_test
+        write_tcp_ooc_test \
+        write_part_pins
 }
 
 # TODO Create bulleted list of the files in a TCP
@@ -51,28 +53,19 @@ proc ::tincr::write_tcp {filename} {
 #   <a href="https://github.com/byuccl/RapidSmith2/tree/master/doc">https://github.com/byuccl/RapidSmith2/tree/master/doc</a>
 #   and Thomas Townsend's Masters Thesis.
 #
-#   USAGE: tincr::write_rscp [-quiet] [-mode mode] [-part partName] [-static staticDCP.dcp] [-pblock pblock] filename.rscp
+#   USAGE: tincr::write_rscp [-quiet] [-ooc] filename.rscp
 #
 # @params args Argument list as defined above. The flag "-quiet" 
 #   can be used to suppress console output. The flag "-ooc" needs to be 
-#   set for designs implemented "out-of-context". The "-part partName"  
-#   option is used as the part identifier in the design.info if specified.
-#   The "-static staticDCP.dcp" option needs to be used if the resources that
-#   a static design uses (in a PR flow) need to be saved as part of the RSCP.
-#   The "-pblock pblock" option should also be used in this case. The "pblock"
-#   specifies the name of the pblock that should be searched for used resources.
-#   The filename parameter is the name for the generated RSCP.
+#   set for designs implemented "out-of-context". The filename parameter is the name
+#   for the generated RSCP.
 proc ::tincr::write_rscp {args} {
     set quiet 0
-    #set ooc 0
+    set ooc 0
     set mode ""
-    set partName ""
-    set staticDCP ""
-    set pblock ""
-    
-    ::tincr::parse_args {mode partName staticDCP pblock} {quiet} {} {filename} $args
+    ::tincr::parse_args {} {quiet ooc} {} {filename} $args
     set filename [::tincr::add_extension ".rscp" $filename]
-    file mkdir $filename
+    file mkdir $filename   
 
     set old_verbose $::tincr::verbose 
     if {$quiet} {
@@ -80,11 +73,15 @@ proc ::tincr::write_rscp {args} {
     } else {
         set ::tincr::verbose 1
     }
+    
+    if {$ooc} {
+        set mode "ooc"
+    }    
        
     ::tincr::print_verbose "Writing RapidSmith2 checkpoint to $filename..."
 
     # generate the design info file
-    write_design_info -mode $mode -part $partName "${filename}/design.info"
+    write_design_info -mode $mode -part "" "${filename}/design.info"
     
     # generate the EDIF
     set start_time [clock clicks -microseconds]
@@ -115,24 +112,90 @@ proc ::tincr::write_rscp {args} {
     write_routing_rs2 -global_logic "${filename}/routing.rsc" $internal_net_map
     set end_time [clock clicks -microseconds]
     ::tincr::print_verbose "Routing Done...([::tincr::format_time [expr $end_time -$start_time] s]s)"
-    
-    # Write static used resources information
-    if {$staticDCP != "" && $pblock != ""} {
-        #TODO: Pass the pblock directly (get it as an arg to the main procedure).
-        # There's no need to have more than one pblock's used resources in this file.
-        set start_time [clock clicks -microseconds]
-        ::tincr::write_static_resources $staticDCP $pblock "${filename}/static_resources.rsc"
-        set end_time [clock clicks -microseconds]
-        ::tincr::print_verbose "Static Used Resources Done...([::tincr::format_time [expr $end_time -$start_time] s]s)"
-    }
      
     ::tincr::print_verbose "Successfully Created RapidSmith2 Checkpoint!"
     set ::tincr::verbose $old_verbose
 }
 
+# Note: I needed a sepeperate read_rm_tcp, so a seperate write_rm_rscp makes sense.
+# TODO: Replace runtime measurements with tincr::report_runtime.
+## Generates an RM RSCP. May be called either on an OOC checkpoint only containing the RM (TODO: or the full design)
+#
+#   USAGE: tincr::write_rm_rscp [-quiet] partialDeviceName staticDCP pblock filename
+#
+# @params args Argument list as defined above. 
+#         The flag "-quiet"  can be used to suppress console output. 
+#         The required partialDeviceName parameter is used as the part identifier in the design.info.
+#         The required staticDCP parameter specifies the path to the static DCP used to identify static resources.
+#         The required pBlock parameter specifies the name of the pblock that should be searched for used resources.
+#         The required filename parameter is the name for the generated RSCP.
+proc ::tincr::write_rm_rscp {args} {
+    set quiet 0
+    set partialDeviceName ""
+    set staticDCP ""
+    set pblock ""
+    set rm_mode 1
+    
+    ::tincr::parse_args {} {quiet} {} {partialDeviceName staticDCP pblock filename} $args
+    set filename [::tincr::add_extension ".rscp" $filename]
+    file mkdir $filename
+
+    set old_verbose $::tincr::verbose 
+    if {$quiet} {
+        set ::tincr::verbose 0
+    } else {
+        set ::tincr::verbose 1
+    }
+       
+    ::tincr::print_verbose "Writing RapidSmith2 checkpoint to $filename..."
+
+    # generate the design info file
+    write_design_info -mode "rm" -part $partialDeviceName "${filename}/design.info"
+    
+    # generate the EDIF
+    set start_time [clock clicks -microseconds]
+    write_edif -force "${filename}/netlist.edf"
+    set end_time [clock clicks -microseconds]
+    ::tincr::print_verbose "EDIF Done...([::tincr::format_time [expr $end_time -$start_time] s]s)"
+    
+    # generate the macros.xml
+    set start_time [clock clicks -microseconds]
+    set internal_net_map [write_macros "${filename}/macros.xml"]
+    set end_time [clock clicks -microseconds]
+    ::tincr::print_verbose "Macros Done...([::tincr::format_time [expr $end_time -$start_time] s]s)"
+    
+    # write design constraints
+    set start_time [clock clicks -microseconds]
+    write_xdc -force "${filename}/constraints.xdc"
+    set end_time [clock clicks -microseconds]
+    ::tincr::print_verbose "XDC Done...([::tincr::format_time [expr $end_time -$start_time] s]s)"
+    
+    # write placement information
+    set start_time [clock clicks -microseconds]
+    write_placement_rs2 "${filename}/placement.rsc" $rm_mode
+    set end_time [clock clicks -microseconds]
+    ::tincr::print_verbose "Placement Done...([::tincr::format_time [expr $end_time -$start_time] s]s)"
+    
+    # write routing information
+    set start_time [clock clicks -microseconds]
+    write_routing_rs2 -global_logic "${filename}/routing.rsc" $internal_net_map
+    set end_time [clock clicks -microseconds]
+    ::tincr::print_verbose "Routing Done...([::tincr::format_time [expr $end_time -$start_time] s]s)"
+    
+    # Write static used resources information   
+    set start_time [clock clicks -microseconds]
+    ::tincr::write_static_resources $staticDCP $pblock "${filename}/placement.rsc" "${filename}/static_resources.rsc"
+    set end_time [clock clicks -microseconds]
+    ::tincr::print_verbose "Static Used Resources Done...([::tincr::format_time [expr $end_time -$start_time] s]s)"
+    
+    ::tincr::print_verbose "Successfully Created RapidSmith2 Checkpoint!"
+    set ::tincr::verbose $old_verbose
+}
+
+
 ## Reads a RM (reconfigurable module) TCP design into a corresponding static DCP design in Vivado.
 #
-# USAGE: tincr::read_rm_tcp [-quiet] [-verbose] [-static staticDCP.dcp] [-rp_name rp_name] filename
+# USAGE: tincr::read_rm_tcp [-quiet] [-verbose] staticDCP rp_name filename
 #   
 #   @param args Argument list shown in the usage statement above. The "-quiet " flag
 #       can be used to suppress console output. The "-verbose" flag can be used to print
@@ -144,7 +207,7 @@ proc ::tincr::read_rm_tcp {args} {
     set static_dcp ""
     set rp_name ""
 
-    ::tincr::parse_args {static_dcp rp_name} {quiet verbose} {} {filename} $args
+    ::tincr::parse_args {} {quiet verbose} {} {static_dcp rp_name filename} $args
     
     set q "-quiet"
     set ::tincr::verbose 1
@@ -162,8 +225,6 @@ proc ::tincr::read_rm_tcp {args} {
     # Open static design
     open_checkpoint $static_dcp
 
-    
-    # Should I lock_design -level routing before I update_design? Seems like Xilinx might do this.
     lock_design -level routing
     # Update the RP blackbox with the RM netlist
     set edif_runtime [report_runtime "update_design -verbose -cells $rp_name -from_file ${filename}/netlist.edf" s]
@@ -296,10 +357,7 @@ proc ::tincr::read_tcp {args} {
     set quiet 0
     set verbose 0
     set ooc 0
-    set static_dcp ""
-    set rp_name ""
-
-    ::tincr::parse_args {static_dcp rp_name} {quiet verbose ooc} {} {filename} $args
+    ::tincr::parse_args {} {quiet verbose ooc} {} {filename} $args
     
     set q "-quiet"
     set ::tincr::verbose 1
@@ -313,7 +371,7 @@ proc ::tincr::read_tcp {args} {
     
     # Set the link mode to "out_of_context" or "default" based on the command arguments
     # If a static_dcp is specified, ooc mode is implied.
-    if {$ooc || ($static_dcp != "")} {
+    if {$ooc} {
         set link_mode "out_of_context"
     } else {
         set link_mode "default"
@@ -353,7 +411,6 @@ proc ::tincr::read_tcp {args} {
         }
     }       
   
-    # unlock the design at the end of the import process...do we need to do this?
     ::tincr::print_verbose "Unlocking the design..."
     lock_design $q -level placement -unlock
 
@@ -430,55 +487,6 @@ proc ::tincr::write_design_info {args} {
     }
     
     close $outfile
-}
-
-## Writes a "placement.xdc" file for a TCP. This contains all
-#   placement information or a design.
-#
-# \deprecated This function is no longer used to represent placement. See tincr::write_placement_rs2 instead.
-#
-proc ::tincr::write_placement_xdc {args} {
-    ::tincr::parse_args {cells} {} {} {filename} $args
-
-    set filename [::tincr::add_extension ".xdc" $filename]
-
-    set xdc [open $filename w]
-
-    #set f2 [::tincr::add_extension ".txt" $filename]
-    #set carry_xdc [open $f2 w]
-
-    #shouldn't this be in the constraints file? I guess it needs to be here actually
-    foreach port [get_ports] {
-        if {[get_property PACKAGE_PIN $port] != ""} {
-            puts $xdc "set_property PACKAGE_PIN [get_property PACKAGE_PIN $port] \[get_ports \{[get_name $port]\}\]"
-        }
-    }
-
-    # if the cells option is not provided, do all cells
-    if {[catch {$cells == ""}]} {
-        set cells [get_cells -hierarchical -filter {PRIMITIVE_LEVEL!=INTERNAL}]
-    }
-
-    foreach cell [sort_cells_for_export $cells] {
-    
-        # ASSUMPTION: I am assuming that the only macros that are un-flattenable are LUT RAMS
-        # Also, through experimentation, it looks like only one LUT RAM can be placed on a site at a time
-        # so we don't have to worry about ordering distributed rams
-        if { [get_property PRIMITIVE_LEVEL $cell] == "MACRO" } {
-            puts "Warning: There is an unflattened macro in the design...this is currently not supported with RapidSmith2"
-            puts $xdc "set_property LOC [get_property LOC $cell] \[get_cells \{[get_name $cell]\}\]"
-        } else {
-            puts $xdc "set_property BEL [get_property BEL $cell] \[get_cells \{[get_name $cell]\}\]"
-            puts $xdc "set_property LOC [get_property LOC $cell] \[get_cells \{[get_name $cell]\}\]"
-
-            set pins_to_lock [get_pins_to_lock $cell]
-            if {[llength $pins_to_lock] != 0} {
-                puts $xdc "set_property LOCK_PINS \{$pins_to_lock\} \[get_cells \{[get_name $cell]\}\]"
-            }
-        }
-    }
-
-    close $xdc
 }
 
 ## Writes a "routing.xdc" file for a TCP. This contains all
@@ -676,7 +684,9 @@ proc ::tincr::write_macros { {filename macros.xml } } {
 #       - Internal cell properties
 #
 # @param filename The name of the placement checkpoint file, "placement.rsc" is the default.
-proc ::tincr::write_placement_rs2 { {filename placement.rsc} }  {
+# @param rm_mode If 1, the mode is reconfig_module.
+# @param pblock If specified, only get placement info for resources within the pblock.
+proc ::tincr::write_placement_rs2 { {filename placement.rsc} {rm_mode 0} }  {
 
     set filename [::tincr::add_extension ".rsc" $filename]
     set txt [open $filename w]
@@ -762,6 +772,11 @@ proc ::tincr::write_placement_rs2 { {filename placement.rsc} }  {
         }
     }
     
+    # write out-of-context hierarchical ports to the file
+    if {!$rm_mode} {
+        ::tincr::write_part_pins $txt
+    }
+    
     close $txt
 }
 
@@ -835,11 +850,6 @@ proc ::tincr::write_routing_rs2 {args} {
     
     # write the static and routethrough lut information to the file
     write_static_and_routethrough_luts $used_sites $channel_out
-    
-    # write out-of-context hierarchical ports to the file
-    
-    # TODO: Don't do this for partial reconfig mode?
-    write_ooc_ports $channel_out
     
     # select which nets to export (do not get the hierarchical nets)
     if {$global_logic} {
@@ -946,17 +956,44 @@ proc write_static_and_routethrough_luts { site_list channel } {
 #   to the port.
 #
 # @param channel File handle to write the ooc ports to
-proc write_ooc_ports {channel} {
-    # for OOC checkpoints with hierarchical ports, print the starting wires for each port
-    # OOC checkpoints has the design property IS_BLOCK set to true
-    if {[get_property IS_BLOCK [current_design]]} {
-        # TODO: could change this to have a token of "OOC_PORTS" with a list of ports all on one line, but his is oke for now
-        foreach ooc_port [get_ports -filter HD.ASSIGNED_PPLOCS!="" -quiet] {
-             #TODO: Remove the hierarchical part of it? i.e. alu_reconfig/a -> a
-             puts $channel "OOC_PORT $ooc_port [string map {" " "/"} [get_property HD.ASSIGNED_PPLOCS $ooc_port]]" 
-        }
+#proc write_ooc_ports {channel} {
+#    # for OOC checkpoints with hierarchical ports, print the starting wires for each port
+#    # OOC checkpoints has the design property IS_BLOCK set to true
+#    if {[get_property IS_BLOCK [current_design]]} {
+#        # TODO: could change this to have a token of "OOC_PORTS" with a list of ports all on one line, but his is oke for now
+#        foreach ooc_port [get_ports -filter HD.ASSIGNED_PPLOCS!="" -quiet] {
+#             #TODO: Remove the hierarchical part of it? i.e. alu_reconfig/a -> a
+#             puts $channel "OOC_PORT $ooc_port [string map {" " "/"} [get_property HD.ASSIGNED_PPLOCS $ooc_port]]" 
+#        }
+#    }
+#} 
+
+## Finds partition pins (out-of-context ports) in a design and adds them to the placement.rsc file. 
+#   Out-of-context ports are those that aren't mapped to PAD BELs, but are partially routed to a specific
+#   wire in the device. The device wire represents the start/end wire of nets connected
+#   to the port.
+#
+# @param channel File handle to write the ooc ports to
+proc ::tincr::write_part_pins {channel} {
+    foreach part_pin [get_pins -filter HD.ASSIGNED_PPLOCS!="" -quiet] {
+	     set pin_name [get_property REF_PIN_NAME [get_pins $part_pin]]
+		 set direction [get_property DIRECTION [get_pins $part_pin]]
+		 
+		 # Change the direction to be from the correct perspective
+		 set direction [expr {$direction eq "IN" ? "OUT" : "IN"}] 
+		 
+		 # Get the partition pin's wire
+		 set wire_name [string map {" " "/"} [get_property HD.ASSIGNED_PPLOCS $part_pin]]
+		 
+		 # Use the wire to get the partition pin's node
+		 set node [get_nodes -of_object [get_wires $wire_name]]
+		 
+         # Are there cases where the wire is needed instead of the node?
+         puts $channel "PART_PIN $pin_name $node $direction" 
     }
 } 
+
+
 
 ## Writes the physical elements used in each net of the design. This includes the
 #   pips and site pins of the net. VCC and GND nets are treated specially. The physical 
