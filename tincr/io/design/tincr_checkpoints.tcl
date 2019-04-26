@@ -235,17 +235,19 @@ proc ::tincr::read_rm_tcp {args} {
     
     # Route the partition pin nets
     set partpin_runtime [report_runtime "read_xdc ${filename}/partpin_routing.xdc" s]
-    
-    # TODO: Apply all other user constraints.
-    
-    # TODO: Also apply the static constraints again. For some reason, Vivado needs the port constraints set again, otherwise
-    # it will throw "ERROR: [DRC 23-20] Rule violation (UCIO-1) Unconstrained Logical Port", complaining that the ports aren'take
-    # constrained, even if they were already constrained in the static design.
-    
-    
+       
     ::tincr::print_verbose "Unlocking the design..."
     lock_design $q -level placement -unlock
-       
+    
+    # Apply the (I/O) constraints again. For some reason, Vivado needs the port constraints set again, even though they are already set.
+    # Otherwise, it will throw "ERROR: [DRC 23-20] Rule violation (UCIO-1) Unconstrained Logical Port", at bitgen.
+    #TODO: Measure this time. Also, note that reading in the constraints.xdc at this point doesn't work for some reason.
+    foreach port [get_ports] {
+        set package_pin [get_property PACKAGE_PIN $port]
+        set io_standard [get_property IOSTANDARD $port]
+        set_property -dict "PACKAGE_PIN $package_pin IOSTANDARD $io_standard" $port
+    }    
+    
     set total_runtime [expr { $edif_runtime + $place_runtime + $route_runtime + $partpin_runtime} ]
     ::tincr::print_verbose "RM design importation complete. ($total_runtime seconds)"    
 }

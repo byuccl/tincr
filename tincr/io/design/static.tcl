@@ -23,28 +23,31 @@ proc get_rp_site_routethroughs { tiles channel } {
     # Get all nodes that are in the tiles we care about and that also have nets
     set nodes [::struct::set intersect [get_nodes -quiet -of_objects $nets] [get_nodes -quiet -of_objects $tiles]]
     
-    # Get the list of nets that those nodes deal with
-    set nets [get_nets -of_objects $nodes]
-    
-    # Get a subset of the PIPs that are within the tiles and are used in nets we care about.
-    set tile_pips [lsort [get_pips -quiet -of_objects $tiles -filter {!IS_TEST_PIP && !IS_EXCLUDED_PIP}]]
-    set net_pips [lsort [get_pips -quiet -of_objects $nets -filter {!IS_TEST_PIP && !IS_EXCLUDED_PIP}]]
-    set pips [::struct::set intersect $tile_pips $net_pips]
+    if {[llength $nodes] != 0} {
 
-    foreach pip $pips {
-    # If the PIP is within the tiles of the pblock
-    set uphill_node [get_nodes -quiet -uphill -of_object $pip]
-    set downhill_node [get_nodes -quiet -downhill -of_object $pip]
+        # Get the list of nets that those nodes deal with
+        set nets [get_nets -of_objects $nodes]
         
-    # A route-through PIP must have an uphill (source) and a downhill (sink) node
-    if {$uphill_node != "" && $downhill_node != ""} {
-        # If PSEUDO, it's a route-through PIP (and not a "real" PIP).
-        if {[get_property IS_PSEUDO $pip]} {
-            set src_pin [get_site_pins -of_object [get_nodes -uphill -of_object $pip]]
-            #set snk_pin [get_site_pins -of_object [get_nodes -downhill -of_object $pip]]
-        #lappend site_rts "[get_sites -of_object $src_pin]([::tincr::site_pins get_info $src_pin name]-[::tincr::site_pins get_info $snk_pin name])" 
-        lappend site_rts "[get_sites -of_object $src_pin]"
-        }
+        # Get a subset of the PIPs that are within the tiles and are used in nets we care about.
+        set tile_pips [lsort [get_pips -quiet -of_objects $tiles -filter {!IS_TEST_PIP && !IS_EXCLUDED_PIP}]]
+        set net_pips [lsort [get_pips -quiet -of_objects $nets -filter {!IS_TEST_PIP && !IS_EXCLUDED_PIP}]]
+        set pips [::struct::set intersect $tile_pips $net_pips]
+
+        foreach pip $pips {
+        # If the PIP is within the tiles of the pblock
+        set uphill_node [get_nodes -quiet -uphill -of_object $pip]
+        set downhill_node [get_nodes -quiet -downhill -of_object $pip]
+            
+        # A route-through PIP must have an uphill (source) and a downhill (sink) node
+        if {$uphill_node != "" && $downhill_node != ""} {
+            # If PSEUDO, it's a route-through PIP (and not a "real" PIP).
+            if {[get_property IS_PSEUDO $pip]} {
+                set src_pin [get_site_pins -of_object [get_nodes -uphill -of_object $pip]]
+                #set snk_pin [get_site_pins -of_object [get_nodes -downhill -of_object $pip]]
+            #lappend site_rts "[get_sites -of_object $src_pin]([::tincr::site_pins get_info $src_pin name]-[::tincr::site_pins get_info $snk_pin name])" 
+            lappend site_rts "[get_sites -of_object $src_pin]"
+            }
+            }
         }
     }
     # print the site routethroughs to the pr static file
@@ -83,17 +86,42 @@ proc write_static_part_pins { rp_cell channel } {
 #
 # @param tiles List of possible tiles with used PIPs (in a reconfigurable region)
 # @param channel Output file handle
-proc get_used_rp_wires { tiles channel } {
-    set used_pips [list]
-    set nets [get_nets -hierarchical]
-
+proc get_used_rp_wires { tiles static_nets channel } {
+    set used_wires [list]
+    
+    # Get non partition-pin nets
+    set nets [struct::set difference [get_nets -hierarchical] $static_nets]
+    
     # Get all wires that are in the tiles we care about and that also have nets
-    set wires [::struct::set intersect [get_wires -quiet -of_objects $nets] [get_wires -quiet -of_objects $tiles]]
+   # set wires [::struct::set intersect [get_wires -quiet -of_objects $nets] [get_wires -quiet -of_objects $tiles]]
     
     #TODO: Remove the wires that are part of partition pin routes from this list.
     
+    # New method: Get wires from the PIPs. We only want the wires that are at the ends of nodes (not the inbetween ones)
+    # Get all nodes that are in the tiles we care about and that also have nets
+    if {[llength $nets] != 0} {
+        set nodes [::struct::set intersect [get_nodes -quiet -of_objects $nets] [get_nodes -quiet -of_objects $tiles]]
+        
+        if {[llength $nodes] != 0} {
+        
+            # Get the list of nets that those nodes deal with
+            set nets [get_nets -of_objects $nodes]
+            
+            # Now, print out the PIPs of each tile using the list of tiles and the list of nets
+            # TODO: Could probably make this faster with a map from tiles -> nets that go through that tile
+            foreach tile $tiles {    
+                # If I just use -of_objects $nodes, I will probably find VCC PIPs too. (physical nets)
+                set tile_pips [get_pips -quiet -filter "TILE == $tile" -of_objects $nets]
+                foreach pip $tile_pips {
+                    lappend used_wires "[get_wires -of_objects $pip]"
+                }  
+            }
+            
+        }
+    }
+        
     # print the used wires to the pr static file
-    ::tincr::print_list -header "RESERVED_WIRES" -channel $channel $wires
+    ::tincr::print_list -header "RESERVED_WIRES" -channel $channel $used_wires
 }
 
 ## Searches through the used sites in the reconfigurable region of the design, 
@@ -291,27 +319,25 @@ proc ::tincr::write_static_resources { args } {
     set min_col [get_property COLUMN $bott_left_tile]
     
     ::tincr::print_verbose "Pblock Tile Range: Rows $min_row - $max_row, Columns $min_col - $max_col"
-        
+
+    # Get complete static routes
+    # It is important for these to come first on the RS2 side.
+    set static_nets [get_nets -of_objects [get_cells -hierarchical -filter { IS_BLACKBOX == "TRUE" } ] ] 
+    set diff_time [tincr::report_runtime "get_static_routes [subst -novariables {$static_nets $channel_out}]" s]
+	::tincr::print_verbose "Found static portions of nets...($diff_time seconds)"   
+
     # Get used PIPs.
     # Get a list of tiles that might have used PIPs (CLB and INT)
     # Interconnect Tiles (INT_L, INT_R) and CLB Tiles (CLBLM_L, CLBLM_R, CLBLL_L, CLBLL_R)
     # are possible types.
     set rp_tiles [get_tiles -filter "(ROW >= $min_row && ROW <= $max_row && COLUMN <= $max_col && COLUMN >= $min_col) && (TILE_TYPE == INT_L || TILE_TYPE == INT_R || TILE_TYPE == CLBLM_L || TILE_TYPE == CLBLM_R || TILE_TYPE == CLBLL_L || TILE_TYPE == CLBLL_R) "] 
-    set diff_time [tincr::report_runtime "get_used_rp_wires [subst -novariables {$rp_tiles $channel_out}]" s]
-    ::tincr::print_verbose "Found used PIPs...($diff_time seconds)"
+    set diff_time [tincr::report_runtime "get_used_rp_wires [subst -novariables {$rp_tiles $static_nets $channel_out}]" s]
+    ::tincr::print_verbose "Found used wires...($diff_time seconds)"
    
     # Get site route-throughs
     set tiles [get_tiles -filter "(ROW >= $min_row && ROW <= $max_row && COLUMN <= $max_col && COLUMN >= $min_col)"] 
     set diff_time [tincr::report_runtime "get_rp_site_routethroughs [subst -novariables {$tiles $channel_out}]" s]
     ::tincr::print_verbose "Found site route-throughs...($diff_time seconds)"
-    
-    # Get complete static routes
-    # It is important for these to come first on the RS2 side.
-    set static_nets [get_nets -of_objects [get_cells -hierarchical -filter { IS_BLACKBOX == "TRUE" } ] ] 
-    set diff_time [tincr::report_runtime "get_static_routes [subst -novariables {$static_nets $channel_out}]" s]
-	::tincr::print_verbose "Found static portions of nets...($diff_time seconds)"
-    
-
     
     close_project
     close $channel_out
