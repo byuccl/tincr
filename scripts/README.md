@@ -1,0 +1,1 @@
+This directory contains non-Tcl scripts for Tincr and Vivado.

@@ -8,7 +8,7 @@ Tincr is a suite of Tcl libraries written for Xilinx's Vivado IDE. The goal of T
 TincrCAD is a Tcl-based API built on top of native Vivado Tcl commands. It provides a set of commands that are common in the development of custom CAD tools, which supplement the user with higher levels of abstraction, performance gains, and a greater wealth of information.
 
 ### TincrIO
-TincrIO provides a set of commands for pulling design and device data out of Vivado into a open, parsable format. With TincrIO, users are able to generate XDLRC device descriptions and export designs out of Vivado into a "Tincr checkpoint" of EDIF, placement, routing, and constraint files. Importing these checkpoints into Vivado is currently supported as a BETA feature.
+TincrIO provides a set of commands for pulling design and device data out of Vivado into a open, parsable format. With TincrIO, users are able to generate XDLRC device descriptions and export designs out of Vivado into a "Tincr checkpoint" of EDIF, placement, routing, and constraint files. For more information on generating XDLRC files, see [the RapihSmith2 Technical Report](https://github.com/byuccl/RapidSmith2/blob/master/docs/TechReport/TechReport.pdf).
 
 ## Installation
 Installing Tincr can be done in three simple steps:
