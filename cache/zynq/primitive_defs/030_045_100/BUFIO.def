@@ -1,0 +1,21 @@
+	(primitive_def BUFIO 2 4
+		(pin I I input)
+		(pin O O output)
+		(element BUFIO 2 # BEL
+			(pin I input)
+			(pin O output)
+			(conn BUFIO O ==> O O)
+			(conn BUFIO I <== I I)
+		)
+		(element I 1
+			(pin I output)
+			(conn I I ==> BUFIO I)
+		)
+		(element O 1
+			(pin O input)
+			(conn O O <== BUFIO O)
+		)
+		(element DELAY_BYPASS 0
+			(cfg FALSE TRUE)
+		)
+	)

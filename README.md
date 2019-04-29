@@ -31,7 +31,7 @@ All commands in Tincr belong to the `::tincr::` namespace. This means that all T
 ```
 namespace import ::tincr::*
 ```
-This will save you the trouble of prefixing every command with `::tincr::` (e.g. `cells get`). Please note that the commands from Tincr will override any commands of the same name already in the global namespace.
+This will save you the trouble of prefixing every command with `::tincr::` (e.g. `cells get`). However, *this is not recommended* as this will make the commands from Tincr override any commands of the same name already in the global namespace.
 
 ### Load Tincr on Startup
 You can add the following lines to the end of `<Vivado path>/tps/tcl/tcl8.5/init.tcl` to force Vivado to automatically load the Tincr package and import all of its commands into the global namespace on startup:

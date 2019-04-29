@@ -168,9 +168,24 @@ proc ::tincr::write_xdlrc { args } {
 
             puts $outfile "(primitive_defs [dict size $sorted_site_types]"
             
+            # Get path to primitive definitions
+            set pdef_path [::tincr::cache::directory_path dict.site_type.src_bel.src_pin.snk_bel.snk_pins]
+            
+            # Zynq devices do not all have identical pdefs. This may be true for other families as well.
+            if {[get_property ARCHITECTURE [get_property PART [current_design] ] ] == "zynq" } {
+                set device [get_property DEVICE [get_property PART [current_design] ] ]
+                set device_length [string length $device]
+                set device_size [string range $device [expr $device_length - 3] $device_length]
+                if { $device_size == "010" || $device_size == "020" } {
+                    set pdef_path "$pdef_path[file separator]010_020"
+                } else {
+                    set pdef_path "$pdef_path[file separator]030_045_100"
+                }
+            }
+            
             # Append primitive definitions
             dict for {site_type instance} $sorted_site_types {
-                set prim_def_file [file join [::tincr::cache::directory_path dict.site_type.src_bel.src_pin.snk_bel.snk_pins] "$site_type.def"]
+                set prim_def_file [file join "$pdef_path" "$site_type.def"]
                 
                 #throw an error if a site type doesn't have a corresponding definition
                 if { ![file exists $prim_def_file] } {
