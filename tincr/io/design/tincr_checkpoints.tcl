@@ -24,29 +24,6 @@ namespace eval ::tincr:: {
         write_part_pins
 }
 
-# TODO Create bulleted list of the files in a TCP
-## Writes a Tincr checkpoint to file. A Tincr checkpoint is able to store a basic design, its placement, 
-#   and routing in a human-readable format. consists of five files: an EDIF netlist representation and XDC files 
-#   that constrain the placement and routing of the design. Currently, designs with route-throughs are not supported, 
-#   though this functionality is planned for a future release of Tincr. 
-#   
-#   \deprecated This function is no longer used to represent external Vivado designs. See tincr::write_rscp instead.
-#
-# @param filename The path and filename where the Tincr checkpoint is to be written.
-proc ::tincr::write_tcp {filename} {
-    set filename [::tincr::add_extension ".tcp" $filename]
-
-    file mkdir $filename
-
-    # TODO Planned feature: Remove route-throughs.
-
-    write_design_info "${filename}/design.info"
-    write_edif -force "${filename}/netlist.edf"
-    write_xdc -force "${filename}/constraints.xdc"
-    write_placement_xdc "${filename}/placement.xdc"
-    write_routing_xdc -global_logic "${filename}/routing.xdc"
-}
-
 ## Generates a RSCP. RSCPs are an external representation of a Xilinx design
 #   which can be used to reconstruct Vivado designs in external CAD tools. The format
 #   of RSCPs are extensively documented in the RapidSmith2 tech report found at
@@ -387,10 +364,11 @@ proc ::tincr::read_tcp {args} {
     ::tincr::print_verbose "Reading netlist and constraint files..."
     set edif_runtime [report_runtime "read_edif $q ${filename}/netlist.edf" s]
     set import_fileset [create_fileset -constrset xdc_constraints]
-  
-    # Add all xdc files to the fileset (including extra ones a user may have added)
-    add_files -fileset $import_fileset [glob ${filename}/*.xdc]
-        
+
+    add_files -fileset $import_fileset ${filename}/constraints.xdc 
+    add_files -fileset $import_fileset ${filename}/placement.xdc 
+    add_files -fileset $import_fileset ${filename}/routing.xdc 
+    
     ::tincr::print_verbose "Netlist and constraints added successfully. ($edif_runtime seconds)"
     ::tincr::print_verbose "Linking design (this may take awhile)..."
     set link_runtime [report_runtime "link_design $q -mode $link_mode -constrset $import_fileset -part $part" s]
@@ -411,8 +389,23 @@ proc ::tincr::read_tcp {args} {
             set diff_time [tincr::report_runtime "route_design -quiet -nets [subst -novariables {$differential_nets}]" s]
             ::tincr::print_verbose "Done routing...($diff_time seconds)"
         }
-    }       
-  
+    }
+	
+    # Complete the route for nets with a hierarchical source port.
+    # The same warning/bug described above occurs when trying to specify the ROUTE string of a net
+    # that is a hierarchical port (placed or unplaced port with no driver).
+    # Work around is also to have Vivado route these nets for us.
+    if {$link_mode=="out_of_context"} {
+        set diff_time 0
+        set hier_nets [get_nets -of [get_ports] -filter {ROUTE_STATUS == HIERPORT} -quiet]
+	    
+        if {[llength $hier_nets] > 0 } {
+	        ::tincr::print_verbose "Routing [llength $hier_nets] hierarchical port nets..."		    	    
+	        set diff_time [tincr::report_runtime "route_design -quiet -nets [subst -novariables {$hier_nets}]" s]
+	        ::tincr::print_verbose "Done routing hierarchical port nets...($diff_time seconds)"
+	    }
+    }
+    
     ::tincr::print_verbose "Unlocking the design..."
     lock_design $q -level placement -unlock
 
@@ -1133,7 +1126,7 @@ proc ::tincr::read_tcp_ooc_test {filename} {
         return
     }
 
-    set part [get_property PART [get_design]]
+    set part [get_property PART [get_designs]]
 
     foreach tcp $tcp_files {
         link_design -mode out_of_context -part $part -name $tcp

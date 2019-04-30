@@ -1,0 +1,25 @@
+	(primitive_def BSCAN_JTAG_MONE2 3 4
+		(pin TCK TCK output)
+		(pin TDI TDI output)
+		(pin TMS TMS output)
+		(element TCK 1
+			(pin TCK input)
+			(conn TCK TCK <== BSCAN_JTAG_MONE2 TCK)
+		)
+		(element TDI 1
+			(pin TDI input)
+			(conn TDI TDI <== BSCAN_JTAG_MONE2 TDI)
+		)
+		(element TMS 1
+			(pin TMS input)
+			(conn TMS TMS <== BSCAN_JTAG_MONE2 TMS)
+		)
+		(element BSCAN_JTAG_MONE2 3 # BEL
+			(pin TCK output)
+			(pin TDI output)
+			(pin TMS output)
+			(conn BSCAN_JTAG_MONE2 TCK ==> TCK TCK)
+			(conn BSCAN_JTAG_MONE2 TDI ==> TDI TDI)
+			(conn BSCAN_JTAG_MONE2 TMS ==> TMS TMS)
+		)
+	)

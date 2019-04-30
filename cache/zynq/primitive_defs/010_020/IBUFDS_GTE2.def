@@ -1,0 +1,62 @@
+	(primitive_def IBUFDS_GTE2 6 10
+		(pin CEB CEB input)
+		(pin CLKTESTSIG CLKTESTSIG input)
+		(pin I I input)
+		(pin IB IB input)
+		(pin O O output)
+		(pin ODIV2 ODIV2 output)
+		(element CLKCM_CFG 0
+			(cfg TRUE FALSE)
+		)
+		(element CLKRCV_TRST 0
+			(cfg TRUE FALSE)
+		)
+		(element CEB 1
+			(pin CEB output)
+			(conn CEB CEB ==> IBUFDS_GTE2 CEB)
+		)
+		(element CLKTESTSIG 1
+			(pin CLKTESTSIG output)
+			(conn CLKTESTSIG CLKTESTSIG ==> CLKTESTSIGINV CLKTESTSIG)
+			(conn CLKTESTSIG CLKTESTSIG ==> CLKTESTSIGINV CLKTESTSIG_B)
+		)
+		(element CLKTESTSIGINV 3
+			(pin OUT output)
+			(pin CLKTESTSIG input)
+			(pin CLKTESTSIG_B input)
+			(cfg CLKTESTSIG CLKTESTSIG_B)
+			(conn CLKTESTSIGINV OUT ==> IBUFDS_GTE2 CLKTESTSIG)
+			(conn CLKTESTSIGINV CLKTESTSIG <== CLKTESTSIG CLKTESTSIG)
+			(conn CLKTESTSIGINV CLKTESTSIG_B <== CLKTESTSIG CLKTESTSIG)
+		)
+		(element I 1
+			(pin I output)
+			(conn I I ==> IBUFDS_GTE2 I)
+		)
+		(element IB 1
+			(pin IB output)
+			(conn IB IB ==> IBUFDS_GTE2 IB)
+		)
+		(element O 1
+			(pin O input)
+			(conn O O <== IBUFDS_GTE2 O)
+		)
+		(element ODIV2 1
+			(pin ODIV2 input)
+			(conn ODIV2 ODIV2 <== IBUFDS_GTE2 ODIV2)
+		)
+		(element IBUFDS_GTE2 6 # BEL
+			(pin CEB input)
+			(pin CLKTESTSIG input)
+			(pin I input)
+			(pin IB input)
+			(pin O output)
+			(pin ODIV2 output)
+			(conn IBUFDS_GTE2 O ==> O O)
+			(conn IBUFDS_GTE2 ODIV2 ==> ODIV2 ODIV2)
+			(conn IBUFDS_GTE2 CEB <== CEB CEB)
+			(conn IBUFDS_GTE2 CLKTESTSIG <== CLKTESTSIGINV OUT)
+			(conn IBUFDS_GTE2 I <== I I)
+			(conn IBUFDS_GTE2 IB <== IB IB)
+		)
+	)

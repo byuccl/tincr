@@ -8,7 +8,7 @@ Tincr is a suite of Tcl libraries written for Xilinx's Vivado IDE. The goal of T
 TincrCAD is a Tcl-based API built on top of native Vivado Tcl commands. It provides a set of commands that are common in the development of custom CAD tools, which supplement the user with higher levels of abstraction, performance gains, and a greater wealth of information.
 
 ### TincrIO
-TincrIO provides a set of commands for pulling design and device data out of Vivado into a open, parsable format. With TincrIO, users are able to generate XDLRC device descriptions and export designs out of Vivado into a "Tincr checkpoint" of EDIF, placement, routing, and constraint files. Importing these checkpoints into Vivado is currently supported as a BETA feature.
+TincrIO provides a set of commands for pulling design and device data out of Vivado into a open, parsable format. With TincrIO, users are able to generate XDLRC device descriptions and export designs out of Vivado into a "Tincr checkpoint" of EDIF, placement, routing, and constraint files. For more information on generating XDLRC files, see [the RapidSmith2 Technical Report](https://github.com/byuccl/RapidSmith2/blob/master/docs/TechReport/TechReport.pdf).
 
 ## Installation
 Installing Tincr can be done in three simple steps:
@@ -31,7 +31,7 @@ All commands in Tincr belong to the `::tincr::` namespace. This means that all T
 ```
 namespace import ::tincr::*
 ```
-This will save you the trouble of prefixing every command with `::tincr::` (e.g. `cells get`). Please note that the commands from Tincr will override any commands of the same name already in the global namespace.
+This will save you the trouble of prefixing every command with `::tincr::` (e.g. `cells get`). However, *this is not recommended* as this will make the commands from Tincr override any commands of the same name already in the global namespace.
 
 ### Load Tincr on Startup
 You can add the following lines to the end of `<Vivado path>/tps/tcl/tcl8.5/init.tcl` to force Vivado to automatically load the Tincr package and import all of its commands into the global namespace on startup:

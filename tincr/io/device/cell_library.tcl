@@ -560,7 +560,7 @@ proc create_port_xml { site_map xml_out } {
     puts "Creating port definitions..."
     
     # series7 needs to be processed differently than ultrascale and beyond
-    set arch [get_property ARCHITECTURE [get_parts -of [get_design]]]
+    set arch [get_property ARCHITECTURE [get_parts -of [get_designs]]]
     set is_series7 [tincr::parts::is_series7]
     
     set iport_map [dict create]
@@ -1137,7 +1137,7 @@ proc ::tincr::create_xml_cell_library { {part xc7a100t-csg324-3} {filename ""} {
     puts $xml_out "<root>"
     
     # Add the family tag to the xml file  
-    puts $xml_out "  <family>[string toupper [get_property FAMILY [get_parts -of [get_design]]]]</family>"
+    puts $xml_out "  <family>[string toupper [get_property FAMILY [get_parts -of [get_designs]]]]</family>"
     
     puts $xml_out "  <cells>"
 

@@ -168,9 +168,24 @@ proc ::tincr::write_xdlrc { args } {
 
             puts $outfile "(primitive_defs [dict size $sorted_site_types]"
             
+            # Get path to primitive definitions
+            set pdef_path [::tincr::cache::directory_path dict.site_type.src_bel.src_pin.snk_bel.snk_pins]
+            
+            # Zynq devices do not all have identical pdefs. This may be true for other families as well.
+            if {[get_property ARCHITECTURE [get_property PART [current_design] ] ] == "zynq" } {
+                set device [get_property DEVICE [get_property PART [current_design] ] ]
+                set device_length [string length $device]
+                set device_size [string range $device [expr $device_length - 3] $device_length]
+                if { $device_size == "010" || $device_size == "020" } {
+                    set pdef_path "$pdef_path[file separator]010_020"
+                } else {
+                    set pdef_path "$pdef_path[file separator]030_045_100"
+                }
+            }
+            
             # Append primitive definitions
             dict for {site_type instance} $sorted_site_types {
-                set prim_def_file [file join [::tincr::cache::directory_path dict.site_type.src_bel.src_pin.snk_bel.snk_pins] "$site_type.def"]
+                set prim_def_file [file join "$pdef_path" "$site_type.def"]
                 
                 #throw an error if a site type doesn't have a corresponding definition
                 if { ![file exists $prim_def_file] } {
@@ -258,15 +273,17 @@ proc ::tincr::write_xdlrc_tile { tile outfile brief} {
                     set direction "input"
                 } elseif {[get_property IS_OUTPUT $site_pin]} {
                     set direction "output"
+                } elseif {[get_property DIRECTION $site_pin] == "INOUT"} {
+                    set direction "bidir"
                 }
-    
+
                 set pin_name [tincr::site_pins get_info $site_pin name]
     
                 set site_pin_wire "NULL"
                 set site_pin_node [get_nodes -quiet -of_object $site_pin]
-    
+
                 set wire_name "NULL"
-    
+
                 #This means that the pin is on an edge tile, and has no node - it still has a wire though
                 if {$site_pin_node == "" } {
                     # When the pin has no node, it isn't possible to find what wire it connects to. Since the wire doesn't go anywhere, we can just create a fake one.
@@ -278,6 +295,8 @@ proc ::tincr::write_xdlrc_tile { tile outfile brief} {
                         set site_pin_wire [get_wires -of_object $site_pin_node -filter IS_INPUT_PIN]
                     } elseif {[get_property IS_OUTPUT $site_pin]} {
                         set site_pin_wire [get_wires -of_object $site_pin_node -filter IS_OUTPUT_PIN]
+                    } elseif {[get_property DIRECTION $site_pin] == "INOUT"} {
+                        set site_pin_wire [get_wires -of_object $site_pin_node -filter { IS_INPUT_PIN == "TRUE" && IS_OUTPUT_PIN == "TRUE" }]
                     }
                     set wire_name [::tincr::wires get_info $site_pin_wire name]
                 }
@@ -292,7 +311,7 @@ proc ::tincr::write_xdlrc_tile { tile outfile brief} {
     
         incr num_pins [get_property NUM_PINS $site]
     }
-    
+
     # print GND and VCC primitive sites for ultrascale devices and later
     set unique_tile_num "[get_property TILE_X $tile][get_property TILE_Y $tile]"
     set gnd_count_local 0

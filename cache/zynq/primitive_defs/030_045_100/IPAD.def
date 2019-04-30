@@ -1,0 +1,17 @@
+	(primitive_def IPAD 1 3
+		(pin O O output)
+		(element O 1
+			(pin O input)
+			(conn O O <== IPAD O)
+		)
+		(element PAD 1 # BEL
+			(pin PAD input)
+			(conn PAD PAD ==> IPAD I)
+		)
+		(element IPAD 2 # BEL
+			(pin I input)
+			(pin O output)
+			(conn IPAD O ==> O O)
+			(conn IPAD I <== PAD PAD)
+		)
+	)

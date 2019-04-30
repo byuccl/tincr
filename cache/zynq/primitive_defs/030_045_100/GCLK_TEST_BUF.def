@@ -1,0 +1,24 @@
+	(primitive_def GCLK_TEST_BUF 2 5
+		(pin CLKIN CLKIN input)
+		(pin CLKOUT CLKOUT output)
+		(element CLKOUT 1
+			(pin CLKOUT input)
+			(conn CLKOUT CLKOUT <== GCLK_TEST_BUF CLKOUT)
+		)
+		(element GCLK_TEST_BUF 2 # BEL
+			(pin CLKIN input)
+			(pin CLKOUT output)
+			(conn GCLK_TEST_BUF CLKOUT ==> CLKOUT CLKOUT)
+			(conn GCLK_TEST_BUF CLKIN <== CLKIN CLKIN)
+		)
+		(element CLKIN 1
+			(pin CLKIN output)
+			(conn CLKIN CLKIN ==> GCLK_TEST_BUF CLKIN)
+		)
+		(element INVERT_INPUT 0
+			(cfg TRUE FALSE)
+		)
+		(element GCLK_TEST_ENABLE 0
+			(cfg FALSE TRUE)
+		)
+	)
