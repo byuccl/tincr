@@ -80,7 +80,7 @@ proc ::tincr::write_rscp {args} {
     
     # write placement information
     set start_time [clock clicks -microseconds]
-    write_placement_rs2 "${filename}/placement.rsc"
+    write_placement_rs2 "${filename}/placement.rsc" $ooc
     set end_time [clock clicks -microseconds]
     ::tincr::print_verbose "Placement Done...([::tincr::format_time [expr $end_time -$start_time] s]s)"
     
@@ -111,7 +111,6 @@ proc ::tincr::write_rm_rscp {args} {
     set partialDeviceName ""
     set staticDCP ""
     set pblock ""
-    set rm_mode 1
     
     ::tincr::parse_args {} {quiet} {} {partialDeviceName staticDCP pblock filename} $args
     set filename [::tincr::add_extension ".rscp" $filename]
@@ -149,7 +148,7 @@ proc ::tincr::write_rm_rscp {args} {
     
     # write placement information
     set start_time [clock clicks -microseconds]
-    write_placement_rs2 "${filename}/placement.rsc" $rm_mode
+    write_placement_rs2 "${filename}/placement.rsc" 1
     set end_time [clock clicks -microseconds]
     ::tincr::print_verbose "Placement Done...([::tincr::format_time [expr $end_time -$start_time] s]s)"
     
@@ -679,9 +678,9 @@ proc ::tincr::write_macros { {filename macros.xml } } {
 #       - Internal cell properties
 #
 # @param filename The name of the placement checkpoint file, "placement.rsc" is the default.
-# @param rm_mode If 1, the mode is reconfig_module.
+# @param ooc If 1, the mode is ooc / reconfig_module.
 # @param pblock If specified, only get placement info for resources within the pblock.
-proc ::tincr::write_placement_rs2 { {filename placement.rsc} {rm_mode 0} }  {
+proc ::tincr::write_placement_rs2 { {filename placement.rsc} {ooc 0} }  {
 
     set filename [::tincr::add_extension ".rsc" $filename]
     set txt [open $filename w]
@@ -768,7 +767,7 @@ proc ::tincr::write_placement_rs2 { {filename placement.rsc} {rm_mode 0} }  {
     }
     
     # write out-of-context hierarchical ports to the file
-    if {!$rm_mode} {
+    if {$ooc} {
         ::tincr::write_part_pins $txt
     }
     
@@ -944,25 +943,6 @@ proc write_static_and_routethrough_luts { site_list channel } {
     ::tincr::print_list -header "LUT_RTS" -channel $channel $routethrough_luts
 }
 
-## Finds all out-of-context ports in a design and adds them to the routing.rsc file. 
-#   This only occurs for designs implemented in out-of-context mode. Out-of-context ports
-#   are those that aren't mapped to PAD BELs, but are partially routed to a specific
-#   wire in the device. The device wire represents the start/end wire of nets connected
-#   to the port.
-#
-# @param channel File handle to write the ooc ports to
-#proc write_ooc_ports {channel} {
-#    # for OOC checkpoints with hierarchical ports, print the starting wires for each port
-#    # OOC checkpoints has the design property IS_BLOCK set to true
-#    if {[get_property IS_BLOCK [current_design]]} {
-#        # TODO: could change this to have a token of "OOC_PORTS" with a list of ports all on one line, but his is oke for now
-#        foreach ooc_port [get_ports -filter HD.ASSIGNED_PPLOCS!="" -quiet] {
-#             #TODO: Remove the hierarchical part of it? i.e. alu_reconfig/a -> a
-#             puts $channel "OOC_PORT $ooc_port [string map {" " "/"} [get_property HD.ASSIGNED_PPLOCS $ooc_port]]" 
-#        }
-#    }
-#} 
-
 ## Finds partition pins (out-of-context ports) in a design and adds them to the placement.rsc file. 
 #   Out-of-context ports are those that aren't mapped to PAD BELs, but are partially routed to a specific
 #   wire in the device. The device wire represents the start/end wire of nets connected
@@ -970,25 +950,45 @@ proc write_static_and_routethrough_luts { site_list channel } {
 #
 # @param channel File handle to write the ooc ports to
 proc ::tincr::write_part_pins {channel} {
-    foreach part_pin [get_pins -filter HD.ASSIGNED_PPLOCS!="" -quiet] {
-	     set pin_name [get_property REF_PIN_NAME [get_pins $part_pin]]
-		 set direction [get_property DIRECTION [get_pins $part_pin]]
-		 
-		 # Change the direction to be from the correct perspective
-		 set direction [expr {$direction eq "IN" ? "OUT" : "IN"}] 
-		 
-		 # Get the partition pin's wire
-		 set wire_name [string map {" " "/"} [get_property HD.ASSIGNED_PPLOCS $part_pin]]
-		 
-		 # Use the wire to get the partition pin's node
-		 set node [get_nodes -of_object [get_wires $wire_name]]
-		 
-         # Are there cases where the wire is needed instead of the node?
-         puts $channel "PART_PIN $pin_name $node $direction" 
+    # In OOC mode, the partition pins are considered I/O ports in Vivado.
+    # OOC checkpoints have the design property IS_BLOCK set to true
+    if {[get_property IS_BLOCK [current_design]]} {
+        foreach ooc_port [get_ports -filter HD.ASSIGNED_PPLOCS!="" -quiet] {
+            set port_name [get_property NAME [get_ports $ooc_port]]
+            set direction [get_property DIRECTION [get_ports $ooc_port]]
+            
+            # Change the direction to be from the correct perspective
+            set direction [expr {$direction eq "IN" ? "OUT" : "IN"}] 
+            
+            # Get the partition pin's wire
+            set wire_name [string map {" " "/"} [get_property HD.ASSIGNED_PPLOCS $ooc_port]]
+            
+            # Use the wire to get the partition pin's node
+            set node [get_nodes -of_object [get_wires $wire_name]]
+            
+            # Are there cases where the wire is needed instead of the node?
+            puts $channel "PART_PIN $port_name $node $direction" 
+        }
+    } else {
+        # In the PR flow, the partition pins are cell pins in Vivado.
+        foreach part_pin [get_pins -filter HD.ASSIGNED_PPLOCS!="" -quiet] {
+             set pin_name [get_property REF_PIN_NAME [get_pins $part_pin]]
+             set direction [get_property DIRECTION [get_pins $part_pin]]
+             
+             # Change the direction to be from the correct perspective
+             set direction [expr {$direction eq "IN" ? "OUT" : "IN"}] 
+             
+             # Get the partition pin's wire
+             set wire_name [string map {" " "/"} [get_property HD.ASSIGNED_PPLOCS $part_pin]]
+             
+             # Use the wire to get the partition pin's node
+             set node [get_nodes -of_object [get_wires $wire_name]]
+             
+             # Are there cases where the wire is needed instead of the node?
+             puts $channel "PART_PIN $pin_name $node $direction" 
+        }
     }
 } 
-
-
 
 ## Writes the physical elements used in each net of the design. This includes the
 #   pips and site pins of the net. VCC and GND nets are treated specially. The physical 
