@@ -11,12 +11,12 @@ namespace eval ::tincr:: {
 
 ## Identifies <b>used</b> site routethroughs present in a list of tiles 
 # (like the tiles of a pblock) and writes these site rouethroughs to the 
-# static design export file.
+# static.rsc file.
 #
-# @param tiles List of tiles in the reconfigurable region (pblock)
+# @param tiles List of tiles in the reconfigurable region
 # @param channel Output file handle
-proc get_rp_site_routethroughs { tiles channel } {
-    #TODO: Speed this procedure up. It is slow right now.
+# TODO: Optimize this procedure.
+proc write_rp_site_routethroughs { tiles channel } {
     set site_rts [list]
     set nets [get_nets -hierarchical]
 
@@ -34,30 +34,30 @@ proc get_rp_site_routethroughs { tiles channel } {
         set pips [::struct::set intersect $tile_pips $net_pips]
 
         foreach pip $pips {
-        # If the PIP is within the tiles of the pblock
-        set uphill_node [get_nodes -quiet -uphill -of_object $pip]
-        set downhill_node [get_nodes -quiet -downhill -of_object $pip]
-            
-        # A route-through PIP must have an uphill (source) and a downhill (sink) node
-        if {$uphill_node != "" && $downhill_node != ""} {
-            # If PSEUDO, it's a route-through PIP (and not a "real" PIP).
-            if {[get_property IS_PSEUDO $pip]} {
-                set src_pin [get_site_pins -of_object [get_nodes -uphill -of_object $pip]]
-                #set snk_pin [get_site_pins -of_object [get_nodes -downhill -of_object $pip]]
-            #lappend site_rts "[get_sites -of_object $src_pin]([::tincr::site_pins get_info $src_pin name]-[::tincr::site_pins get_info $snk_pin name])" 
-            lappend site_rts "[get_sites -of_object $src_pin]"
-            }
+            # If the PIP is within the tiles of the pblock
+            set uphill_node [get_nodes -quiet -uphill -of_object $pip]
+            set downhill_node [get_nodes -quiet -downhill -of_object $pip]
+                
+            # A route-through PIP must have an uphill (source) and a downhill (sink) node
+            if {$uphill_node != "" && $downhill_node != ""} {
+                # If PSEUDO, it's a route-through PIP (and not a "real" PIP).
+                if {[get_property IS_PSEUDO $pip]} {
+                    set src_pin [get_site_pins -of_object [get_nodes -uphill -of_object $pip]]
+                    lappend site_rts "[get_sites -of_object $src_pin]"
+                }
             }
         }
     }
-    # print the site routethroughs to the pr static file
+    # print the site routethroughs
     ::tincr::print_list -header "SITE_RTS" -channel $channel $site_rts
 }
 
-# TODO: Migrate to tincr_checkpoints.tcl and output in placement.xdc for OOC checkpoints as well.
+## Finds VCC/GND partition pins (out-of-context ports) in a design and writes them to the routing.rsc file.
+#
+# @param channel File handle to write to
+# TODO: Migrate to tincr_checkpoints.tcl and output in routing.xdc for OOC checkpoints as well?
 proc write_static_part_pins { rp_cell channel } {
-    # The direction filter may be overkill
-    # Assuming any pins in this lists will be VCC or GND part pins coming into the RP. Maybe do some checking here.
+    # Any pins in these lists will be VCC or GND part pins coming into the RP.
     set vcc_part_pins [list]
     set gnd_part_pins [list]
     
@@ -82,100 +82,48 @@ proc write_static_part_pins { rp_cell channel } {
 }
 
 ## Searches through the given list of tiles, identifies used PIPs, and
-# writes these used PIPs to the PR static export file.
+# writes these used PIPs (as wires) to the PR static export file.
 #
 # @param tiles List of possible tiles with used PIPs (in a reconfigurable region)
 # @param channel Output file handle
-proc get_used_rp_wires { tiles static_nets channel } {
+proc write_used_rp_wires { tiles static_nets channel } {
     set used_wires [list]
     
     # Get non partition-pin nets
     set nets [struct::set difference [get_nets -hierarchical] $static_nets]
-    
-    # Get all wires that are in the tiles we care about and that also have nets
-   # set wires [::struct::set intersect [get_wires -quiet -of_objects $nets] [get_wires -quiet -of_objects $tiles]]
-    
-    #TODO: Remove the wires that are part of partition pin routes from this list.
-    
-    # New method: Get wires from the PIPs. We only want the wires that are at the ends of nodes (not the inbetween ones)
-    # Get all nodes that are in the tiles we care about and that also have nets
+
+    # Get wires from the PIPs. We only want the wires that are at the ends of nodes (not the in-between ones)
+    # First get all nodes that are in the tiles we care about and that also have nets
     if {[llength $nets] != 0} {
         set nodes [::struct::set intersect [get_nodes -quiet -of_objects $nets] [get_nodes -quiet -of_objects $tiles]]
         
         if {[llength $nodes] != 0} {
-        
             # Get the list of nets that those nodes deal with
             set nets [get_nets -of_objects $nodes]
             
             # Now, print out the PIPs of each tile using the list of tiles and the list of nets
             # TODO: Could probably make this faster with a map from tiles -> nets that go through that tile
             foreach tile $tiles {    
-                # If I just use -of_objects $nodes, I will probably find VCC PIPs too. (physical nets)
                 set tile_pips [get_pips -quiet -filter "TILE == $tile" -of_objects $nets]
                 foreach pip $tile_pips {
                     lappend used_wires "[get_wires -of_objects $pip]"
                 }  
             }
-            
         }
     }
         
-    # print the used wires to the pr static file
+    # print the used wires
     ::tincr::print_list -header "RESERVED_WIRES" -channel $channel $used_wires
 }
 
-## Searches through the used sites in the reconfigurable region of the design, 
-# identifies LUT BELs that are being used as either a routethrough or static 
-# source (always outputs 1 or 0), and writes these BELs in the pr static export file.
+## Prints the partial route strings for the partition pin routes.
+# These route strings only contain the static portion of the nets.
 #
-# @param site_list List of <b>used</b> sites in the reconfigurable region.
-# @param channel Output file handle
-proc get_rp_static_and_routethrough_luts { tiles channel } {
-    set vcc_sources [list]
-    set gnd_sources [list]
-    set routethrough_luts [list]
-    set MAX_CONFIG_SIZE 20
-    
-    # get list of used sites within the reconfigurable region.
-    set site_list [get_sites -quiet -filter IS_USED -of_objects $tiles] 
-    
-    foreach bel [get_bels -quiet -of $site_list -filter {TYPE =~ *LUT* && !IS_USED}] {
-    
-    set config [get_property CONFIG.EQN $bel]
-    
-    # skip long config strings...they cannot be static sources or routethroughs
-    if { [string length $config] > $MAX_CONFIG_SIZE } {
-        continue
-    }
-    
-    if { [regexp {(O[5,6])=(?:\(A6\+~A6\)\*)?\(?1\)? ?} $config -> pin] } { ; # VCC source
-        lappend vcc_sources "[get_property NAME $bel]/$pin"
-    } elseif { [regexp {(O[5,6])=(?:\(A6\+~A6\)\*)?\(?0\)? ?} $config -> pin] } { ; # GND source
-        lappend gnd_sources "[get_property NAME $bel]/$pin"
-    } elseif { [regexp {(O[5,6])=(?:\(A6\+~A6\)\*)?\(+(A[1-6])\)+ ?} $config -> outpin inpin] } { ; # LUT routethrough
-        lappend routethrough_luts "$bel/$inpin/$outpin"
-    }
-    }
-    
-    # In some cases, FFs that are configured as Latches can be used with no cell being placed on the
-    # corresponding Flip Flip. Look for this and add them to the routethrough list. (D and Q are always the input/output pin)
-    foreach bel [get_bels -quiet -of $site_list -filter {NAME=~*FF* && !IS_USED}] {
-    set mode [string trim [get_property CONFIG.LATCH_OR_FF $bel]]
-    if {$mode == "LATCH"} {
-        lappend routethrough_luts "$bel/D/Q"
-    }
-    }
-    
-    # print the gnd sources, vcc sources, and lut routethroughs to the pr static file
-    ::tincr::print_list -header "VCC_SOURCES" -channel $channel $vcc_sources
-    ::tincr::print_list -header "GND_SOURCES" -channel $channel $gnd_sources
-    ::tincr::print_list -header "LUT_RTS" -channel $channel $routethrough_luts
-}
-
-##
-proc get_static_routes { nets channel } {	
+# @param nets The nets to write route strings for
+# @param channel output channel
+# TODO: Optimize this procedure. 
+proc write_static_routes { nets channel } {	
 	foreach net $nets {
-	
 		if { ($net eq "<const0>") || ($net eq "<const1>") || ($net eq "const0") || ($net eq "const1")} {
 		    continue
 		}	
@@ -184,7 +132,6 @@ proc get_static_routes { nets channel } {
 		# If the net connects to more than one partition pin, there will be multiple associated ports
 	    set ports [get_pins -filter { HD.ASSIGNED_PPLOCS !=  "" } -of_objects [get_nets $net]]
 		
-		# TODO: There is almost definitely a better way to do this part.
 		set portNames ""
 		foreach port $ports {
 			set portNames "$portNames [string replace $port 0 [string first "/" $port]]"
@@ -226,7 +173,6 @@ proc get_static_routes { nets channel } {
 			# Check if the first character is an opening curly brace
 			set comparison [string compare -length 1 $line "\{"]
 			if {$comparison == 0} {
-            	# I'm sure there is a more effieicnt way of doing this
             	set cut_line [string trimleft $line " \{*\[\]"]
             	# Now check if the next character is a closing curly brace
             	set comparison [string compare -length 1 $cut_line "\}"]
@@ -236,39 +182,34 @@ proc get_static_routes { nets channel } {
                 	set line "\{ [string range $line 1 end]"
                 }
 			}
-			
 			append route_string "$line "
 		}
-		#puts $route_string
-		::tincr::print $channel $route_string
-		#lappend static_routes $route_string
-			
+		::tincr::print $channel $route_string			
 	}
 }
 
-
-## Prints the static resources for every PR region (specified as pblocks) in a static design.
-#  Searches through a reconfigurable region (a pblock) and writes used resources
+## Prints the static resources contained within a PR region in a static design.
+#  Searches through a reconfigurable region and writes used resources.
 #  (PIPs, site routethroughs) and partition pin information to the static resources file.
-#  USAGE: tincr::write_static_resources [-quiet] [-verbose] static_dcp pblock filename
+#  USAGE: tincr::write_static_resources [-quiet] [-verbose] static_dcp prRegion filename
 #   
 #  @param args Argument list shown in the usage statement above. 
 #         The "-quiet " flag can be used to suppress console output. 
 #         The "-verbose" flag can be used to print all messages to the console.
 #         The required static_dcp parameter specifies the path to the DCP of the static design.
-#         The required pblock parameter specifies the pblock for the PR region.
-#         The required filename parameter specifies
+#         The required prRegion parameter specifies the name of the PR region cell.
+#         The required routing_filename parameter specifies the path of the routing.rsc file.
+#         The required static_filename parameter specifies the path of the static.rsc file.
 #TODO: Remove duplicate logic (don't get all nets more than once, etc.)
-#TODO: Instead of passing the pblock, just pass the name of the RP cell. Then get the pblock from the cell.
 proc ::tincr::write_static_resources { args } {
     set quiet 0
     set verbose 0
     set static_dcp ""
-    set pblock ""
-    set placement_filename ""
+    set prRegion ""
+    set routing_filename ""
     set static_filename ""
 
-    ::tincr::parse_args {} {quiet verbose} {} {static_dcp pblock placement_filename static_filename} $args
+    ::tincr::parse_args {} {quiet verbose} {} {static_dcp prRegion routing_filename static_filename} $args
     
     set old_verbose $::tincr::verbose 
     if {$quiet} {
@@ -278,37 +219,37 @@ proc ::tincr::write_static_resources { args } {
     }
     
     open_checkpoint $static_dcp
+    set rp_cell [get_cells $prRegion]
+   
+    # Write partition pins (to routing.rsc)
+    set routing_filename [::tincr::add_extension ".rsc" $routing_filename]
+    set routing_channel [open $routing_filename w]
+	set partpin_time [tincr::report_runtime "::tincr::write_part_pins [subst -novariables {$routing_channel}]" s]
+    ::tincr::print_verbose "Partition Pins Done...($partpin_time s)"
     
-    set pblock [get_pblocks $pblock]
+    # Write static partition pins (to routing.rsc)
+	set static_partpin_time [tincr::report_runtime "write_static_part_pins [subst -novariables {$rp_cell $routing_channel}]" s]
+    ::tincr::print_verbose "VCC/GND Partition Pins Done...($static_partpin_time s)"
+    close $routing_channel
     
-    
-    # Get partition pins (OOC ports) and write them to the placement.rsc file
-    
-    # Open the placement.rsc for appending
-    set placement_filename [::tincr::add_extension ".rsc" $placement_filename]
-    set placement_channel [open $placement_filename a]
-    
-    set rp_cell [get_cells -of_objects $pblock]
-    
-    #TODO: Measure this again.
-    
-	set diff_time [tincr::report_runtime "::tincr::write_part_pins [subst -novariables {$placement_channel}]" s]
-	set diff_time [tincr::report_runtime "write_static_part_pins [subst -novariables {$rp_cell $placement_channel}]" s]
-	::tincr::print_verbose "Wrote static partition pins...($diff_time seconds)"   
-    close $placement_channel
-    
-    # create the static file
+    # create the static resources file
     set static_filename [::tincr::add_extension ".rsc" $static_filename]
     set channel_out [open $static_filename w]
     
+    # Print the static portion of partition pin routes
+    set static_nets [get_nets -of_objects [get_cells -hierarchical -filter { IS_BLACKBOX == "TRUE" } ] ] 
+    set static_route_time [tincr::report_runtime "write_static_routes [subst -novariables {$static_nets $channel_out}]" s]
+    ::tincr::print_verbose "Static Routes Done...($static_route_time s)"
+
     # It is the user's responsibility to define the pblock for the PR region properly.
     # No checks are made to ensure it is valid. The partial device file should have the 
     # same boundaries as this pblock.
+    set pblock [get_pblocks -of_objects $rp_cell]
+    
+    # Get the range of tiles in the pblock
     set tile_range [split [get_property GRID_RANGES $pblock] ":"]
     set bott_left_site [get_sites [lindex $tile_range 0]]
     set top_right_site [get_sites [lindex $tile_range 1]]
-    
-    # Get the range of tiles in the pblock
     set bott_left_tile [get_tiles -of_objects $bott_left_site]
     set top_right_tile [get_tiles -of_objects $top_right_site]
     
@@ -317,42 +258,20 @@ proc ::tincr::write_static_resources { args } {
     set min_row [get_property ROW $top_right_tile]
     set max_col [get_property COLUMN $top_right_tile]
     set min_col [get_property COLUMN $bott_left_tile]
-    
-    ::tincr::print_verbose "Pblock Tile Range: Rows $min_row - $max_row, Columns $min_col - $max_col"
 
-    # Get complete static routes
-    # It is important for these to come first on the RS2 side.
-    set static_nets [get_nets -of_objects [get_cells -hierarchical -filter { IS_BLACKBOX == "TRUE" } ] ] 
-    set diff_time [tincr::report_runtime "get_static_routes [subst -novariables {$static_nets $channel_out}]" s]
-	::tincr::print_verbose "Found static portions of nets...($diff_time seconds)"   
-
-    # Get used PIPs.
+    # Get used wires.
     # Get a list of tiles that might have used PIPs (CLB and INT)
-    # Interconnect Tiles (INT_L, INT_R) and CLB Tiles (CLBLM_L, CLBLM_R, CLBLL_L, CLBLL_R)
-    # are possible types.
+    # Interconnect Tiles (INT_L, INT_R) and CLB Tiles (CLBLM_L, CLBLM_R, CLBLL_L, CLBLL_R) are possible types.
     set rp_tiles [get_tiles -filter "(ROW >= $min_row && ROW <= $max_row && COLUMN <= $max_col && COLUMN >= $min_col) && (TILE_TYPE == INT_L || TILE_TYPE == INT_R || TILE_TYPE == CLBLM_L || TILE_TYPE == CLBLM_R || TILE_TYPE == CLBLL_L || TILE_TYPE == CLBLL_R) "] 
-    set diff_time [tincr::report_runtime "get_used_rp_wires [subst -novariables {$rp_tiles $static_nets $channel_out}]" s]
-    ::tincr::print_verbose "Found used wires...($diff_time seconds)"
+    set used_wires_time [tincr::report_runtime "write_used_rp_wires [subst -novariables {$rp_tiles $static_nets $channel_out}]" s]
+    ::tincr::print_verbose "Used Wires Done...($used_wires_time s)"
    
     # Get site route-throughs
     set tiles [get_tiles -filter "(ROW >= $min_row && ROW <= $max_row && COLUMN <= $max_col && COLUMN >= $min_col)"] 
-    set diff_time [tincr::report_runtime "get_rp_site_routethroughs [subst -novariables {$tiles $channel_out}]" s]
-    ::tincr::print_verbose "Found site route-throughs...($diff_time seconds)"
-    
+    set routethrough_time [tincr::report_runtime "write_rp_site_routethroughs [subst -novariables {$tiles $channel_out}]" s]
+    ::tincr::print_verbose "Site route-throughs Done...($routethrough_time s)"
+
     close_project
     close $channel_out
     set ::tincr::verbose $old_verbose
-    
-    
-    # Static or routethrough LUT BELs should never be used by the static design because no static logic will
-    # be placed in PR regions. 
-    # Get static and routethrough LUT BELs.
-    # Get used sites within the reconfigurable region.
-    # TODO: Don't duplicate the get_rp_static_and_routethrough_luts process.
-    #
-    #set site_list [get_sites -quiet -filter IS_USED -of_objects $tiles] 
-    #set diff_time [tincr::report_runtime "get_rp_static_and_routethrough_luts [subst -novariables {$site_list $channel_out}]" s]
-    #::tincr::print_verbose "Found static & route-through LUTs...($diff_time seconds)"
 }
-
-
