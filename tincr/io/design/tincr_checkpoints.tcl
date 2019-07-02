@@ -9,8 +9,6 @@ namespace eval ::tincr:: {
         read_rm_tcp \
         read_tcp \
         write_design_info \
-        write_placement_xdc \
-        write_routing_xdc \
         get_design_info \
         get_pins_to_lock\
         write_placement_rs2\
@@ -32,16 +30,18 @@ namespace eval ::tincr:: {
 #
 # @params args Argument list as defined above. The flag "-quiet" 
 #   can be used to suppress console output. The flag "-ooc" needs to be 
-#   set for designs implemented "out-of-context". The filename parameter is the name
-#   for the generated RSCP.
+#   set for designs implemented "out-of-context". The "-part partName"  
+#   option is used as the part identifier in the design.info if specified.
+#   The filename parameter is the name for the generated RSCP.
 proc ::tincr::write_rscp {args} {
     set quiet 0
     set ooc 0
+    set partName ""
     set ooc_flag ""
     set mode ""
-    ::tincr::parse_args {} {quiet ooc} {} {filename} $args
+    ::tincr::parse_args {partName} {quiet ooc} {} {filename} $args
     set filename [::tincr::add_extension ".rscp" $filename]
-    file mkdir $filename   
+    file mkdir $filename
 
     set old_verbose $::tincr::verbose 
     if {$quiet} {
@@ -58,7 +58,7 @@ proc ::tincr::write_rscp {args} {
     ::tincr::print_verbose "Writing RapidSmith2 checkpoint to $filename..."
 
     # generate the design info file
-    write_design_info -mode $mode -part "" "${filename}/design.info"
+    write_design_info -mode $mode -part $partName "${filename}/design.info"
     
     # generate the EDIF
     set edif_runtime [report_runtime "write_edif -force ${filename}/netlist.edf" s]
@@ -245,7 +245,6 @@ proc ::tincr::read_tcp {args} {
     }
     
     # Set the link mode to "out_of_context" or "default" based on the command arguments
-    # If a static_dcp is specified, ooc mode is implied.
     if {$ooc} {
         set link_mode "out_of_context"
     } else {
@@ -269,13 +268,12 @@ proc ::tincr::read_tcp {args} {
     ::tincr::print_verbose "Linking design (this may take awhile)..."
     set link_runtime [report_runtime "link_design $q -mode $link_mode -constrset $import_fileset -part $part" s]
     ::tincr::print_verbose "Design linked successfully. ($link_runtime seconds)"
-        
+
     # complete the route for differential pair nets
     # there is a bug in Vivado where you can't specify the ROUTE string of a net
     # if the source is a port. It will give the error "ERROR: [Designutils 20-949] No driver found on net clock_N[0]"
     # work around is to have Vivado route these nets for us ...
     # TODO: add another part to the filter that says the nets are not routed
-    # TODO: Don't do this if the TCP is a pre-route TCP?
     set diff_time 0
     if {$link_mode=="default"} {
         set differential_nets [get_nets -of [get_ports] -filter {ROUTE_STATUS != INTRASITE} -quiet]
@@ -322,7 +320,7 @@ proc ::tincr::sort_cells_for_export { cells } {
     set ff_5 [list]
 
     # TODO: Eventually, we may have to look through all of the cells
-    #       (internal cells of macros) to support macros.
+    # (internal cells of macros) to support macros.
     foreach cell $cells {
         if {[cells is_placed $cell]} {
             set group [get_property PRIMITIVE_GROUP $cell]
@@ -347,28 +345,25 @@ proc ::tincr::sort_cells_for_export { cells } {
 
 ## Creates the "design.info" file of a RSCP.
 #   
-#   USAGE: tincr::write_design_info filename
+#   USAGE: tincr::write_design_info filename -mode mode -part partName
 #
-# @param args Argument list shown in the usage statement above. The optional parameter
-#       "ooc" is used to output the mode of the design. The "-part partName"  
-#   option is used as the part identifier in the design.info if specified.
-#   The filename parameter is the name for the generated design.info.
+# @param args Argument list shown in the usage statement above. The -mode option
+#   is used to output the mode of the design. The -part option is used as the 
+#   part identifier in the design.info. The filename parameter is the name for 
+#   the generated design.info.
 proc ::tincr::write_design_info {args} {
     set mode ""
     set partName ""
     ::tincr::parse_args {mode partName} {} {} {filename} $args
-
     set filename [::tincr::add_extension ".info" $filename]
-
     set outfile [open $filename w]
-    
+
     # if no partName is specified, get the part from the design
     if {$partName == ""} {
         set partName "[get_property PART [current_design]]"
     }
 
     puts $outfile "part=$partName"
-    
     if { ($mode eq "ooc") || ($mode eq "out_of_context") } {
         puts $outfile "mode=out_of_context"
     } elseif { ($mode eq "rm") || ($mode eq "reconfig_module") } {
@@ -378,73 +373,6 @@ proc ::tincr::write_design_info {args} {
     }
     
     close $outfile
-}
-
-## Writes a "routing.xdc" file for a TCP. This contains all
-#   routing information for a design.
-#
-# \deprecated This function is no longer used to represent routing. See tincr::write_routing_rs2 instead.
-#
-proc ::tincr::write_routing_xdc {args} {
-    set global_logic 0
-    ::tincr::parse_args {nets sites} {global_logic} {} {filename} $args
-
-    set filename [::tincr::add_extension ".xdc" $filename]
-
-    set xdc [open $filename w]
-
-    if {[catch {$sites == ""}]} {
-        set sites [get_sites -quiet -filter IS_USED]
-    }
-
-    foreach site $sites {
-        set site_pips [get_site_pips -quiet -of_objects $site -filter IS_USED]
-
-        # The SITE_TYPE property of a site is unreliable. To determine the actual site type
-        # that is being used...use the BEL property of any cell in the site...we can probably
-        # update this code once/if this bug is fixed.
-        set sample_cell [lindex [get_cells -of $site] 0]
-        #set site_type [get_property SITE_TYPE $site]
-        set site_type [lindex [split [get_property BEL $sample_cell] "."] 0]
-
-        # TODO: We needed to add a special case for IOB33 since it causes Vivado to crash...update once this gets fixed
-        if {$site_pips != "" && $site_type != "IOB33"} {
-            puts $xdc "set_property MANUAL_ROUTING $site_type \[get_sites \{[get_property NAME $site]\}\]"
-            puts $xdc "set_property SITE_PIPS \{$site_pips\} \[get_sites \{[get_property NAME $site]\}\]"
-        }
-    }
-
-    # TODO: Do we want to export partially routed nets as well? This may be useful, but its unclear how useful
-
-    if {[catch {$nets == ""}]} {
-        if {$global_logic} {
-            set nets [get_nets -quiet -hierarchical -filter {ROUTE_STATUS == ROUTED}]
-        } else {
-            set nets [get_nets -quiet -hierarchical -filter {TYPE != POWER && TYPE != GROUND && ROUTE_STATUS == ROUTED}]
-        }
-    }
-
-    #TODO: may be faster to filter the nets originally by by type, and process the GND and VCC nets differently than the regular nets
-    foreach net $nets {
-        set route_string [get_property ROUTE $net]
-        # special case for VCC nets
-        if { [get_property TYPE $net] == "POWER" || [get_property TYPE $net] == "GROUND" } {
-            set tiles [get_tiles -of $net]
-            if {[llength $tiles] == 2} {
-                # assuming that the second tile in the tile list is the interconnect tile
-                set switchbox_tile [lindex $tiles 1]
-                set route_string [string range [get_property ROUTE $net] 3 end-3]
-                set route_string "\{ $switchbox_tile/$route_string \}"
-            } else {
-                set route_string "\{$route_string\}"
-            }
-        }
-
-        puts $xdc "set_property ROUTE $route_string \[get_nets \{[get_property NAME $net]\}\]"
-        #        puts $xdc "device::direct_route -route \{[get_property ROUTE $net]\} \[get_nets \{[get_property NAME $net]\}\]"
-    }
-
-    close $xdc
 }
 
 ## Parses a design.info file of a TCP and returns the requested information.
@@ -519,13 +447,7 @@ proc ::tincr::write_macros { {filename macros.xml } } {
     puts $xml "<root>"
     puts $xml "  <macros>"
     
-    # I'm assuming the "PRIMITIVE_COUNT > 1" part of this is here due to the assumption that a macro will have more
-    # than one primitive inside of it. I think this assumption is broken when dealing with RMs...
     set macro_cells [get_cells -filter {PRIMITIVE_LEVEL==MACRO || (PRIMITIVE_COUNT > 1 && PARENT=="")} -quiet]
-    
-    #set macro_cells [get_cells -hierarchical -quiet]
-    
-    #set macro_cells [get_cells -filter {PRIMITIVE_LEVEL==MACRO || (PRIMITIVE_COUNT > 0 && PARENT=="")} -quiet]
     set macros_to_write [list]
     set macros_in_design [list]
     
@@ -614,7 +536,7 @@ proc ::tincr::write_placement_rs2 { {filename placement.rsc} }  {
         set bel_toks [split [get_property BEL $cell] "."]
         
         # NOTE: We have to do this, because the SITE_TYPE property of sites are not updated correctly
-        #      when you place cells there. BUFG is an example
+        # when you place cells there. BUFG is an example
         set sitetype [lindex $bel_toks 0]
         set bel [lindex $bel_toks end]
         set tile [get_tile -of $site]
@@ -641,7 +563,6 @@ proc ::tincr::write_placement_rs2 { {filename placement.rsc} }  {
             }
             append pin_map " "
         }
-        
         puts $txt "PINMAP [get_name $cell] $pin_map"
     }
     
@@ -660,7 +581,6 @@ proc ::tincr::write_placement_rs2 { {filename placement.rsc} }  {
             }
         }
     }
-    
     close $txt
 }
 
@@ -1032,31 +952,6 @@ proc ::tincr::read_tcp_ooc_test {filename} {
         remove_files *
         close_design
     }
-}
-
-proc ::tincr::write_tcp_ooc_test {filename} {
-
-    file mkdir $filename
-
-    foreach pblock [group_cells_by_clock_region] {
-        set outfile "$filename[file separator][get_property NAME $pblock].tcp"
-
-        set nets [get_internal_nets $pblock]
-        set internal_nets [lindex $nets 0]
-        set external_nets [lindex $nets 1]
-
-        write_tcp_for_pblock $outfile $pblock $internal_nets
-    }
-}
-
-proc ::tincr::write_tcp_for_pblock {filename pblock nets} {
-    set filename [::tincr::add_extension ".tcp" $filename]
-
-    file mkdir $filename
-
-    write_edif -force -pblock $pblock "${filename}"
-    write_placement_xdc -cells [get_cells -of $pblock] "${filename}/placement.xdc"
-    write_routing_xdc -sites [get_sites -of $pblock -filter IS_USED] -nets $nets -global_logic "${filename}/routing.xdc"
 }
 
 # packages the nets of the given pblock by internal nets,

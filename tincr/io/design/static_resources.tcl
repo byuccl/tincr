@@ -228,7 +228,7 @@ proc ::tincr::write_static_resources { args } {
     ::tincr::print_verbose "Partition Pins Done...($partpin_time s)"
     
     # Write static partition pins (to routing.rsc)
-	set static_partpin_time [tincr::report_runtime "write_static_part_pins [subst -novariables {$rp_cell $routing_channel}]" s]
+    set static_partpin_time [tincr::report_runtime "write_static_part_pins [subst -novariables {$rp_cell $routing_channel}]" s]
     ::tincr::print_verbose "VCC/GND Partition Pins Done...($static_partpin_time s)"
     close $routing_channel
     
