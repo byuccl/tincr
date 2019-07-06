@@ -142,7 +142,7 @@ proc ::tincr::write_rm_rscp {args} {
     ::tincr::print_verbose "Static Resources Done...($static_runtime s)"
     
     # write routing information
-    set route_runtime [report_runtime "write_routing_rs2 -global_logic $internal_net_map ${filename}/routing.rsc" s]
+    set route_runtime [report_runtime "write_routing_rs2 [subst -novariables {"-global_logic" $internal_net_map ${filename}/routing.rsc}]" s]
     ::tincr::print_verbose "Routing Done...($route_runtime s)"
     
     set total_runtime [expr { $edif_runtime + $macro_time + $place_runtime + $route_runtime + $static_runtime} ]
@@ -207,7 +207,7 @@ proc ::tincr::read_rm_tcp {args} {
         set_property -dict "PACKAGE_PIN $package_pin IOSTANDARD $io_standard" $port
     }
     set end_time [clock clicks -microseconds]
-    set constraints_time [expr $end_time -$start_time]
+    set constraints_time [::tincr::format_time [expr $end_time -$start_time] s]
     ::tincr::print_verbose "Constraints Done...($constraints_time s)"
     
     set total_runtime [expr { $edif_runtime + $place_runtime + $route_runtime + $partpin_runtime + $constraints_time} ]
@@ -663,6 +663,7 @@ proc ::tincr::write_routing_rs2 {args} {
     
     # select which nets to export (do not get the hierarchical nets)
     if {$global_logic} {
+        puts "global logic"
         set nets [get_nets -quiet]
     } else {
         set nets [get_nets -quiet -filter {TYPE != POWER && TYPE != GROUND}]
