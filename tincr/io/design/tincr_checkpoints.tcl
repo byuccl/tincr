@@ -78,7 +78,7 @@ proc ::tincr::write_rscp {args} {
     ::tincr::print_verbose "Placement Done...($placement_runtime s)"
     
     # write routing information
-    set routing_runtime [report_runtime "write_routing_rs2 [subst -novariables {"-global_logic" $ooc_flag $internal_net_map ${filename}/routing.rsc}]" s]
+    set routing_runtime [report_runtime "write_routing_rs2 -global_logic $ooc_flag [subst -novariables {$internal_net_map ${filename}/routing.rsc}]" s]
     ::tincr::print_verbose "Routing Done...($routing_runtime s)"
     
     ::tincr::print_verbose "Successfully Created RapidSmith2 Checkpoint!"
