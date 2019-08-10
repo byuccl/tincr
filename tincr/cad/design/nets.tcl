@@ -739,10 +739,18 @@ proc ::tincr::nets::recurse_split_route { target var_name path } {
 # @param net TCL net object
 # @return a list of corrected site pins connected to the net
 proc ::tincr::nets::get_site_pins_of_net { net } {
-    
     set pin_set [list]
+    set bel_pins [list]
     
-    foreach bel_pin [get_bel_pins -of $net -quiet] {
+    # Bel Pins must be obtained in this manner because get_cell_pins and get_bel_pins sometimes
+    # do not return all of the bel pins.
+    foreach cell [get_cells -of_objects $net -quiet] {
+        foreach cell_pin [get_pins -of_objects $cell] {
+            lappend bel_pins [get_bel_pins -of_objects $cell_pin -quiet]
+        }
+    }
+       
+    foreach bel_pin $bel_pins {
         if {[llength [get_bels -of [get_sites -of $bel_pin]]] == 1} {
             # if there is only one bel in the site, the bel pin name will match its corresponding site pin.
             set belPinToks [split $bel_pin "/"]
