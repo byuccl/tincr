@@ -745,7 +745,7 @@ proc ::tincr::nets::get_site_pins_of_net { net } {
     # Bel Pins must be obtained in this manner because get_cell_pins and get_bel_pins sometimes
     # do not return all of the bel pins.
     foreach cell [get_cells -of_objects $net -quiet] {
-        foreach cell_pin [get_pins -of_objects $cell] {
+        foreach cell_pin [get_pins -of_objects $cell -quiet] {
             lappend bel_pins [get_bel_pins -of_objects $cell_pin -quiet]
         }
     }
