@@ -142,7 +142,7 @@ proc ::tincr::write_rm_rscp {args} {
     ::tincr::print_verbose "Static Resources Done...($static_runtime s)"
     
     # write routing information
-    set route_runtime [report_runtime "write_routing_rs2 [subst -novariables {"-global_logic" $internal_net_map ${filename}/routing.rsc}]" s]
+    set route_runtime [report_runtime "write_routing_rs2 -global_logic -append [subst -novariables {$internal_net_map ${filename}/routing.rsc}]" s]
     ::tincr::print_verbose "Routing Done...($route_runtime s)"
     
     set total_runtime [expr { $edif_runtime + $macro_time + $place_runtime + $route_runtime + $static_runtime} ]
@@ -632,19 +632,27 @@ proc ::tincr::get_internal_macro_nets {macro} {
 #   - Merged VCC/GND net information 
 #  For OOC/RM designs, this file also includes partition pins / ooc ports.
 #
-#   USAGE: tincr::write_routing_rs2 [-global_logic] [-ooc] internal_net_map filename
+#   USAGE: tincr::write_routing_rs2 [-global_logic] [-ooc] [-append] internal_net_map filename
 # @param args Argument list shown in the usage statement above. The flag "-global_logic"
 #       is used to include VCC and GND routing. The flag "-ooc" is used to include partition pins / ooc ports.
+#       The flag "-append" is used to indicate whether the routing.rsc file should be opened as a new file or appended to.
 #       The parameter "internal_net_map" is a list of internal macro nets so the routing information for 
 #       these nets can be exported. The parameter "filename" is the name of the file to write the routing information to. 
 proc ::tincr::write_routing_rs2 {args} {
     set global_logic 0
     set ooc 0
-    ::tincr::parse_args {} {global_logic ooc} {} {internal_net_map filename} $args
+    set append 0
+    ::tincr::parse_args {} {global_logic ooc append} {} {internal_net_map filename} $args
 
     # create the routing file
     set filename [::tincr::add_extension ".rsc" $filename]
-    set channel_out [open $filename a+]
+    set channel_out ""
+    
+    if {$append} {
+        set channel_out [open $filename a+]
+    } else {
+        set channel_out [open $filename w]
+    }
     
     # write out-of-context hierarchical ports to the file
     if {$ooc} {

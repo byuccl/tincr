@@ -739,8 +739,8 @@ proc ::tincr::nets::recurse_split_route { target var_name path } {
 # @param net TCL net object
 # @return a list of corrected site pins connected to the net
 proc ::tincr::nets::get_site_pins_of_net { net } {
-    
     set pin_set [list]
+    set is_pad 0
     
     foreach bel_pin [get_bel_pins -of $net -quiet] {
         if {[llength [get_bels -of [get_sites -of $bel_pin]]] == 1} {
@@ -753,6 +753,7 @@ proc ::tincr::nets::get_site_pins_of_net { net } {
                 set site [get_sites -of $site_pin]
                 
                 if {[get_property IS_PAD $site]} {
+                    set is_pad 1
                     set pin_name [lindex [split $site_pin "/"] 1]
                     set iob_name [get_package_pins -of $site]
                     set site_pin "$iob_name/$pin_name"
@@ -763,6 +764,22 @@ proc ::tincr::nets::get_site_pins_of_net { net } {
         }
     }
     
+    # If the net includes a site pad, check for a missing output site pin. Issues may come up, for example, with 
+    # a net that goes from an IOB33S's PADOUT pin to an IOB33M's DIFFI_IN pin. In this case, Vivado does not find
+    # the bel pin or the output site pin. It is unknown if this occurs in any other situations.
+    if {$is_pad == 1 && [llength $pin_set] == 1} {
+        set port [get_ports -of_objects $net -quiet]
+        set site [get_sites -of_objects $port -quiet]
+        foreach site_pin [get_site_pins -of_objects $site -quiet] {
+            set site_pin_net [get_nets -of_objects $site_pin -quiet]
+            if {$site_pin_net == $net} {
+                set pin_name [lindex [split $site_pin "/"] 1]
+                set iob_name [get_package_pins -of $site]
+                set site_pin "$iob_name/$pin_name"
+                ::struct::set add pin_set $site_pin
+            }
+        }
+    }
     return $pin_set
 }
 
