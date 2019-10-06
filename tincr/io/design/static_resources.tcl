@@ -17,7 +17,7 @@ namespace eval ::tincr:: {
 # @param channel Output file handle
 # TODO: Optimize this procedure.
 proc write_rp_site_routethroughs { tiles channel } {
-    set site_rts [list]
+    set MAX_CONFIG_SIZE 20
     set nets [get_nets -hierarchical]
 
     # Get all nodes that are in the tiles we care about and that also have nets
@@ -42,17 +42,65 @@ proc write_rp_site_routethroughs { tiles channel } {
             if {$uphill_node != "" && $downhill_node != ""} {
                 # If PSEUDO, it's a route-through PIP (and not a "real" PIP).
                 if {[get_property IS_PSEUDO $pip]} {
+                    set routethrough_luts [list]
                     set src_pin [get_site_pins -of_object [get_nodes -uphill -of_object $pip]]
-                    lappend site_rts "[get_sites -of_object $src_pin]"
+                    set site [get_sites -of_object $src_pin]
+                    puts $channel "SITE_RT $site $pip"
+                    
+                    set site_pips [get_site_pips -quiet -of_objects $site -filter IS_USED]
+                    if {$site_pips != ""} {
+
+                        set sitename [get_property NAME $site]
+
+                        if { [get_property IS_PAD $site] && $is_series7 } {
+                            set sitename [get_property NAME [get_package_pins -quiet -of_object $site]]
+                        }
+
+                        puts -nonewline $channel "SITE_PIPS $sitename "
+
+                        foreach sp $site_pips {
+                            puts -nonewline $channel "[lindex [split $sp "/"] end] "
+                        }
+                        puts $channel {}
+                    }
+                    
+                    # Find lut route-throughs
+                    foreach bel [get_bels -quiet -of $site -filter {TYPE =~ *LUT*}] {
+                        set config [get_property CONFIG.EQN $bel]
+                        
+                        # skip long config strings...they cannot be static sources or routethroughs
+                        if { [string length $config] > $MAX_CONFIG_SIZE } {
+                            continue
+                        }
+                        
+                        if { [regexp {(O[5,6])=(?:\(A6\+~A6\)\*)?\(+(A[1-6])\)+ ?} $config -> outpin inpin] } {
+                            set toks [split $bel "/"]
+                            set local_bel [lindex $toks 1]                        
+                            lappend routethrough_luts "$local_bel/$inpin/$outpin"
+                        }
+                    }
+                    
+                    # Also look for FF route-throughs
+                    foreach bel [get_bels -quiet -of $site -filter {NAME=~*FF*}] {
+                        set mode [string trim [get_property CONFIG.LATCH_OR_FF $bel]]
+                        if {$mode == "LATCH"} {
+                            set toks [split $bel "/"]
+                            set local_bel [lindex $toks 1]
+                            lappend routethrough_luts "$local_bel/D/Q"
+                        }
+                    }
+                    
+                    puts $channel "SITE_LUTS $site $routethrough_luts"               
                 }
             }
         }
     }
-    # print the site routethroughs
-    ::tincr::print_list -header "SITE_RTS" -channel $channel $site_rts
 }
 
 ## Finds VCC/GND partition pins (out-of-context ports) in a design and writes them to the routing.rsc file.
+# VCC/GND partition pins occur when the initial static design created with Vivado has partition pins that are always driven
+# by VCC/GND. For these pins, partition pins are still logically created, but they are not assigned to a physical wire.
+# Instead, they are driven by VCC/GND tie-offs within the PR region.
 #
 # @param channel File handle to write to
 # TODO: Migrate to tincr_checkpoints.tcl and output in routing.xdc for OOC checkpoints as well?
@@ -82,12 +130,13 @@ proc write_static_part_pins { rp_cell channel } {
 }
 
 ## Searches through the given list of tiles, identifies used PIPs, and
-# writes these used PIPs (as wires) to the PR static export file.
+# writes these used PIPs to the PR static export file.
 #
 # @param tiles List of possible tiles with used PIPs (in a reconfigurable region)
 # @param channel Output file handle
-proc write_used_rp_wires { tiles static_nets channel } {
-    set used_wires [list]
+proc write_used_rp_pips { tiles static_nets channel } {
+    #set used_wires [list]
+    set used_pips [list]
     
     # Get non partition-pin nets
     set nets [struct::set difference [get_nets -hierarchical] $static_nets]
@@ -98,22 +147,42 @@ proc write_used_rp_wires { tiles static_nets channel } {
         set nodes [::struct::set intersect [get_nodes -quiet -of_objects $nets] [get_nodes -quiet -of_objects $tiles]]
         
         if {[llength $nodes] != 0} {
+            puts -nonewline $channel "RESERVED_PIPS "
+
             # Get the list of nets that those nodes deal with
             set nets [get_nets -of_objects $nodes]
             
-            # Now, print out the PIPs of each tile using the list of tiles and the list of nets
-            # TODO: Could probably make this faster with a map from tiles -> nets that go through that tile
-            foreach tile $tiles {    
-                set tile_pips [get_pips -quiet -filter "TILE == $tile" -of_objects $nets]
-                foreach pip $tile_pips {
-                    lappend used_wires "[get_wires -of_objects $pip]"
-                }  
+            foreach net $nets {
+                set net_pips [get_pips -quiet -of_objects $net]
+                set tile_pips [get_pips -quiet -of_objects $tiles]
+                set static_pips [struct::set intersect $net_pips $tile_pips]
+                
+                # It is much slower now that I find the true direction for bi-directional PIPs...
+                foreach pip $static_pips {
+                    if {[regexp {(.*)\/(.*)\.([^<]*)((?:<<)?->>?)(.*)} $pip match tile type wireA dir wireB]} {
+                        # Find bi-directional pips' used direction
+                        if {$dir == "<<->>"} {
+                            set nodeB [get_nodes -of_objects [get_wires "${tile}/${wireB}"]]
+                            
+                            # Are there any downhill pips from this node that the net uses?
+                            set downhill_pips [get_pips -downhill -of_objects $nodeB]
+                            set downhill_used [struct::set intersect $downhill_pips $net_pips]
+                            if {[llength $downhill_used] > 0 } {
+                                # The direction is A->B
+                                puts -nonewline $channel "${tile}/${type}.${wireA}->>${wireB}"
+                            } else {
+                                # The direction is B->A
+                                puts -nonewline $channel "${tile}/${type}.${wireB}->>${wireA}"
+                            }
+                        } else {
+                            puts -nonewline $channel "$pip "
+                        }
+                    }
+                }
             }
+            puts $channel {}
         }
     }
-        
-    # print the used wires
-    ::tincr::print_list -header "RESERVED_WIRES" -channel $channel $used_wires
 }
 
 ## Prints the partial route strings for the partition pin routes.
@@ -259,18 +328,19 @@ proc ::tincr::write_static_resources { args } {
     set max_col [get_property COLUMN $top_right_tile]
     set min_col [get_property COLUMN $bott_left_tile]
 
-    # Get used wires.
-    # Get a list of tiles that might have used PIPs (CLB and INT)
-    # Interconnect Tiles (INT_L, INT_R) and CLB Tiles (CLBLM_L, CLBLM_R, CLBLL_L, CLBLL_R) are possible types.
-    set rp_tiles [get_tiles -filter "(ROW >= $min_row && ROW <= $max_row && COLUMN <= $max_col && COLUMN >= $min_col) && (TILE_TYPE == INT_L || TILE_TYPE == INT_R || TILE_TYPE == CLBLM_L || TILE_TYPE == CLBLM_R || TILE_TYPE == CLBLL_L || TILE_TYPE == CLBLL_R) "] 
-    set used_wires_time [tincr::report_runtime "write_used_rp_wires [subst -novariables {$rp_tiles $static_nets $channel_out}]" s]
-    ::tincr::print_verbose "Used Wires Done...($used_wires_time s)"
-   
     # Get site route-throughs
-    set tiles [get_tiles -filter "(ROW >= $min_row && ROW <= $max_row && COLUMN <= $max_col && COLUMN >= $min_col)"] 
+    set tiles [get_tiles -filter "(ROW >= $min_row && ROW <= $max_row && COLUMN <= $max_col && COLUMN >= $min_col && TILE_TYPE != INT_L && TILE_TYPE != INT_R)"] 
     set routethrough_time [tincr::report_runtime "write_rp_site_routethroughs [subst -novariables {$tiles $channel_out}]" s]
     ::tincr::print_verbose "Site route-throughs Done...($routethrough_time s)"
 
+    # Get used wires.
+    # Get a list of tiles that might have used PIPs (CLB and INT)
+    # Interconnect Tiles (INT_L, INT_R) and CLB Tiles (CLBLM_L, CLBLM_R, CLBLL_L, CLBLL_R) are possible types.
+    #set rp_tiles [get_tiles -filter "(ROW >= $min_row && ROW <= $max_row && COLUMN <= $max_col && COLUMN >= $min_col) && (TILE_TYPE == INT_L || TILE_TYPE == INT_R || TILE_TYPE == CLBLM_L || TILE_TYPE == CLBLM_R || TILE_TYPE == CLBLL_L || TILE_TYPE == CLBLL_R) "] 
+    set rp_tiles [get_tiles -filter "(ROW >= $min_row && ROW <= $max_row && COLUMN <= $max_col && COLUMN >= $min_col)"] 
+    set used_wires_time [tincr::report_runtime "write_used_rp_pips [subst -novariables {$rp_tiles $static_nets $channel_out}]" s]
+    ::tincr::print_verbose "Used Wires Done...($used_wires_time s)"
+   
     close_project
     close $channel_out
     set ::tincr::verbose $old_verbose
