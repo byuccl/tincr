@@ -15,7 +15,6 @@ namespace eval ::tincr:: {
 #
 # @param tiles List of tiles in the reconfigurable region
 # @param channel Output file handle
-# TODO: Optimize this procedure.
 proc write_rp_site_routethroughs { tiles channel } {
     set MAX_CONFIG_SIZE 20
     set nets [get_nets -hierarchical]
@@ -134,12 +133,11 @@ proc write_static_part_pins { rp_cell channel } {
 #
 # @param tiles List of possible tiles with used PIPs (in a reconfigurable region)
 # @param channel Output file handle
-proc write_used_rp_pips { tiles static_nets channel } {
-    #set used_wires [list]
+proc write_used_rp_pips { tiles partpin_nets channel } {
     set used_pips [list]
     
     # Get non partition-pin nets
-    set nets [struct::set difference [get_nets -hierarchical] $static_nets]
+    set nets [struct::set difference [get_nets -hierarchical] $partpin_nets]
 
     # Get wires from the PIPs. We only want the wires that are at the ends of nodes (not the in-between ones)
     # First get all nodes that are in the tiles we care about and that also have nets
@@ -154,12 +152,12 @@ proc write_used_rp_pips { tiles static_nets channel } {
             
             foreach net $nets {
                 set net_pips [get_pips -quiet -of_objects $net]
-                set tile_pips [get_pips -quiet -of_objects $tiles]
+                set net_tiles [struct::set intersect [get_tiles -of_objects $net] $tiles]
+                set tile_pips [get_pips -quiet -of_objects $net_tiles]
                 set static_pips [struct::set intersect $net_pips $tile_pips]
                 
-                # It is much slower now that I find the true direction for bi-directional PIPs...
                 foreach pip $static_pips {
-                    if {[regexp {(.*)\/(.*)\.([^<]*)((?:<<)?->>?)(.*)} $pip match tile type wireA dir wireB]} {
+                    if {[get_property IS_DIRECTIONAL $pip] == 0 && [regexp {(.*)\/(.*)\.([^<]*)((?:<<)?->>?)(.*)} $pip match tile type wireA dir wireB]} {
                         # Find bi-directional pips' used direction
                         if {$dir == "<<->>"} {
                             set nodeB [get_nodes -of_objects [get_wires "${tile}/${wireB}"]]
@@ -187,74 +185,36 @@ proc write_used_rp_pips { tiles static_nets channel } {
 
 ## Prints the partial route strings for the partition pin routes.
 # These route strings only contain the static portion of the nets.
+# Note that using regex in this procedure is slightly faster than 
+# using several string operations.
 #
 # @param nets The nets to write route strings for
 # @param channel output channel
-# TODO: Optimize this procedure. 
-proc write_static_routes { nets channel } {	
-	foreach net $nets {
-		if { ($net eq "<const0>") || ($net eq "<const1>") || ($net eq "const0") || ($net eq "const1")} {
-		    continue
-		}	
-	
-		# Get the name(s) of the port(s)
+proc write_static_routes { nets channel } {
+    foreach net $nets {
+        if { ($net eq "<const0>") || ($net eq "<const1>") || ($net eq "const0") || ($net eq "const1")} {
+            continue
+        }
+        
+        # Get the name(s) of the port(s)
 		# If the net connects to more than one partition pin, there will be multiple associated ports
-	    set ports [get_pins -filter { HD.ASSIGNED_PPLOCS !=  "" } -of_objects [get_nets $net]]
-		
+	    set ports [get_pins -filter { HD.ASSIGNED_PPLOCS !=  "" } -of_objects [get_nets $net]]		
 		set portNames ""
 		foreach port $ports {
 			set portNames "$portNames [string replace $port 0 [string first "/" $port]]"
 		}
-		
-		set route_string "STATIC_RT $net $portNames "
-		
+		set route_string "STATIC_RT $net $portNames"
+
 		# Split report_route_status by lines
-		set lines [split [report_route_status -of_objects $net -return_string] "\n"]
-		
+		set lines [split [report_route_status -quiet -of_objects $net -return_string] "\n"]
+
 		foreach line $lines {
-			# Trim spaces, *'s, and p (partition pin marker)
-			set line [string trim $line " *p"]
-			
-			# Remove characters starting from the first '(' to the end of the line
-			# This is the PIP information
-			set start_idx [string first "(" $line] 
-			
-			if {$start_idx == -1} {
-				continue
-			}
-			
-			set line [string replace $line $start_idx end]
-			
-			# Get rid of other extra characters
-			set line [string trim $line " *\["]
-			set line [string map {"p" ""} $line]
-			set line [string map {"*" ""} $line]
-			set line [string map {" " ""} $line]
-			
-			# Check if the first character is a closing curly brace
-			set comparison [string compare -length 1 $line "\}"]
-			
-			if {$comparison == 0} {
-				set line "$line \}"
-				set line [string trimleft $line " \}*\[\]"]
-			}
-			
-			# Check if the first character is an opening curly brace
-			set comparison [string compare -length 1 $line "\{"]
-			if {$comparison == 0} {
-            	set cut_line [string trimleft $line " \{*\[\]"]
-            	# Now check if the next character is a closing curly brace
-            	set comparison [string compare -length 1 $cut_line "\}"]
-                if {$comparison == 0} {
-                	set line "\{ [string range $cut_line 1 end] \}"
-                } else {
-                	set line "\{ [string range $line 1 end]"
-                }
-			}
-			append route_string "$line "
+            if {[regexp {({?)\*\s*(}?)]?p?\s*([A-Z0-9_/]+) \(\s*[0-9]+\)} $line matched l_curly r_curly wire]} {
+                append route_string "${l_curly} ${wire} ${r_curly} "
+            }
 		}
-		::tincr::print $channel $route_string			
-	}
+		::tincr::print $channel $route_string
+    }
 }
 
 ## Prints the static resources contained within a PR region in a static design.
@@ -269,7 +229,6 @@ proc write_static_routes { nets channel } {
 #         The required prRegion parameter specifies the name of the PR region cell.
 #         The required routing_filename parameter specifies the path of the routing.rsc file.
 #         The required static_filename parameter specifies the path of the static.rsc file.
-#TODO: Remove duplicate logic (don't get all nets more than once, etc.)
 proc ::tincr::write_static_resources { args } {
     set quiet 0
     set verbose 0
@@ -333,13 +292,13 @@ proc ::tincr::write_static_resources { args } {
     set routethrough_time [tincr::report_runtime "write_rp_site_routethroughs [subst -novariables {$tiles $channel_out}]" s]
     ::tincr::print_verbose "Site route-throughs Done...($routethrough_time s)"
 
-    # Get used wires.
+    # Get used pips.
     # Get a list of tiles that might have used PIPs (CLB and INT)
     # Interconnect Tiles (INT_L, INT_R) and CLB Tiles (CLBLM_L, CLBLM_R, CLBLL_L, CLBLL_R) are possible types.
     #set rp_tiles [get_tiles -filter "(ROW >= $min_row && ROW <= $max_row && COLUMN <= $max_col && COLUMN >= $min_col) && (TILE_TYPE == INT_L || TILE_TYPE == INT_R || TILE_TYPE == CLBLM_L || TILE_TYPE == CLBLM_R || TILE_TYPE == CLBLL_L || TILE_TYPE == CLBLL_R) "] 
     set rp_tiles [get_tiles -filter "(ROW >= $min_row && ROW <= $max_row && COLUMN <= $max_col && COLUMN >= $min_col)"] 
-    set used_wires_time [tincr::report_runtime "write_used_rp_pips [subst -novariables {$rp_tiles $static_nets $channel_out}]" s]
-    ::tincr::print_verbose "Used Wires Done...($used_wires_time s)"
+    set used_pips_time [tincr::report_runtime "write_used_rp_pips [subst -novariables {$rp_tiles $static_nets $channel_out}]" s]
+    ::tincr::print_verbose "Used Pips Done...($used_pips_time s)"
    
     close_project
     close $channel_out
