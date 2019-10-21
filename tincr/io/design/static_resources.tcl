@@ -6,8 +6,76 @@ package require tincr.cad.util 0.0
 
 namespace eval ::tincr:: {
     namespace export \
-    write_static_resources 
+    write_static_resources \
+    write_dcps
 }
+
+
+proc ::tincr::write_dcps {} {
+    set dcps [glob *.dcp]
+    
+    foreach dcp $dcps {
+        open_checkpoint $dcp
+        set name [get_property NAME [get_designs]]
+        tincr::write_rscp ${name}.routed.rscp
+        close_project
+    }
+        
+}
+
+proc ::tincr::get_possible_sinks {node} {
+    set site_pins [list]
+    
+    set site_pin [get_site_pins -of_objects $node]
+    if {$site_pin != ""} {
+        lappend site_pins $site_pin
+    } else {
+        set downhill_nodes [get_nodes -downhill -of_objects $node]
+    
+        foreach down_node $downhill_nodes {
+            lappend site_pins [get_possible_sinks $down_node]
+        }
+    }
+    return $site_pins
+}
+
+
+proc ::tincr::get_possible_drivers {node tile {seen_nodes ""}} {
+    set site_pins [list]
+    if {$seen_nodes == ""} {
+        set seen_nodes [list]
+        lappend seen_nodes $node
+    }
+    puts "1"
+    set tile_x [expr [get_property INT_TILE_X $tile]]
+    set tile_y [expr [get_property INT_TILE_Y $tile]]
+    puts "2"
+    set site_pin [get_site_pins -of_objects $node]
+    if {$site_pin != ""} {
+        lappend site_pins $site_pin
+    } else {
+        set uphill_nodes [get_nodes -uphill -of_objects $node]
+        puts "3"
+        foreach uphill_node $uphill_nodes {
+            if {[lsearch -exact $seen_nodes $uphill_node] == -1} {
+                puts "4"
+                set up_tile_x [expr [get_property INT_TILE_X [get_tiles -of_objects $uphill_node]]]
+                set up_tile_y [expr [get_property INT_TILE_Y [get_tiles -of_objects $uphill_node]]]
+                puts "5"
+                lappend seen_nodes $uphill_node
+
+                set x_diff [expr {$tile_x - $up_tile_x}]
+                set y_diff [expr {$tile_y - $up_tile_y}]
+                puts "comn"
+                if {($x_diff == 1 || $x_diff == -1) && ($y_diff == 1 || $y_diff == -1)} {
+                    lappend site_pins [get_possible_drivers $uphill_node $seen_nodes]
+                }
+            } 
+        }
+    }
+    return $site_pins
+}
+
 
 ## Identifies <b>used</b> site routethroughs present in a list of tiles 
 # (like the tiles of a pblock) and writes these site rouethroughs to the 
